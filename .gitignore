@@ -1,0 +1,20 @@
+Frontend/ava-02/node_modules
+Frontend/ava-02/.pnp
+*.pnp.js
+
+# testing
+Frontend/ava-02/coverage
+
+# production
+Frontend/ava-02/build
+
+# misc
+Frontend/ava-02/.DS_Store
+Frontend/ava-02/.env.local
+Frontend/ava-02/.env.development.local
+Frontend/ava-02/.env.test.local
+Frontend/ava-02.env.production.local
+
+Frontend/ava-02/npm-debug.log*
+Frontend/ava-02/yarn-debug.log*
+Frontend/ava-02/yarn-error.log*
