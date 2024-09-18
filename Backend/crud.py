@@ -24,11 +24,13 @@ def create_driver(db: Session, user: schemas.DriverCreate):
     return db_driver
 
 ## READ DRIVES
-def get_drive(db: Session, drive_id):
+def get_drive(db: Session, drive_id: int):
     return db.query(models.Drive).filter(models.Drive.drive_id == drive_id).first()
 
-def get_drives_by_driver(db: Session, driver_id):
+def get_drives_by_driver(db: Session, driver_id: int):
     return db.query(models.Drive).filter(models.Drive.driver_id == driver_id).all()
+
+
 
 ## WRITE DRIVES
 
