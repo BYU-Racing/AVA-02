@@ -18,6 +18,11 @@ def get_drives_by_driver(driver_id: int, db: Session = Depends(get_db)):
     drives = crud.get_drives_by_driver(db, driver_id)
     return drives
 
+@router.get("/drive/{drive_id}", response_model=schemas.Drive)
+def get_drive_by_id(drive_id: int, db: Session = Depends(get_db)):
+    drive = crud.get_drive(db, drive_id)
+    return drive
+
 
 @router.post("/drive", response_model=schemas.Drive)
 def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
@@ -27,6 +32,8 @@ def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Drive already registered")
     
     return crud.create_drive(db=db, drive=drive)
+
+
 
 
 
