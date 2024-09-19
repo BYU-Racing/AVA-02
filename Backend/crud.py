@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 from datetime import datetime
+import logging
 
 
 ## READ DRIVERS
@@ -8,7 +9,9 @@ def get_driver_by_name(db: Session, driver_name: str):
     return db.query(models.Driver).filter(models.Driver.name == driver_name).first()
 
 def get_driver(db: Session, driver_id: int):
-    return db.query(models.Driver).filter(models.Driver.driver_id == driver_id).first()
+    driver = db.query(models.Driver).filter(models.Driver.driver_id == driver_id).first()
+    logging.error(driver)
+    return driver
 
 def get_drivers(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Driver).offset(skip).limit(limit).all()

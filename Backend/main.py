@@ -1,15 +1,25 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from .endpoints import drive
-from sqlalchemy import create_engine, MetaData
-from databases import Database
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from .endpoints import drive, driver
+
+from . import crud, models, schemas
+from .database import SessionLocal, engine
+
+models.Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI()
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # Include routers from different endpoint files
 app.include_router(drive.router)
+app.include_router(driver.router)
 
 
 # Root endpoint (optional)

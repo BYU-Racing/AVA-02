@@ -1,11 +1,38 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from .. import crud, models, schemas
+from ..database import SessionLocal, engine
+from sqlalchemy.orm import Session
+
 
 router = APIRouter()
 
-@router.get("/drive")
-def get_users():
-    return {"drives": ["drive", "drive", "drive"]}
+models.Base.metadata.create_all(bind=engine)
 
-@router.get("/drive/{drive_id}")
-def get_user(drive_id: int):
-    return {"drive_id": drive_id}
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@router.get("/driver", response_model=list[schemas.Driver])
+def get_drivers(db: Session = Depends(get_db)):
+    drivers = crud.get_drivers(db)
+
+    return drivers
+
+
+@router.get("/driver/{id}", response_model=schemas.Driver)
+def get_driver_by_id(id: int, db: Session = Depends(get_db)):
+    driver = crud.get_driver(db, id)
+    if driver is None:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    return driver
+
+@router.post("/driver", response_model=schemas.Driver)
+def create_driver(driver: schemas.DriverCreate, db: Session = Depends(get_db)):
+    db_driver = crud.get_driver_by_name(db, driver.name)
+    if db_driver:
+        raise HTTPException(status_code=400, detail="Driver already registered")
+    
+    return crud.create_driver(db=db, user=driver)
