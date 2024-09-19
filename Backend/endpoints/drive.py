@@ -13,13 +13,7 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/drive", response_model=list[schemas.Drive])
-def get_drives(db: Session = Depends(get_db)):
-    drives = crud.get_drives_by_driver(db, 0)
+@router.get("/drive/{driver_id}", response_model=list[schemas.Drive])
+def get_drives_by_driver(driver_id: int, db: Session = Depends(get_db)):
+    drives = crud.get_drives_by_driver(db, driver_id)
     return drives
-
-
-
-@router.get("/drive/{drive_id}")
-def get_user(drive_id: int):
-    return {"drive_id": drive_id}

@@ -18,3 +18,5 @@ Frontend/ava-02.env.production.local
 Frontend/ava-02/npm-debug.log*
 Frontend/ava-02/yarn-debug.log*
 Frontend/ava-02/yarn-error.log*
+
+Backend/secrets.py
