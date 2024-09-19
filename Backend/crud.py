@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
+from datetime import datetime
 
 
 ## READ DRIVERS
@@ -31,13 +32,32 @@ def get_drives_by_driver(db: Session, driver_id: int):
     return db.query(models.Drive).filter(models.Drive.driver_id == driver_id).all()
 
 
-
 ## WRITE DRIVES
+def create_drive(db: Session, drive: schemas.DriveCreate):
 
+    db_drive = models.Drive(driver_id=drive.driver_id, date=drive.date, notes=drive.notes)
+    db.add(db_drive)
+    db.commit()
+    db.refresh(db_drive)
+
+    return db_drive
 
 ## READ RAW DATA
 
+def get_all_data_from_drive(db: Session, drive_id: int):
+    return db.query(models.RawData).filter(models.RawData.drive_id == drive_id).all()
+
+def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
+    return db.query(models.RawData).filter(models.RawData.drive_id == drive_id).filter(models.RawData.msg_id == sensor_id).all()
 
 
 ## WRITE RAW DATA
 
+def create_raw_data(db: Session, data: schemas.RawDataCreate):
+    db_data = models.RawData(drive_id=data.drive_id, msg_id=data.msg_id, raw_data=data.raw_data)
+
+    db.add(db_data)
+    db.commit()
+    db.refresh(db_data)
+
+    return db_data
