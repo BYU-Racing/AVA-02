@@ -29,6 +29,7 @@ def get_data_from_drive_for_sensor(drive_id: int, sensor_id: int, db: Session = 
 
     return data
 
+
 @router.post("/data", response_model=schemas.RawData)
 def create_data(data: schemas.RawDataCreate, db: Session = Depends(get_db)):
     
