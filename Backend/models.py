@@ -34,6 +34,7 @@ class RawData(Base):
     drive_id = Column(Integer, ForeignKey("drive.drive_id"))
     msg_id = Column(Integer)
     raw_data = Column(ARRAY(Integer))
+    time = Column(Integer)
 
 
     drive = relationship("Drive", back_populates="raw_data")

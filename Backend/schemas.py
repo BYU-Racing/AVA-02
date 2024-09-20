@@ -7,6 +7,7 @@ from datetime import datetime
 class RawDataBase(BaseModel):
     msg_id: int
     raw_data: List[int]
+    time: int
 
 
 class RawDataCreate(RawDataBase):

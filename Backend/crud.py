@@ -57,7 +57,7 @@ def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
 ## WRITE RAW DATA
 
 def create_raw_data(db: Session, data: schemas.RawDataCreate):
-    db_data = models.RawData(drive_id=data.drive_id, msg_id=data.msg_id, raw_data=data.raw_data)
+    db_data = models.RawData(drive_id=data.drive_id, msg_id=data.msg_id, raw_data=data.raw_data, time=data.time)
 
     db.add(db_data)
     db.commit()
