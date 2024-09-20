@@ -34,6 +34,8 @@ def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     return crud.create_drive(db=db, drive=drive)
 
 
-
+@router.post("/drive/{driver_id}", response_model=schemas.Drive)
+def create_drive_from_file(driver_id: int, drive: schemas.DriveCreate, db: Session = Depends(get_db)):
+    return {"Test Endpoint": "complete"}
 
 
