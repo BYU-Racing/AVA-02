@@ -22,6 +22,16 @@ class RawData(RawDataBase):
 
 
 # Schema for Drive
+
+class DriveSimple(BaseModel):
+    date: datetime
+    notes: Optional[str] = None
+    driver_id: int
+    drive_id: int
+
+    class Config:
+        orm_mode = True
+
 class DriveBase(BaseModel):
     date: datetime
     notes: Optional[str] = None
@@ -51,6 +61,14 @@ class DriverCreate(DriverBase):
 class Driver(DriverBase):
     driver_id: int
     drives: List[Drive] = []
+
+    class Config:
+        orm_mode = True
+
+
+class DriverSimple(BaseModel):
+    name: str
+    driver_id: int
 
     class Config:
         orm_mode = True
