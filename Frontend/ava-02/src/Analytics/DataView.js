@@ -1,37 +1,25 @@
 import { useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
+import SensorChart from "./SensorChart";
 import {
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
 } from "./CANtransformations";
-import id_map from "../idMap";
-import SensorChart from "./SensorChart";
 
 function DataView() {
   const [sensorDataArray, setSensorDataArray] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleDrop = async (event) => {
+  const handleDrop = async (event, targetSensorId = null) => {
     event.preventDefault();
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
-    // Check if the sensor data is already present
-    if (sensorDataArray.some((data) => data.sensorId === sensorId)) {
-      return;
-    }
+    // Find the chart that the data is being dropped onto
+    const targetChartIndex = sensorDataArray.findIndex(({ sensorIds }) =>
+      sensorIds.includes(targetSensorId)
+    );
 
     setLoading(true);
     try {
@@ -48,10 +36,25 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }
 
-      setSensorDataArray((prevArray) => [
-        ...prevArray,
-        { sensorId, data: timeSeriesData },
-      ]);
+      if (targetChartIndex >= 0) {
+        // If dropped onto an existing chart, add the new line data
+        const updatedCharts = [...sensorDataArray];
+        updatedCharts[targetChartIndex].dataSets.push({
+          sensorId,
+          data: timeSeriesData,
+        });
+        updatedCharts[targetChartIndex].sensorIds.push(sensorId); // Add the sensorId to the chart
+        setSensorDataArray(updatedCharts);
+      } else {
+        // If dropped in a blank space, create a new chart
+        setSensorDataArray((prevArray) => [
+          ...prevArray,
+          {
+            sensorIds: [sensorId],
+            dataSets: [{ sensorId, data: timeSeriesData }],
+          },
+        ]);
+      }
     } catch (error) {
       console.error("Error fetching sensor data:", error);
     } finally {
@@ -65,7 +68,7 @@ function DataView() {
 
   const removeChart = (sensorId) => {
     setSensorDataArray((prevArray) =>
-      prevArray.filter((data) => data.sensorId !== sensorId)
+      prevArray.filter(({ sensorIds }) => !sensorIds.includes(sensorId))
     );
   };
 
@@ -86,12 +89,13 @@ function DataView() {
       ) : (
         sensorDataArray.length > 0 && (
           <div>
-            {sensorDataArray.map(({ sensorId, data }) => (
+            {sensorDataArray.map(({ sensorIds, dataSets }) => (
               <SensorChart
-                key={sensorId}
-                sensorId={sensorId}
-                data={data}
-                onRemove={() => removeChart(sensorId)} // Pass the remove function
+                key={sensorIds.join(",")}
+                sensorIds={sensorIds}
+                dataSets={dataSets}
+                onRemove={() => removeChart(sensorIds[0])}
+                onDrop={(event) => handleDrop(event, sensorIds[0])} // Allow dropping onto this chart
               />
             ))}
           </div>
