@@ -1,6 +1,6 @@
 import DriveObject from "./DriveObject";
 
-function ListView({ driveList, handleExpand, sensorData }) {
+function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
   return (
     <div>
       <h1>Drives</h1>
@@ -10,7 +10,8 @@ function ListView({ driveList, handleExpand, sensorData }) {
             key={drive.drive_id}
             drive={drive}
             handleExpand={handleExpand}
-            sensors={sensorData[drive.drive_id] || []} // Pass the relevant sensor data
+            sensors={sensorData[drive.drive_id] || []}
+            loadingSensors={loadingSensors} // Pass the relevant sensor data
           />
         ))}
       </div>

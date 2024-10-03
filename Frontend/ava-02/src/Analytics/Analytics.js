@@ -6,16 +6,19 @@ import { useState, useEffect } from "react";
 
 function Analytics({ driveList }, { setDriveList }) {
   const [sensorData, setSensorData] = useState({}); // Stores sensor data for each drive
+  const [loadingSensors, setLoadingSensors] = useState(false);
 
   // Function to handle accordion expand and fetch sensors
   const handleExpand = async (driveId, isExpanded) => {
     if (isExpanded && !sensorData[driveId]) {
+      setLoadingSensors(true);
       const response = await fetch(`http://127.0.0.1:8000/sensors/${driveId}`);
       const sensors = await response.json();
       setSensorData((prevData) => ({
         ...prevData,
         [driveId]: sensors, // Store sensors for the specific drive
       }));
+      setLoadingSensors(false);
     }
   };
   // Fetch drives on component mount
@@ -43,7 +46,8 @@ function Analytics({ driveList }, { setDriveList }) {
           <ListView
             driveList={driveList}
             handleExpand={handleExpand}
-            sensorData={sensorData} // Pass sensor data to ListView
+            sensorData={sensorData}
+            loadingSensor={loadingSensors} // Pass sensor data to ListView
           />
         </Grid>
         <Grid item xs={10}>

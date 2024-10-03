@@ -4,8 +4,13 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
+import id_map from "../idMap";
 
-function DriveObject({ drive, handleExpand, sensors }) {
+function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
   // Format the date to MM:DD:YY HH:MM
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     month: "2-digit",
@@ -30,14 +35,22 @@ function DriveObject({ drive, handleExpand, sensors }) {
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
-        {sensors.length > 0 ? (
-          <ul>
-            {sensors.map((sensor) => (
-              <li key={sensor}>{sensor}</li>
+        {loadingSensors === true ? (
+          <Typography>Loading...</Typography>
+        ) : sensors.length > 0 ? (
+          <List>
+            {sensors.map((sensor, index) => (
+              <div key={sensor}>
+                <ListItem>
+                  <ListItemText primary={id_map[sensor]} />
+                </ListItem>
+                {/* Add a divider between list items, except for the last one */}
+                {index < sensors.length - 1 && <Divider />}
+              </div>
             ))}
-          </ul>
+          </List>
         ) : (
-          <Typography>No sensors available.</Typography>
+          <Typography>Loading...</Typography>
         )}
       </AccordionDetails>
     </Accordion>
