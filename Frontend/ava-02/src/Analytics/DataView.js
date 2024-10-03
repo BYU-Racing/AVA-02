@@ -6,19 +6,20 @@ import {
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
 } from "./CANtransformations";
+import { v4 as uuidv4 } from "uuid"; // Use uuid to generate unique IDs
 
 function DataView() {
   const [sensorDataArray, setSensorDataArray] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleDrop = async (event, targetSensorId = null) => {
+  const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
     // Find the chart that the data is being dropped onto
-    const targetChartIndex = sensorDataArray.findIndex(({ sensorIds }) =>
-      sensorIds.includes(targetSensorId)
+    const targetChartIndex = sensorDataArray.findIndex(
+      ({ chartId }) => chartId === targetChartId
     );
 
     setLoading(true);
@@ -36,6 +37,7 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }
 
+      console.log(targetChartIndex);
       if (targetChartIndex >= 0) {
         // If dropped onto an existing chart, add the new line data
         const updatedCharts = [...sensorDataArray];
@@ -46,10 +48,11 @@ function DataView() {
         updatedCharts[targetChartIndex].sensorIds.push(sensorId); // Add the sensorId to the chart
         setSensorDataArray(updatedCharts);
       } else {
-        // If dropped in a blank space, create a new chart
+        // If dropped in a blank space, create a new chart with a unique chartId
         setSensorDataArray((prevArray) => [
           ...prevArray,
           {
+            chartId: uuidv4(), // Generate a unique ID for the chart
             sensorIds: [sensorId],
             dataSets: [{ sensorId, data: timeSeriesData }],
           },
@@ -66,9 +69,9 @@ function DataView() {
     event.preventDefault();
   };
 
-  const removeChart = (sensorId) => {
-    setSensorDataArray((prevArray) =>
-      prevArray.filter(({ sensorIds }) => !sensorIds.includes(sensorId))
+  const removeChart = (chartId) => {
+    setSensorDataArray(
+      (prevArray) => prevArray.filter(({ chartId: id }) => id !== chartId) // Remove chart by its unique chartId
     );
   };
 
@@ -89,13 +92,14 @@ function DataView() {
       ) : (
         sensorDataArray.length > 0 && (
           <div>
-            {sensorDataArray.map(({ sensorIds, dataSets }) => (
+            {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
               <SensorChart
-                key={sensorIds.join(",")}
+                key={chartId} // Use the unique chartId as key
+                chartId={chartId} // Pass chartId to the SensorChart component
                 sensorIds={sensorIds}
                 dataSets={dataSets}
-                onRemove={() => removeChart(sensorIds[0])}
-                onDrop={(event) => handleDrop(event, sensorIds[0])} // Allow dropping onto this chart
+                onRemove={() => removeChart(chartId)} // Remove by unique chartId
+                onDrop={(event) => handleDrop(event, chartId)} // Allow dropping onto this chart
               />
             ))}
           </div>
