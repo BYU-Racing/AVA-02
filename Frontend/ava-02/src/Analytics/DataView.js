@@ -17,29 +17,7 @@ import {
   transformCANMessagesToTimeSeriesDIGITAL,
 } from "./CANtransformations";
 import id_map from "../idMap";
-
-const SensorChart = ({ sensorId, data, onRemove }) => (
-  <div style={{ position: "relative", marginBottom: "16px" }}>
-    <Typography variant="h6">
-      {id_map[sensorId]}:
-      <IconButton
-        onClick={onRemove}
-        size="small"
-        style={{ position: "absolute", right: 0, top: 0 }}
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    </Typography>
-    <LineChart width={600} height={300} data={data}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="timestamp" />
-      <YAxis />
-      <Tooltip />
-      <Legend />
-      <Line type="monotone" dataKey="value" stroke="#8884d8" />
-    </LineChart>
-  </div>
-);
+import SensorChart from "./SensorChart";
 
 function DataView() {
   const [sensorDataArray, setSensorDataArray] = useState([]);
