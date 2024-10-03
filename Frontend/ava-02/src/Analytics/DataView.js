@@ -30,7 +30,7 @@ function DataView() {
 
       // Transform the CAN messages to time series
       let timeSeriesData;
-      if (sensorId === 1) {
+      if (sensorId === "1") {
         timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
