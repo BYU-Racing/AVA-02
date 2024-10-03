@@ -82,11 +82,10 @@ function DataView() {
   };
 
   const handleDragOver = (event) => {
-    event.preventDefault(); // Prevent default to allow drop
+    event.preventDefault();
   };
 
   const removeChart = (sensorId) => {
-    // Filter out the sensorId to remove the chart from the array
     setSensorDataArray((prevArray) =>
       prevArray.filter((data) => data.sensorId !== sensorId)
     );
