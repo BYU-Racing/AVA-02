@@ -44,7 +44,6 @@ function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
                 <ListItem>
                   <ListItemText primary={id_map[sensor]} />
                 </ListItem>
-                {/* Add a divider between list items, except for the last one */}
                 {index < sensors.length - 1 && <Divider />}
               </div>
             ))}
