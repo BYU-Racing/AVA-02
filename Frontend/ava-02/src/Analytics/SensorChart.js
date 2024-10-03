@@ -14,6 +14,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import id_map from "../idMap";
+import { Button } from "@mui/material";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -75,9 +76,14 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
       </Typography>
 
       {zoomed && (
-        <button type="button" className="btn update" onClick={zoomOut}>
+        <Button
+          variant="outlined"
+          type="button"
+          className="btn update"
+          onClick={zoomOut}
+        >
           Zoom Out
-        </button>
+        </Button>
       )}
 
       {/* Wrapping the chart in ResponsiveContainer */}
