@@ -4,11 +4,11 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import id_map from "../idMap";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
-import id_map from "../idMap";
 
 function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
   // Format the date to MM:DD:YY HH:MM
@@ -21,9 +21,15 @@ function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
     hour12: false,
   }).format(new Date(drive.date));
 
+  const handleDragStart = (event, sensorId) => {
+    event.dataTransfer.setData("sensorId", sensorId);
+    event.dataTransfer.setData("driveId", drive.drive_id);
+  };
+
   return (
     <Accordion
       onChange={(event, isExpanded) => handleExpand(drive.drive_id, isExpanded)}
+      sx={{ marginBottom: 0 }}
     >
       <AccordionSummary
         expandIcon={<ArrowDropDownIcon />}
@@ -31,20 +37,32 @@ function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
         id="panel2-header"
       >
         <Typography>
-          {drive.notes} - {drive.driver.name} - {formattedDate}
+          {drive.driver.name} - {formattedDate}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
         {loadingSensors === true ? (
-          <Typography>Loading...</Typography>
+          <Typography>Loading</Typography>
         ) : sensors.length > 0 ? (
           <List>
             {sensors.map((sensor, index) => (
               <div key={sensor}>
-                <ListItem>
+                <ListItem
+                  draggable
+                  onDragStart={(event) => handleDragStart(event, sensor)}
+                  sx={{
+                    padding: 1,
+                    borderRadius: 1,
+                    backgroundColor: "background.paper",
+                    transition: "background-color 0.3s",
+                    "&:hover": {
+                      backgroundColor: "rgba(211, 211, 211, 0.5)",
+                    },
+                  }}
+                >
                   <ListItemText primary={id_map[sensor]} />
                 </ListItem>
-                {index < sensors.length - 1 && <Divider />}
+                {index < sensors.length - 1 && <Divider />}{" "}
               </div>
             ))}
           </List>
