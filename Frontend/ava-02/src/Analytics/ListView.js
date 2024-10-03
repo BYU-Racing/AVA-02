@@ -1,10 +1,12 @@
 import DriveObject from "./DriveObject";
-
+import Divider from "@mui/material/Divider";
 function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
   return (
     <div>
       <h1>Drives</h1>
-      <div>
+      <Divider />
+      <br />
+      <div style={{ padding: 10 }}>
         {driveList.map((drive) => (
           <DriveObject
             key={drive.drive_id}
