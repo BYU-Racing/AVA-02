@@ -56,7 +56,7 @@ function Analytics({ driveList, setDriveList }) {
             loadingSensor={loadingSensors} // Pass sensor data to ListView
           />
         </Grid>
-        <Grid item xs={7} sx={{ height: "100%", padding: 10 }}>
+        <Grid item xs={7} sx={{ height: "100%" }}>
           {" "}
           {/* Ensure full height for DataView */}
           <DataView />

@@ -14,6 +14,8 @@ function DataView() {
 
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
+    event.stopPropagation(); // Ensure drop does not propagate further
+
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
@@ -37,7 +39,6 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }
 
-      console.log(targetChartIndex);
       if (targetChartIndex >= 0) {
         // If dropped onto an existing chart, add the new line data
         const updatedCharts = [...sensorDataArray];
@@ -47,7 +48,7 @@ function DataView() {
         });
         updatedCharts[targetChartIndex].sensorIds.push(sensorId); // Add the sensorId to the chart
         setSensorDataArray(updatedCharts);
-      } else {
+      } else if (targetChartId === null) {
         // If dropped in a blank space, create a new chart with a unique chartId
         setSensorDataArray((prevArray) => [
           ...prevArray,
@@ -78,13 +79,13 @@ function DataView() {
   return (
     <Box
       sx={{
-        backgroundColor: "#f5f5f5",
-        borderRadius: "8px",
-        padding: "16px",
+        backgroundColor: "#ffffff",
+        margin: "16px",
         height: "100%",
-        width: "100%",
+        width: "120%",
+        boxSizing: "border-box",
       }}
-      onDrop={handleDrop}
+      onDrop={(event) => handleDrop(event, null)} // Only create new chart if targetChartId is null
       onDragOver={handleDragOver}
     >
       {loading ? (
@@ -99,7 +100,10 @@ function DataView() {
                 sensorIds={sensorIds}
                 dataSets={dataSets}
                 onRemove={() => removeChart(chartId)} // Remove by unique chartId
-                onDrop={(event) => handleDrop(event, chartId)} // Allow dropping onto this chart
+                onDrop={(event) => {
+                  event.stopPropagation(); // Stop propagation so only one drop event is triggered
+                  handleDrop(event, chartId); // Allow dropping onto this chart
+                }}
               />
             ))}
           </div>
