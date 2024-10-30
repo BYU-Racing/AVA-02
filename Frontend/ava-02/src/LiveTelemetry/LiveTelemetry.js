@@ -77,6 +77,7 @@ function LiveTelemetry() {
             </li>
           ))} */}
         </ul>
+        <p>{latestMessage}</p>
 
         <div>
           <h1 style={{ display: "inline-block", marginRight: "10px" }}>
