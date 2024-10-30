@@ -6,7 +6,12 @@ import { Box } from "@mui/material";
 function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
   return (
     <div>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ padding: 1 }}
+      >
         <Typography variant="h4" component="div" sx={{ flexGrow: 1 }}>
           Drives
         </Typography>
