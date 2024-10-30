@@ -7,6 +7,9 @@ import Tab from "@mui/material/Tab";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
+import AddDriver from "./AddDriver";
+import AddDrive from "./AddDrive";
+import AddData from "./AddData";
 
 const style = {
   position: "absolute",
@@ -40,9 +43,6 @@ export default function AddDataModal() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            The form
-          </Typography>
           <Box sx={{ width: "100%", typography: "body1" }}>
             <TabContext value={value}>
               <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -51,13 +51,19 @@ export default function AddDataModal() {
                   aria-label="lab API tabs example"
                 >
                   <Tab label="Add Driver" value="1" />
-                  <Tab label="Add Data to Drive" value="2" />
+                  <Tab label="Add Data" value="2" />
                   <Tab label="Add Drive" value="3" />
                 </TabList>
               </Box>
-              <TabPanel value="1">Driver Form</TabPanel>
-              <TabPanel value="2">Data in Drive Form</TabPanel>
-              <TabPanel value="3">Drive Form</TabPanel>
+              <TabPanel value="1">
+                <AddDriver />
+              </TabPanel>
+              <TabPanel value="2">
+                <AddData />
+              </TabPanel>
+              <TabPanel value="3">
+                <AddDrive />
+              </TabPanel>
             </TabContext>
           </Box>
         </Box>
