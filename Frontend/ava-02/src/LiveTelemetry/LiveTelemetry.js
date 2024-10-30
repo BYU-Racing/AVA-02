@@ -78,6 +78,7 @@ function LiveTelemetry() {
           ))} */}
         </ul>
         <p>{latestMessage}</p>
+        <p>Live Telemetry 2</p>
 
         <div>
           <h1 style={{ display: "inline-block", marginRight: "10px" }}>
