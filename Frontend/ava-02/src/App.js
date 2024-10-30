@@ -1,24 +1,45 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Header from "./Header";
+import Home from "./Home";
+import Analytics from "./Analytics/Analytics";
+import LiveTelemetry from "./LiveTelemetry/LiveTelemetry";
+import { useState, useEffect } from "react";
 
 function App() {
+  const [driveList, setDriveList] = useState([]);
+
+  // Fetch drives on component mount
+  const getDrives = async () => {
+    async function fetchDrives() {
+      const response = await fetch("http://127.0.0.1:8000/drive");
+      const data = await response.json();
+      return data;
+    }
+
+    const drives = await fetchDrives();
+    setDriveList(drives);
+  };
+
+  useEffect(() => {
+    if (driveList.length === 0) {
+      getDrives();
+    }
+  }, []);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/analytics"
+          element={
+            <Analytics driveList={driveList} setDriveList={setDriveList} />
+          }
+        />
+        <Route path="/live-telemetry" element={<LiveTelemetry />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import distinct
 from . import models, schemas
 from datetime import datetime
 import logging
@@ -28,6 +29,13 @@ def create_driver(db: Session, user: schemas.DriverCreate):
     return db_driver
 
 ## READ DRIVES
+
+def get_unique_sensors_from_drive(db: Session, drive_id: int):
+    return db.query(distinct(models.RawData.msg_id)).filter(models.RawData.drive_id == drive_id).all()
+
+def get_drives(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Drive).offset(skip).limit(limit).all()
+
 def get_drive(db: Session, drive_id: int):
     return db.query(models.Drive).filter(models.Drive.drive_id == drive_id).first()
 

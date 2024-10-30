@@ -25,6 +25,16 @@ def get_drive_by_id(drive_id: int, db: Session = Depends(get_db)):
     drive = crud.get_drive(db, drive_id)
     return drive
 
+@router.get("/sensors/{drive_id}", response_model=list[int])
+def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):
+    sensors = crud.get_unique_sensors_from_drive(db, drive_id)
+
+    if not sensors:
+        raise HTTPException(status_code=404, detail="No sensors found for this drive")
+
+    # Extract the sensor IDs from the results
+    return [sensor_id[0] for sensor_id in sensors]
+
 
 @router.post("/drive", response_model=schemas.Drive)
 def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
@@ -35,6 +45,11 @@ def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     
     return crud.create_drive(db=db, drive=drive)
 
+
+@router.get("/drive", response_model=list[schemas.DriveSimple])
+def get_drives(db: Session = Depends(get_db)):
+    drives = crud.get_drives(db)
+    return drives
 
 @router.post("/drive/{drive_id}", response_model=dict)
 async def add_data_to_drive_from_file(
