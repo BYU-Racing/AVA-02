@@ -84,16 +84,19 @@ function AddDrive() {
           type="file"
           onChange={handleFileChange}
         />
-        <label htmlFor="file-upload">
-          <Button
-            variant="contained"
-            color="primary"
-            component="span"
-            startIcon={<UploadFileIcon />}
-          >
-            Upload File
-          </Button>
-        </label>
+
+        {!file && (
+          <label htmlFor="file-upload">
+            <Button
+              variant="contained"
+              color="primary"
+              component="span"
+              startIcon={<UploadFileIcon />}
+            >
+              Upload File
+            </Button>
+          </label>
+        )}
 
         {file && (
           <div
