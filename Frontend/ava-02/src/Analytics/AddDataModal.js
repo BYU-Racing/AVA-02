@@ -27,7 +27,7 @@ export default function AddDataModal() {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  const [value, setValue] = React.useState("1");
+  const [value, setValue] = React.useState("3");
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
