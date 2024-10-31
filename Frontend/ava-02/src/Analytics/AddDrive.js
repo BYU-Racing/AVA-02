@@ -141,7 +141,7 @@ function AddDrive() {
         margin="normal"
         value={notes}
         onChange={handleNotesChange}
-        placeholder="Enter any notes here..."
+        placeholder="Enter any notes about the drive here..."
       />
 
       <Button
