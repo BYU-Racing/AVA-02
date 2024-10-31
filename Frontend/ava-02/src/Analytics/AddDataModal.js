@@ -51,15 +51,11 @@ export default function AddDataModal() {
                   aria-label="lab API tabs example"
                 >
                   <Tab label="Add Driver" value="1" />
-                  <Tab label="Add Data" value="2" />
                   <Tab label="Add Drive" value="3" />
                 </TabList>
               </Box>
               <TabPanel value="1">
                 <AddDriver />
-              </TabPanel>
-              <TabPanel value="2">
-                <AddData />
               </TabPanel>
               <TabPanel value="3">
                 <AddDrive />
