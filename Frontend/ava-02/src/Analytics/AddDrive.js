@@ -20,6 +20,7 @@ function AddDrive() {
   const [failure, setFailure] = useState(false);
   const [drivers, setDrivers] = useState([]);
   const [file, setFile] = useState(null);
+  const [notes, setNotes] = useState("");
 
   const handleChange = (event) => {
     setDriverId(event.target.value);
@@ -31,6 +32,10 @@ function AddDrive() {
 
   const handleFileRemove = () => {
     setFile(null);
+  };
+
+  const handleNotesChange = (event) => {
+    setNotes(event.target.value);
   };
 
   useEffect(() => {
@@ -54,6 +59,10 @@ function AddDrive() {
 
     fetchDrivers();
   }, []);
+
+  // Check if form is valid
+  const isFormValid =
+    driverId !== "NULL" && file !== null && notes.trim() !== "";
 
   return (
     <div>
@@ -122,6 +131,26 @@ function AddDrive() {
           </div>
         )}
       </FormControl>
+
+      <TextField
+        label="Notes"
+        multiline
+        rows={4}
+        variant="outlined"
+        fullWidth
+        margin="normal"
+        value={notes}
+        onChange={handleNotesChange}
+        placeholder="Enter any notes here..."
+      />
+
+      <Button
+        variant="contained"
+        color="primary"
+        disabled={!isFormValid} // Disable button if form is incomplete
+      >
+        Add Drive
+      </Button>
     </div>
   );
 }
