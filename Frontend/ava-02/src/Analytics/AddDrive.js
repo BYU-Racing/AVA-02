@@ -57,7 +57,6 @@ function AddDrive() {
 
   return (
     <div>
-      {isLoading && <CircularProgress />}
       {failure && <Alert severity="error">Failed to load drivers</Alert>}
 
       <FormControl fullWidth variant="outlined" margin="normal">
