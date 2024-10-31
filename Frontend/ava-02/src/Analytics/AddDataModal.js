@@ -50,8 +50,8 @@ export default function AddDataModal() {
                   onChange={handleChange}
                   aria-label="lab API tabs example"
                 >
-                  <Tab label="Add Driver" value="1" />
                   <Tab label="Add Drive" value="3" />
+                  <Tab label="Add Driver" value="1" />
                 </TabList>
               </Box>
               <TabPanel value="1">
