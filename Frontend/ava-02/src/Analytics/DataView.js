@@ -5,6 +5,7 @@ import SensorChart from "./SensorChart";
 import {
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
+  transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
 import { v4 as uuidv4 } from "uuid"; // Use uuid to generate unique IDs
 
@@ -35,6 +36,8 @@ function DataView() {
       let timeSeriesData;
       if (sensorId === "1") {
         timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+      } else if (sensorId === "192") {
+        timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }

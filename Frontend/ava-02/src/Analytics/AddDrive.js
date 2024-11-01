@@ -38,6 +38,50 @@ function AddDrive() {
     setNotes(event.target.value);
   };
 
+  const createDrive = async () => {
+    const currentDate = new Date().toISOString();
+
+    console.log(currentDate);
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/drive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: currentDate,
+          notes: notes,
+          driver_id: driverId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create drive");
+      }
+
+      const data = await response.json();
+      const driveId = data.drive_id; // Extract drive_id from the response
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response2 = await fetch(`http://127.0.0.1:8000/drive/${driveId}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response2.ok) {
+        throw new Error("Failed to complete second request");
+      }
+
+      setSuccessful(true);
+    } catch (error) {
+      console.error("Error in createDrive:", error);
+      setFailure(true);
+    }
+  };
+
   useEffect(() => {
     const fetchDrivers = async () => {
       setIsLoading(true);
@@ -148,6 +192,7 @@ function AddDrive() {
         variant="contained"
         color="primary"
         disabled={!isFormValid} // Disable button if form is incomplete
+        onClick={createDrive}
       >
         Add Drive
       </Button>

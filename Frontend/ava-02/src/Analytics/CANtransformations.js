@@ -11,3 +11,10 @@ export const transformCANMessagesToTimeSeriesANALOG = (canMessages) => {
     value: message.raw_data[0] * 100 + message.raw_data[1],
   }));
 };
+
+export const transformCANMessagesToTimeSeriesTORQUE = (canMessages) => {
+  return canMessages.map((message) => ({
+    timestamp: message.time,
+    value: message.raw_data[1] * 256 + message.raw_data[0],
+  }));
+};
