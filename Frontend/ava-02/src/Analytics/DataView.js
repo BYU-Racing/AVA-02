@@ -34,7 +34,7 @@ function DataView() {
 
       // Transform the CAN messages to time series
       let timeSeriesData;
-      if (sensorId === "1") {
+      if (sensorId === "0") {
         timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
       } else if (sensorId === "192") {
         timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);

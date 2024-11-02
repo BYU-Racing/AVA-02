@@ -20,7 +20,7 @@ function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
 
       <Divider />
       <br />
-      <div style={{ padding: 10 }}>
+      <div style={{ padding: 10, height: "730px", overflow: "auto" }}>
         {driveList.map((drive) => (
           <DriveObject
             key={drive.drive_id}

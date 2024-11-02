@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ClearIcon from "@mui/icons-material/Clear";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 function AddDrive() {
   const [driverId, setDriverId] = useState("NULL");
@@ -40,8 +41,8 @@ function AddDrive() {
 
   const createDrive = async () => {
     const currentDate = new Date().toISOString();
-
-    console.log(currentDate);
+    setSuccessful(false);
+    setIsLoading(true);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/drive", {
@@ -80,6 +81,8 @@ function AddDrive() {
       console.error("Error in createDrive:", error);
       setFailure(true);
     }
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -111,6 +114,7 @@ function AddDrive() {
   return (
     <div>
       {failure && <Alert severity="error">Failed to load drivers</Alert>}
+      {successful && <Alert severity="success">Succesfully added drive</Alert>}
 
       <FormControl fullWidth variant="outlined" margin="normal">
         <InputLabel id="driver-select-label">Driver</InputLabel>
@@ -188,14 +192,22 @@ function AddDrive() {
         placeholder="Enter any notes about the drive here..."
       />
 
-      <Button
-        variant="contained"
-        color="primary"
-        disabled={!isFormValid} // Disable button if form is incomplete
-        onClick={createDrive}
-      >
-        Add Drive
-      </Button>
+      {!isLoading && (
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={!isFormValid} // Disable button if form is incomplete
+          onClick={createDrive}
+        >
+          Add Drive
+        </Button>
+      )}
+
+      {isLoading && (
+        <LoadingButton loading variant="outlined">
+          Add Drive
+        </LoadingButton>
+      )}
     </div>
   );
 }
