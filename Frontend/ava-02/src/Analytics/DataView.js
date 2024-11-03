@@ -91,26 +91,22 @@ function DataView() {
       onDrop={(event) => handleDrop(event, null)} // Only create new chart if targetChartId is null
       onDragOver={handleDragOver}
     >
-      {loading ? (
-        <Typography>Loading...</Typography>
-      ) : (
-        sensorDataArray.length > 0 && (
-          <div>
-            {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
-              <SensorChart
-                key={chartId} // Use the unique chartId as key
-                chartId={chartId} // Pass chartId to the SensorChart component
-                sensorIds={sensorIds}
-                dataSets={dataSets}
-                onRemove={() => removeChart(chartId)} // Remove by unique chartId
-                onDrop={(event) => {
-                  event.stopPropagation(); // Stop propagation so only one drop event is triggered
-                  handleDrop(event, chartId); // Allow dropping onto this chart
-                }}
-              />
-            ))}
-          </div>
-        )
+      {sensorDataArray.length > 0 && (
+        <div>
+          {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
+            <SensorChart
+              key={chartId} // Use the unique chartId as key
+              chartId={chartId} // Pass chartId to the SensorChart component
+              sensorIds={sensorIds}
+              dataSets={dataSets}
+              onRemove={() => removeChart(chartId)} // Remove by unique chartId
+              onDrop={(event) => {
+                event.stopPropagation(); // Stop propagation so only one drop event is triggered
+                handleDrop(event, chartId); // Allow dropping onto this chart
+              }}
+            />
+          ))}
+        </div>
       )}
     </Box>
   );
