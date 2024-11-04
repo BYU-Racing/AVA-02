@@ -5,6 +5,7 @@ import SensorChart from "./SensorChart";
 import {
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
+  transformCANMessagesToTimeSeriesHOTBOX,
   transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
 import { v4 as uuidv4 } from "uuid"; // Use uuid to generate unique IDs
@@ -38,6 +39,12 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
       } else if (sensorId === "192") {
         timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
+      } else if (
+        sensorId === "500" ||
+        sensorId === "501" ||
+        sensorId === "502"
+      ) {
+        timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }

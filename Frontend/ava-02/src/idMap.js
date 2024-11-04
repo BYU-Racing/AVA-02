@@ -7,7 +7,10 @@ let id_map = {
   11: "Brake (OLD)",
   12: "Suspension Damper (OLD)",
   15: "Start Switch (OLD)",
-  50: "HotBox FR",
+  500: "HotBox FR (Inner)",
+  501: "HotBox FR (Middle)",
+  502: "HotBox FR (Outer)",
+  204: "Errors",
 };
 
 export default id_map;

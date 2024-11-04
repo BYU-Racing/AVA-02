@@ -15,6 +15,7 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import id_map from "../idMap";
 import { Button } from "@mui/material";
+import errorMap from "../errorMap";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -61,7 +62,31 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
     setRight("dataMax");
     setZoomed(false);
   };
+  if (sensorIds.length === 1 && sensorIds[0] === "204") {
+    // Count occurrences of each unique value in dataSets[0].data
+    const valueCounts = dataSets[0].data.reduce((acc, entry) => {
+      acc[entry.value] = (acc[entry.value] || 0) + 1;
+      return acc;
+    }, {});
 
+    return (
+      <div style={{ position: "relative", marginBottom: "16px" }}>
+        <Typography variant="h6">
+          Unique Values:
+          <IconButton onClick={onRemove} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Typography>
+        <ul>
+          {Object.entries(valueCounts).map(([value, count]) => (
+            <li key={value}>
+              {errorMap[value]}: {count} errors
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   return (
     <div
       style={{ position: "relative", marginBottom: "16px" }}

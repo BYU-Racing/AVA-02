@@ -68,13 +68,37 @@ async def add_data_to_drive_from_file(
         # Iterate through the rows of the CSV
         for index, row in df.iterrows():
             msg_id, time, *buffers = row[:10]  # Adjust as needed
-            db_data = models.RawData(
-                drive_id=drive_id, 
-                msg_id=msg_id, 
-                raw_data=buffers, 
-                time=time
-            )
-            db.add(db_data)
+
+            if(msg_id < 50 or msg_id > 54):
+                db_data = models.RawData(
+                    drive_id=drive_id, 
+                    msg_id=msg_id, 
+                    raw_data=buffers, 
+                    time=time
+                )
+                db.add(db_data)
+            else:
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 0),
+                    raw_data=[buffers[0], buffers[1], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 1),
+                    raw_data=[buffers[2], buffers[3], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 2),
+                    raw_data=[buffers[4], buffers[5], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
 
         # Commit all changes at once
         db.commit()
