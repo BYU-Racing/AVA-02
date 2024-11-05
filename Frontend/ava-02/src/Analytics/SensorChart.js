@@ -18,6 +18,24 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
     "#f33e77",
   ];
 
+  if (sensorIds.length === 1 && sensorIds[0] === "204") {
+    return (
+      <div style={{ position: "relative", marginBottom: "16px" }}>
+        <Typography variant="h6">
+          {sensorIds.map((id) => id_map[id]).join(", ")}:
+          <IconButton onClick={onRemove} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Typography>
+        <ErrorCodesTableComponent
+          data={dataSets[0].data}
+          errorMap={errorMap}
+          onRemove={onRemove}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{ position: "relative", marginBottom: "16px" }}
@@ -30,21 +48,12 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
           <CloseIcon fontSize="small" />
         </IconButton>
       </Typography>
-
-      {sensorIds.length === 1 && sensorIds[0] === "204" ? (
-        <ErrorCodesTableComponent
-          data={dataSets[0].data}
-          errorMap={errorMap}
-          onRemove={onRemove}
-        />
-      ) : (
-        <LineChartComponent
-          dataSets={dataSets}
-          sensorIds={sensorIds}
-          colors={colors}
-          id_map={id_map}
-        />
-      )}
+      <LineChartComponent
+        dataSets={dataSets}
+        sensorIds={sensorIds}
+        colors={colors}
+        id_map={id_map}
+      />
     </div>
   );
 }
