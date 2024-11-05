@@ -45,26 +45,29 @@ function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
           <Typography>Loading</Typography>
         ) : sensors.length > 0 ? (
           <List>
-            {sensors.map((sensor, index) => (
-              <div key={sensor}>
-                <ListItem
-                  draggable
-                  onDragStart={(event) => handleDragStart(event, sensor)}
-                  sx={{
-                    padding: 1,
-                    borderRadius: 1,
-                    backgroundColor: "background.paper",
-                    transition: "background-color 0.3s",
-                    "&:hover": {
-                      backgroundColor: "rgba(211, 211, 211, 0.5)",
-                    },
-                  }}
-                >
-                  <ListItemText primary={id_map[sensor]} />
-                </ListItem>
-                {index < sensors.length - 1 && <Divider />}{" "}
-              </div>
-            ))}
+            {sensors
+              .slice() // Create a copy of sensors to avoid modifying the original array
+              .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by original integer values in ascending order
+              .map((sensor, index) => (
+                <div key={sensor}>
+                  <ListItem
+                    draggable
+                    onDragStart={(event) => handleDragStart(event, sensor)}
+                    sx={{
+                      padding: 1,
+                      borderRadius: 1,
+                      backgroundColor: "background.paper",
+                      transition: "background-color 0.3s",
+                      "&:hover": {
+                        backgroundColor: "rgba(211, 211, 211, 0.5)",
+                      },
+                    }}
+                  >
+                    <ListItemText primary={id_map[sensor]} />
+                  </ListItem>
+                  {index < sensors.length - 1 && <Divider />}
+                </div>
+              ))}
           </List>
         ) : (
           <Typography>Loading...</Typography>
