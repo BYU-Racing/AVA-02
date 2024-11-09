@@ -1,3 +1,4 @@
+import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
@@ -9,6 +10,7 @@ import id_map from "../idMap";
 import errorMap from "../errorMap";
 import LineChartComponent from "./LineChartComponent";
 import ErrorCodesTableComponent from "./ErrorCodesTableComponent";
+import "react-resizable/css/styles.css";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -26,37 +28,15 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
     borderRadius: "12px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
     marginBottom: "16px",
+    overflow: "hidden",
   };
 
-  if (sensorIds.length === 1 && sensorIds[0] === "204") {
-    return (
-      <Card style={cardStyle}>
-        <CardHeader
-          title={
-            <Typography variant="h6">
-              {sensorIds.map((id) => id_map[id]).join(", ")}
-            </Typography>
-          }
-          action={
-            <IconButton onClick={onRemove} size="small">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          }
-        />
-        <Divider />
-        <CardContent>
-          <ErrorCodesTableComponent
-            data={dataSets[0].data}
-            errorMap={errorMap}
-            onRemove={onRemove}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleResizeStop = (e, data) => {
+    // Handle resize stop event if additional logic is needed
+  };
 
   return (
-    <Card style={cardStyle}>
+    <Card style={{ ...cardStyle, width: "100%", height: "100%" }}>
       <CardHeader
         title={
           <Typography variant="h6">
@@ -71,12 +51,20 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
       />
       <Divider />
       <CardContent onDrop={onDrop} onDragOver={(e) => e.preventDefault()}>
-        <LineChartComponent
-          dataSets={dataSets}
-          sensorIds={sensorIds}
-          colors={colors}
-          id_map={id_map}
-        />
+        {sensorIds.length === 1 && sensorIds[0] === "204" ? (
+          <ErrorCodesTableComponent
+            data={dataSets[0].data}
+            errorMap={errorMap}
+            onRemove={onRemove}
+          />
+        ) : (
+          <LineChartComponent
+            dataSets={dataSets}
+            sensorIds={sensorIds}
+            colors={colors}
+            id_map={id_map}
+          />
+        )}
       </CardContent>
     </Card>
   );

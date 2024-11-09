@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import SensorChart from "./SensorChart";
 import {
   transformCANMessagesToTimeSeriesANALOG,
@@ -8,7 +7,8 @@ import {
   transformCANMessagesToTimeSeriesHOTBOX,
   transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
-import { v4 as uuidv4 } from "uuid"; // Use uuid to generate unique IDs
+import { v4 as uuidv4 } from "uuid";
+import "./DataView.css";
 
 function DataView() {
   const [sensorDataArray, setSensorDataArray] = useState([]);
@@ -16,12 +16,11 @@ function DataView() {
 
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
-    event.stopPropagation(); // Ensure drop does not propagate further
+    event.stopPropagation();
 
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
-    // Find the chart that the data is being dropped onto
     const targetChartIndex = sensorDataArray.findIndex(
       ({ chartId }) => chartId === targetChartId
     );
@@ -33,7 +32,6 @@ function DataView() {
       );
       const canMessages = await response.json();
 
-      // Transform the CAN messages to time series
       let timeSeriesData;
       if (sensorId === "0") {
         timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
@@ -50,20 +48,18 @@ function DataView() {
       }
 
       if (targetChartIndex >= 0) {
-        // If dropped onto an existing chart, add the new line data
         const updatedCharts = [...sensorDataArray];
         updatedCharts[targetChartIndex].dataSets.push({
           sensorId,
           data: timeSeriesData,
         });
-        updatedCharts[targetChartIndex].sensorIds.push(sensorId); // Add the sensorId to the chart
+        updatedCharts[targetChartIndex].sensorIds.push(sensorId);
         setSensorDataArray(updatedCharts);
       } else if (targetChartId === null) {
-        // If dropped in a blank space, create a new chart with a unique chartId
         setSensorDataArray((prevArray) => [
           ...prevArray,
           {
-            chartId: uuidv4(), // Generate a unique ID for the chart
+            chartId: uuidv4(),
             sensorIds: [sensorId],
             dataSets: [{ sensorId, data: timeSeriesData }],
           },
@@ -81,8 +77,8 @@ function DataView() {
   };
 
   const removeChart = (chartId) => {
-    setSensorDataArray(
-      (prevArray) => prevArray.filter(({ chartId: id }) => id !== chartId) // Remove chart by its unique chartId
+    setSensorDataArray((prevArray) =>
+      prevArray.filter(({ chartId: id }) => id !== chartId)
     );
   };
 
@@ -92,26 +88,31 @@ function DataView() {
         backgroundColor: "#ffffff",
         margin: "16px",
         height: "100%",
-        width: "120%",
+        width: "100%",
         boxSizing: "border-box",
+        position: "relative",
       }}
-      onDrop={(event) => handleDrop(event, null)} // Only create new chart if targetChartId is null
+      className={`chart-container ${loading ? "loading" : ""}`}
+      onDrop={(event) => handleDrop(event, null)}
       onDragOver={handleDragOver}
     >
       {sensorDataArray.length > 0 && (
-        <div>
+        <div className="chart-container">
           {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
-            <SensorChart
-              key={chartId} // Use the unique chartId as key
-              chartId={chartId} // Pass chartId to the SensorChart component
-              sensorIds={sensorIds}
-              dataSets={dataSets}
-              onRemove={() => removeChart(chartId)} // Remove by unique chartId
-              onDrop={(event) => {
-                event.stopPropagation(); // Stop propagation so only one drop event is triggered
-                handleDrop(event, chartId); // Allow dropping onto this chart
-              }}
-            />
+            <div className="chart" key={chartId}>
+              <div className="chart-content">
+                <SensorChart
+                  chartId={chartId}
+                  sensorIds={sensorIds}
+                  dataSets={dataSets}
+                  onRemove={() => removeChart(chartId)}
+                  onDrop={(event) => {
+                    event.stopPropagation();
+                    handleDrop(event, chartId);
+                  }}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}
