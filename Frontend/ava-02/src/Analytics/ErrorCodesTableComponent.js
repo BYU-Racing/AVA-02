@@ -18,7 +18,7 @@ function ErrorCodesTableComponent({ data, errorMap, onRemove }) {
   return (
     <div style={{ position: "relative", marginBottom: "16px" }}>
       <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <Table sx={{ minWidth: 300 }} aria-label="simple table">
           <TableHead>
             <TableRow>
               <TableCell>Error</TableCell>

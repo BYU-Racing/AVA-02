@@ -91,6 +91,7 @@ function DataView() {
         width: "100%",
         boxSizing: "border-box",
         position: "relative",
+        minHeight: "400px",
       }}
       className={`chart-container ${loading ? "loading" : ""}`}
       onDrop={(event) => handleDrop(event, null)}
