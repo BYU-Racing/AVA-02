@@ -51,7 +51,7 @@ function LineChartComponent({ dataSets, sensorIds, colors, id_map }) {
           Zoom Out
         </Button>
       )}
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer className="charts" width="100%" height={265}>
         <LineChart
           data={dataSets[0].data}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

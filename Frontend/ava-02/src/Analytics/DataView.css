@@ -16,9 +16,10 @@
   overflow: hidden;
   resize: both; /* Enable resizing from the bottom-right corner */
   min-width: 350px;
-  min-height: 400px;
+  min-height: 350px;
   max-width: 100%; /* Prevent chart from growing beyond container width */
-  height: 400px;
+  height: 350px;
+  max-height: 350px;
   box-sizing: border-box;
   position: relative;
   display: flex;
@@ -29,8 +30,9 @@
 /* Style the contents to stretch and fit the container */
 .chart-content {
   flex-grow: 1; /* Ensure content expands to fit */
-  overflow: auto; /* Allows content to resize within */
+  overflow: hidden; /* Allows content to resize within */
   min-height: 200px;
+  height: 100%;
 }
 
 /* Optional: Hover effect for feedback */
