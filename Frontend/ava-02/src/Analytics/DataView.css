@@ -15,9 +15,9 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   resize: both; /* Enable resizing from the bottom-right corner */
-  min-width: 350px;
+  min-width: 390px;
   min-height: 350px;
-  max-width: 100%; /* Prevent chart from growing beyond container width */
+  max-width: 96%; /* Prevent chart from growing beyond container width */
   height: 350px;
   max-height: 350px;
   box-sizing: border-box;
