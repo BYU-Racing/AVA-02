@@ -19,7 +19,7 @@
   min-height: 350px;
   max-width: 96%; /* Prevent chart from growing beyond container width */
   height: 350px;
-  max-height: 350px;
+  max-height: 380px;
   box-sizing: border-box;
   position: relative;
   display: flex;

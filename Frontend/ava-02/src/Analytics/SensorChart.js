@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
@@ -23,20 +25,25 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
     "#00c49f",
     "#f33e77",
   ];
+  const [zoomed, setZoomed] = useState(false);
+  const [left, setLeft] = useState("dataMin");
+  const [right, setRight] = useState("dataMax");
 
-  const cardStyle = {
-    borderRadius: "12px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-    marginBottom: "16px",
-    overflow: "hidden",
-  };
-
-  const handleResizeStop = (e, data) => {
-    // Handle resize stop event if additional logic is needed
+  const handleZoomOut = () => {
+    setLeft("dataMin");
+    setRight("dataMax");
+    setZoomed(false);
   };
 
   return (
-    <Card style={{ ...cardStyle, width: "100%", height: "100%" }}>
+    <Card
+      style={{
+        borderRadius: "12px",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+        marginBottom: "16px",
+        overflow: "hidden",
+      }}
+    >
       <CardHeader
         title={
           <Typography variant="h6">
@@ -44,9 +51,21 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
           </Typography>
         }
         action={
-          <IconButton onClick={onRemove} size="small">
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <>
+            {zoomed && (
+              <Button
+                variant="outlined"
+                onClick={handleZoomOut}
+                size="small"
+                style={{ marginRight: 8 }}
+              >
+                Zoom Out
+              </Button>
+            )}
+            <IconButton onClick={onRemove} size="small">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </>
         }
       />
       <Divider />
@@ -63,6 +82,11 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
             sensorIds={sensorIds}
             colors={colors}
             id_map={id_map}
+            left={left}
+            right={right}
+            setLeft={setLeft}
+            setRight={setRight}
+            setZoomed={setZoomed}
           />
         )}
       </CardContent>
