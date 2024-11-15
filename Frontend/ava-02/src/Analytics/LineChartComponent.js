@@ -54,6 +54,7 @@ function LineChartComponent({
     if (globalZoom) {
       setGlobalZoomBounds({ left: newLeft, right: newRight });
       setGlobalZoomed(true);
+      setZoomed(true);
     } else {
       setLeft(newLeft);
       setRight(newRight);

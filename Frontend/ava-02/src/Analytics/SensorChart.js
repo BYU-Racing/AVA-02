@@ -55,6 +55,7 @@ function SensorChart({
     if (globalZoom) {
       setGlobalZoomBounds({ left: "dataMin", right: "dataMax" });
       setGlobalZoomed(false);
+      setZoomed(false);
     } else {
       setLeft("dataMin");
       setRight("dataMax");
@@ -77,6 +78,14 @@ function SensorChart({
     setMenuOpen(null);
   };
 
+  let amIZoomed =
+    left !== "dataMin" ||
+    right !== "dataMax" ||
+    (globalZoom &&
+      globalZoomBounds.left !== "dataMin" &&
+      globalZoomBounds.right !== "dataMax");
+
+  console.log(amIZoomed);
   return (
     <Card
       style={{
@@ -95,7 +104,7 @@ function SensorChart({
         }
         action={
           <>
-            {(zoomed || (globalZoom && globalZoomed)) && (
+            {amIZoomed && (
               <Button
                 variant="outlined"
                 onClick={handleZoomOut}
