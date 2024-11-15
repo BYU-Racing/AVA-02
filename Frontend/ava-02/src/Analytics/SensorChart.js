@@ -132,7 +132,7 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
             </Menu>
 
             <IconButton onClick={onRemove} size="small">
-              <CloseIcon fontSize="small" />
+              <CloseIcon />
             </IconButton>
           </>
         }
