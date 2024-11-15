@@ -16,6 +16,9 @@ import "react-resizable/css/styles.css";
 import "./SensorChart.css";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import TuneIcon from "@mui/icons-material/Tune";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -33,6 +36,11 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const [right, setRight] = useState("dataMax");
   const [min0, setMin0] = useState(true);
 
+  const [globalZoom, setGlobalZoom] = useState(true);
+  const handleGlobalZoomExcludeSwitch = (event) => {
+    setGlobalZoom(event.target.checked);
+  };
+
   const handleZoomOut = () => {
     setLeft("dataMin");
     setRight("dataMax");
@@ -41,6 +49,17 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
 
   const handleSwitch = (event) => {
     setMin0(event.target.checked);
+  };
+
+  const [menuOpen, setMenuOpen] = useState(null);
+  const open = Boolean(menuOpen);
+
+  const handleOpen = (event) => {
+    setMenuOpen(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setMenuOpen(null);
   };
 
   return (
@@ -71,12 +90,47 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
                 Zoom Out
               </Button>
             )}
-            <FormControlLabel
-              control={<Switch checked={min0} onChange={handleSwitch} />}
-              label="Min 0"
-              labelPlacement="end"
-              style={{ marginRight: 8 }}
-            />
+            <IconButton
+              aria-label="delete"
+              aria-controls={open ? "basic-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? "true" : undefined}
+              onClick={handleOpen}
+            >
+              <TuneIcon />
+            </IconButton>
+            <Menu
+              id="basic-menu"
+              anchorEl={menuOpen}
+              open={open}
+              onClose={handleClose}
+              MenuListProps={{
+                "aria-labelledby": "basic-button",
+              }}
+            >
+              <MenuItem>
+                <FormControlLabel
+                  control={<Switch checked={min0} onChange={handleSwitch} />}
+                  label="Min 0"
+                  labelPlacement="end"
+                  style={{ marginRight: 8 }}
+                />
+              </MenuItem>
+              <MenuItem>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={globalZoom}
+                      onChange={handleGlobalZoomExcludeSwitch}
+                    />
+                  }
+                  label="Global Zoom"
+                  labelPlacement="end"
+                  style={{ marginRight: 8 }}
+                />
+              </MenuItem>
+            </Menu>
+
             <IconButton onClick={onRemove} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
