@@ -14,6 +14,8 @@ import LineChartComponent from "./LineChartComponent";
 import ErrorCodesTableComponent from "./ErrorCodesTableComponent";
 import "react-resizable/css/styles.css";
 import "./SensorChart.css";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -29,11 +31,16 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const [zoomed, setZoomed] = useState(false);
   const [left, setLeft] = useState("dataMin");
   const [right, setRight] = useState("dataMax");
+  const [min0, setMin0] = useState(true);
 
   const handleZoomOut = () => {
     setLeft("dataMin");
     setRight("dataMax");
     setZoomed(false);
+  };
+
+  const handleSwitch = (event) => {
+    setMin0(event.target.checked);
   };
 
   return (
@@ -64,6 +71,12 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
                 Zoom Out
               </Button>
             )}
+            <FormControlLabel
+              control={<Switch checked={min0} onChange={handleSwitch} />}
+              label="Min 0"
+              labelPlacement="end"
+              style={{ marginRight: 8 }}
+            />
             <IconButton onClick={onRemove} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
@@ -93,6 +106,7 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
             setLeft={setLeft}
             setRight={setRight}
             setZoomed={setZoomed}
+            min0={min0}
           />
         )}
       </CardContent>

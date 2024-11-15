@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import { Button } from "@mui/material";
+
 function LineChartComponent({
   dataSets,
   sensorIds,
@@ -21,9 +22,15 @@ function LineChartComponent({
   setLeft,
   setRight,
   setZoomed,
+  min0,
 }) {
   const [refAreaLeft, setRefAreaLeft] = useState("");
   const [refAreaRight, setRefAreaRight] = useState("");
+
+  // Calculate the minimum value from all datasets
+  const minValue = Math.min(
+    ...dataSets.flatMap(({ data }) => data.map((point) => point.value))
+  );
 
   const zoom = () => {
     if (refAreaLeft === refAreaRight || !refAreaRight) {
@@ -60,7 +67,7 @@ function LineChartComponent({
           domain={[left, right]}
           type="number"
         />
-        <YAxis domain={[0, "dataMax+1"]} />
+        <YAxis domain={min0 ? [0, "dataMax+1"] : [minValue, "dataMax+1"]} />
         <Tooltip />
         <Legend />
         {dataSets.map(({ sensorId, data }, index) => (
