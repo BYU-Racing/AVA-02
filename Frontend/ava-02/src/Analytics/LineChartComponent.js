@@ -12,6 +12,8 @@ import {
 import { useState } from "react";
 import { Button } from "@mui/material";
 
+import { useEffect } from "react";
+
 function LineChartComponent({
   dataSets,
   sensorIds,
@@ -23,6 +25,11 @@ function LineChartComponent({
   setRight,
   setZoomed,
   min0,
+  globalZoomBounds,
+  setGlobalZoomBounds,
+  globalZoom,
+  globalZoomed,
+  setGlobalZoomed,
 }) {
   const [refAreaLeft, setRefAreaLeft] = useState("");
   const [refAreaRight, setRefAreaRight] = useState("");
@@ -44,12 +51,25 @@ function LineChartComponent({
         ? [refAreaRight, refAreaLeft]
         : [refAreaLeft, refAreaRight];
 
-    setLeft(newLeft);
-    setRight(newRight);
+    if (globalZoom) {
+      setGlobalZoomBounds({ left: newLeft, right: newRight });
+      setGlobalZoomed(true);
+    } else {
+      setLeft(newLeft);
+      setRight(newRight);
+      setZoomed(true);
+    }
+
     setRefAreaLeft("");
     setRefAreaRight("");
-    setZoomed(true);
   };
+
+  useEffect(() => {
+    if (globalZoom) {
+      setLeft(globalZoomBounds.left);
+      setRight(globalZoomBounds.right);
+    }
+  }, [globalZoomBounds, globalZoom]);
 
   return (
     <ResponsiveContainer className="charts" width="100%" height="100%">

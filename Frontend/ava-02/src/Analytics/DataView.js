@@ -13,7 +13,11 @@ import "./DataView.css";
 function DataView() {
   const [sensorDataArray, setSensorDataArray] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [globalZoomBounds, setGlobalZoomBounds] = useState({
+    left: "dataMin",
+    right: "dataMax",
+  });
+  const [globalZoomed, setGlobalZoomed] = useState(false);
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
     event.stopPropagation();
@@ -112,6 +116,10 @@ function DataView() {
                     event.stopPropagation();
                     handleDrop(event, chartId);
                   }}
+                  globalZoomBounds={globalZoomBounds}
+                  setGlobalZoomBounds={setGlobalZoomBounds}
+                  globalZoomed={globalZoomed}
+                  setGlobalZoomed={setGlobalZoomed}
                 />
               </div>
             </div>

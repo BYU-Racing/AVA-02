@@ -20,7 +20,17 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import TuneIcon from "@mui/icons-material/Tune";
 
-function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
+function SensorChart({
+  chartId,
+  sensorIds,
+  dataSets,
+  onRemove,
+  onDrop,
+  setGlobalZoomBounds,
+  globalZoomBounds,
+  globalZoomed,
+  setGlobalZoomed,
+}) {
   const colors = [
     "#8884d8",
     "#82ca9d",
@@ -42,9 +52,14 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   };
 
   const handleZoomOut = () => {
-    setLeft("dataMin");
-    setRight("dataMax");
-    setZoomed(false);
+    if (globalZoom) {
+      setGlobalZoomBounds({ left: "dataMin", right: "dataMax" });
+      setGlobalZoomed(false);
+    } else {
+      setLeft("dataMin");
+      setRight("dataMax");
+      setZoomed(false);
+    }
   };
 
   const handleSwitch = (event) => {
@@ -80,14 +95,14 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
         }
         action={
           <>
-            {zoomed && (
+            {(zoomed || (globalZoom && globalZoomed)) && (
               <Button
                 variant="outlined"
                 onClick={handleZoomOut}
                 size="small"
                 style={{ marginRight: 8 }}
               >
-                Zoom Out
+                Reset
               </Button>
             )}
             <IconButton
@@ -158,6 +173,11 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
             setRight={setRight}
             setZoomed={setZoomed}
             min0={min0}
+            setGlobalZoomBounds={setGlobalZoomBounds}
+            globalZoomBounds={globalZoomBounds}
+            globalZoom={globalZoom}
+            globalZoomed={globalZoomed}
+            setGlobalZoomed={setGlobalZoomed}
           />
         )}
       </CardContent>
