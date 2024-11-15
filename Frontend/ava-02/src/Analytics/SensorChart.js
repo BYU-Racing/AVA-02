@@ -13,6 +13,7 @@ import errorMap from "../errorMap";
 import LineChartComponent from "./LineChartComponent";
 import ErrorCodesTableComponent from "./ErrorCodesTableComponent";
 import "react-resizable/css/styles.css";
+import "./SensorChart.css";
 
 function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
   const colors = [
@@ -42,6 +43,7 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
         marginBottom: "16px",
         overflow: "hidden",
+        height: "100%",
       }}
     >
       <CardHeader
@@ -69,7 +71,11 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
         }
       />
       <Divider />
-      <CardContent onDrop={onDrop} onDragOver={(e) => e.preventDefault()}>
+      <CardContent
+        onDrop={onDrop}
+        onDragOver={(e) => e.preventDefault()}
+        className="CardContent"
+      >
         {sensorIds.length === 1 && sensorIds[0] === "204" ? (
           <ErrorCodesTableComponent
             data={dataSets[0].data}

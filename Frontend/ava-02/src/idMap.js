@@ -11,6 +11,9 @@ let id_map = {
   501: "HotBox FR (Middle)",
   502: "HotBox FR (Outer)",
   204: "Errors",
+  200: "Health Check",
+  201: "DCF Health Response",
+  205: "Drive State",
 };
 
 export default id_map;

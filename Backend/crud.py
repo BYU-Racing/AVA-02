@@ -59,7 +59,13 @@ def get_all_data_from_drive(db: Session, drive_id: int):
     return db.query(models.RawData).filter(models.RawData.drive_id == drive_id).all()
 
 def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
-    return db.query(models.RawData).filter(models.RawData.drive_id == drive_id).filter(models.RawData.msg_id == sensor_id).all()
+    return (
+        db.query(models.RawData)
+        .filter(models.RawData.drive_id == drive_id)
+        .filter(models.RawData.msg_id == sensor_id)
+        .order_by(models.RawData.time.asc())  
+        .all()
+    )
 
 
 ## WRITE RAW DATA
