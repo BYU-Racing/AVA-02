@@ -108,27 +108,24 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
                 "aria-labelledby": "basic-button",
               }}
             >
-              <MenuItem>
-                <FormControlLabel
-                  control={<Switch checked={min0} onChange={handleSwitch} />}
-                  label="Min 0"
-                  labelPlacement="end"
-                  style={{ marginRight: 8 }}
-                />
-              </MenuItem>
-              <MenuItem>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={globalZoom}
-                      onChange={handleGlobalZoomExcludeSwitch}
-                    />
-                  }
-                  label="Global Zoom"
-                  labelPlacement="end"
-                  style={{ marginRight: 8 }}
-                />
-              </MenuItem>
+              <FormControlLabel
+                control={<Switch checked={min0} onChange={handleSwitch} />}
+                label="Min 0"
+                labelPlacement="end"
+                style={{ marginRight: 8, padding: 8 }}
+              />
+              <Divider />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={globalZoom}
+                    onChange={handleGlobalZoomExcludeSwitch}
+                  />
+                }
+                label="Global Zoom"
+                labelPlacement="end"
+                style={{ marginRight: 8, padding: 8 }}
+              />
             </Menu>
 
             <IconButton onClick={onRemove} size="small">
