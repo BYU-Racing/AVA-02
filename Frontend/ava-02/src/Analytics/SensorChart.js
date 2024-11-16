@@ -85,7 +85,8 @@ function SensorChart({
       globalZoomBounds.left !== "dataMin" &&
       globalZoomBounds.right !== "dataMax");
 
-  console.log(amIZoomed);
+  let isTable = sensorIds.length === 1 && sensorIds[0] === "204";
+
   return (
     <Card
       style={{
@@ -114,43 +115,48 @@ function SensorChart({
                 Reset
               </Button>
             )}
-            <IconButton
-              aria-label="delete"
-              aria-controls={open ? "basic-menu" : undefined}
-              aria-haspopup="true"
-              aria-expanded={open ? "true" : undefined}
-              onClick={handleOpen}
-            >
-              <TuneIcon />
-            </IconButton>
-            <Menu
-              id="basic-menu"
-              anchorEl={menuOpen}
-              open={open}
-              onClose={handleClose}
-              MenuListProps={{
-                "aria-labelledby": "basic-button",
-              }}
-            >
-              <FormControlLabel
-                control={<Switch checked={min0} onChange={handleSwitch} />}
-                label="Min 0"
-                labelPlacement="end"
-                style={{ marginRight: 8, padding: 8 }}
-              />
-              <Divider />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={globalZoom}
-                    onChange={handleGlobalZoomExcludeSwitch}
+
+            {!isTable && (
+              <>
+                <IconButton
+                  aria-label="delete"
+                  aria-controls={open ? "basic-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={open ? "true" : undefined}
+                  onClick={handleOpen}
+                >
+                  <TuneIcon />
+                </IconButton>
+                <Menu
+                  id="basic-menu"
+                  anchorEl={menuOpen}
+                  open={open}
+                  onClose={handleClose}
+                  MenuListProps={{
+                    "aria-labelledby": "basic-button",
+                  }}
+                >
+                  <FormControlLabel
+                    control={<Switch checked={min0} onChange={handleSwitch} />}
+                    label="Min 0"
+                    labelPlacement="end"
+                    style={{ marginRight: 8, padding: 8 }}
                   />
-                }
-                label="Global Zoom"
-                labelPlacement="end"
-                style={{ marginRight: 8, padding: 8 }}
-              />
-            </Menu>
+                  <Divider />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={globalZoom}
+                        onChange={handleGlobalZoomExcludeSwitch}
+                      />
+                    }
+                    label="Global Zoom"
+                    labelPlacement="end"
+                    style={{ marginRight: 8, padding: 8 }}
+                  />
+                </Menu>
+              </>
+            )}
 
             <IconButton onClick={onRemove} size="small">
               <CloseIcon />
@@ -164,7 +170,7 @@ function SensorChart({
         onDragOver={(e) => e.preventDefault()}
         className="CardContent"
       >
-        {sensorIds.length === 1 && sensorIds[0] === "204" ? (
+        {isTable ? (
           <ErrorCodesTableComponent
             data={dataSets[0].data}
             errorMap={errorMap}

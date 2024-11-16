@@ -49,6 +49,7 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+        console.log("ANALOG REVIEW");
       }
 
       if (targetChartIndex >= 0) {
