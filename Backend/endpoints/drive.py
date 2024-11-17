@@ -69,15 +69,7 @@ async def add_data_to_drive_from_file(
         for index, row in df.iterrows():
             msg_id, time, *buffers = row[:10]  # Adjust as needed
 
-            if(msg_id < 50 or msg_id > 54):
-                db_data = models.RawData(
-                    drive_id=drive_id, 
-                    msg_id=msg_id, 
-                    raw_data=buffers, 
-                    time=time
-                )
-                db.add(db_data)
-            else:
+            if(msg_id >= 50 and  msg_id <= 54): ##HOT BOX CASE
                 db_data = models.RawData(
                     drive_id=drive_id,
                     msg_id=((msg_id * 10) + 0),
@@ -96,6 +88,24 @@ async def add_data_to_drive_from_file(
                     drive_id=drive_id,
                     msg_id=((msg_id * 10) + 2),
                     raw_data=[buffers[4], buffers[5], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+
+            elif(msg_id == 4): #Accelerometer CASE
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=(((msg_id) * 100) + buffers[0]),
+                    raw_data=[buffers[1],buffers[2], buffers[3], buffers[4], 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+
+            else:
+                db_data = models.RawData(
+                    drive_id=drive_id, 
+                    msg_id=msg_id, 
+                    raw_data=buffers, 
                     time=time
                 )
                 db.add(db_data)

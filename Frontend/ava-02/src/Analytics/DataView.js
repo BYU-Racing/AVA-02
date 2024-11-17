@@ -2,6 +2,7 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import SensorChart from "./SensorChart";
 import {
+  transformCANMessagesToTimeSeriesACCEL,
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
   transformCANMessagesToTimeSeriesHOTBOX,
@@ -47,6 +48,17 @@ function DataView() {
         sensorId === "502"
       ) {
         timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
+      } else if (
+        sensorId === "400" ||
+        sensorId === "401" ||
+        sensorId === "402" ||
+        sensorId === "403" ||
+        sensorId === "404" ||
+        sensorId === "405"
+      ) {
+        timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+        console.log("ACCELL");
+        console.log(sensorId);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
         console.log("ANALOG REVIEW");
