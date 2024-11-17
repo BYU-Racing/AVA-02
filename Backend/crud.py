@@ -78,3 +78,18 @@ def create_raw_data(db: Session, data: schemas.RawDataCreate):
     db.refresh(db_data)
 
     return db_data
+
+
+## Hash functions
+
+def read_hash(db: Session, hash: str):
+    return db.query(models.File).filer(models.File.hash == hash).all()
+
+def write_hash(db: Session, data: schemas.FileBase):
+    db_data = models.File(drive_id=data.drive_id, hash=data.hash)
+
+    db.add(db_data)
+    db.commit()
+    db.refresh(db_data)
+    
+    return db_data

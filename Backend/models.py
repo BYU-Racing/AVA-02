@@ -28,6 +28,15 @@ class Drive(Base):
     raw_data = relationship("RawData", back_populates="drive")
 
 
+class File(Base):
+    __tablename__ = "files"
+
+    file_id = Column(Integer, primary_key=True)
+    drive_id = Column(Integer)
+    hash = Column(String)
+
+
+
 class RawData(Base):
     __tablename__ = "raw_data"
     data_id = Column(Integer, primary_key=True)
