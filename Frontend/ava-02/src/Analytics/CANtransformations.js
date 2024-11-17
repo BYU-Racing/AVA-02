@@ -34,13 +34,11 @@ export const transformCANMessagesToTimeSeriesACCEL = (canMessages) => {
       const buffer = new ArrayBuffer(4);
       const view = new DataView(buffer);
 
-      // Copy the first 4 bytes of raw_data into the ArrayBuffer
       for (let i = 0; i < 4; i++) {
         view.setUint8(i, message.raw_data[i]);
       }
 
-      // Read the float value as Big-Endian
-      let value = view.getFloat32(0, true); // false indicates Big-Endian
+      let value = view.getFloat32(0, true);
 
       // Round the value to 4 decimal places
       value = Math.round(value * 10000) / 10000;
