@@ -77,14 +77,3 @@ class DriveSimple(BaseModel):
 
 
 
-class FileBase(BaseModel):
-    drive_id: int
-    hash: str
-
-
-class File(FileBase):
-    file_id: int
-
-    class Config:
-        orm_mode = True
-

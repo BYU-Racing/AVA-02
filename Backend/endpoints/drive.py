@@ -119,19 +119,3 @@ async def add_data_to_drive_from_file(
     
     return {"status": "success"}
 
-
-@router.get("/drive/{hash}", response_model=list[schemas.File])
-def get_file(hash: str, db: Session = Depends(get_db)):
-    files = crud.read_hash(db, hash)
-
-    return files
-
-@router.post("/drive_hash", response_model=dict)
-def write_file(file: schemas.FileBase, db: Session = Depends(get_db)):
-
-    db_file = crud.read_hash(db, file.hash)
-
-    if db_file:
-        raise HTTPException(status_code=400, detail="FILE FOUND")
-    
-    return crud.write_hash(db=db, data=file)
