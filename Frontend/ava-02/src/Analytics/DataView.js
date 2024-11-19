@@ -57,11 +57,8 @@ function DataView() {
         sensorId === "405"
       ) {
         timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
-        console.log("ACCELL");
-        console.log(sensorId);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
-        console.log("ANALOG REVIEW");
       }
 
       if (targetChartIndex >= 0) {

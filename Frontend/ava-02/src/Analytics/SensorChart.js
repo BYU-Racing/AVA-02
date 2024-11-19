@@ -110,7 +110,7 @@ function SensorChart({
               <PublicOffIcon
                 style={{
                   marginRight: 8,
-                  verticalAlign: "middle", // Aligns with text and buttons
+                  verticalAlign: "middle",
                 }}
               />
             )}

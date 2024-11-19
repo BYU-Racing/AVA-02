@@ -6,7 +6,6 @@ export const transformCANMessagesToTimeSeriesDIGITAL = (canMessages) => {
 };
 
 export const transformCANMessagesToTimeSeriesANALOG = (canMessages) => {
-  console.log(canMessages);
   return canMessages.map((message) => ({
     timestamp: message.time,
     value: (message.raw_data[1] << 8) | message.raw_data[0],
