@@ -42,7 +42,7 @@ def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     db_drive = crud.get_drive_by_hash(db, drive.hash)
 
     if db_drive:
-        raise HTTPException(status_code=400, detail="Drive already registered")
+        raise HTTPException(status_code=400, detail="Drive already uploaded")
     
     return crud.create_drive(db=db, drive=drive)
 
