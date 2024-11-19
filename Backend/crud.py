@@ -42,11 +42,14 @@ def get_drive(db: Session, drive_id: int):
 def get_drives_by_driver(db: Session, driver_id: int):
     return db.query(models.Drive).filter(models.Drive.driver_id == driver_id).all()
 
+def get_drive_by_hash(db: Session, hash: str):
+    return db.query(models.Drive).filter(models.Drive.hash == hash).first()
+
 
 ## WRITE DRIVES
 def create_drive(db: Session, drive: schemas.DriveCreate):
 
-    db_drive = models.Drive(driver_id=drive.driver_id, date=drive.date, notes=drive.notes)
+    db_drive = models.Drive(driver_id=drive.driver_id, date=drive.date, notes=drive.notes, hash=drive.hash)
     db.add(db_drive)
     db.commit()
     db.refresh(db_drive)

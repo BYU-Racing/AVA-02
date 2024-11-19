@@ -13,6 +13,7 @@ import {
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ClearIcon from "@mui/icons-material/Clear";
 import LoadingButton from "@mui/lab/LoadingButton";
+import CryptoJS from "crypto-js";
 
 function AddDrive() {
   const [driverId, setDriverId] = useState("NULL");
@@ -22,6 +23,7 @@ function AddDrive() {
   const [drivers, setDrivers] = useState([]);
   const [file, setFile] = useState(null);
   const [notes, setNotes] = useState("");
+  const [currError, setCurrError] = useState("");
 
   const handleChange = (event) => {
     setDriverId(event.target.value);
@@ -39,12 +41,29 @@ function AddDrive() {
     setNotes(event.target.value);
   };
 
+  const calculateFileHash = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileData = event.target.result;
+        const hash = CryptoJS.SHA256(fileData).toString(CryptoJS.enc.Hex);
+        resolve(hash);
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsBinaryString(file);
+    });
+  };
+
   const createDrive = async () => {
     const currentDate = new Date().toISOString();
+
     setSuccessful(false);
     setIsLoading(true);
 
     try {
+      const fileHash = await calculateFileHash(file);
+
+      console.log("FILE HASH: ", fileHash);
       const response = await fetch("http://127.0.0.1:8000/drive", {
         method: "POST",
         headers: {
@@ -53,12 +72,15 @@ function AddDrive() {
         body: JSON.stringify({
           date: currentDate,
           notes: notes,
+          hash: fileHash,
           driver_id: driverId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create drive");
+        const errorData = await response.json();
+        setCurrError(errorData.detail || "Failed to create drive");
+        throw new Error(errorData.detail || "Failed to create drive");
       }
 
       const data = await response.json();
@@ -113,7 +135,7 @@ function AddDrive() {
 
   return (
     <div>
-      {failure && <Alert severity="error">Failed to load drivers</Alert>}
+      {failure && <Alert severity="error">Error: {currError}</Alert>}
       {successful && <Alert severity="success">Succesfully added drive</Alert>}
 
       <FormControl fullWidth variant="outlined" margin="normal">

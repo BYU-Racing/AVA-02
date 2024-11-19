@@ -28,6 +28,7 @@ class RawData(RawDataBase):
 class DriveBase(BaseModel):
     date: datetime
     notes: Optional[str] = None
+    hash: Optional[str] = None
 
 
 class DriveCreate(DriveBase):

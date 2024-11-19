@@ -39,7 +39,7 @@ def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):
 @router.post("/drive", response_model=schemas.Drive)
 def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     #Need an endpoint for getting a drive by driveID
-    db_drive = None #TODO: THIS NEEDS TO CHANGE SO THAT IT CHECKS FOR EXISTENCE OF DRIVE HASH
+    db_drive = crud.get_drive_by_hash(db, drive.hash)
 
     if db_drive:
         raise HTTPException(status_code=400, detail="Drive already registered")
