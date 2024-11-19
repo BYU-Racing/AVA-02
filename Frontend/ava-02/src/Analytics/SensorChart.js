@@ -17,8 +17,8 @@ import "./SensorChart.css";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import TuneIcon from "@mui/icons-material/Tune";
+import PublicOffIcon from "@mui/icons-material/PublicOff";
 
 function SensorChart({
   chartId,
@@ -47,6 +47,7 @@ function SensorChart({
   const [min0, setMin0] = useState(true);
 
   const [globalZoom, setGlobalZoom] = useState(true);
+
   const handleGlobalZoomExcludeSwitch = (event) => {
     setGlobalZoom(event.target.checked);
   };
@@ -105,6 +106,14 @@ function SensorChart({
         }
         action={
           <>
+            {!globalZoom && (
+              <PublicOffIcon
+                style={{
+                  marginRight: 8,
+                  verticalAlign: "middle", // Aligns with text and buttons
+                }}
+              />
+            )}
             {amIZoomed && (
               <Button
                 variant="outlined"
