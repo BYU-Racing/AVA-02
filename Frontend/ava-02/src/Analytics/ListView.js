@@ -21,15 +21,17 @@ function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
       <Divider />
       <br />
       <div style={{ padding: 10, height: "730px", overflow: "auto" }}>
-        {driveList.map((drive) => (
-          <DriveObject
-            key={drive.drive_id}
-            drive={drive}
-            handleExpand={handleExpand}
-            sensors={sensorData[drive.drive_id] || []}
-            loadingSensors={loadingSensors} // Pass the relevant sensor data
-          />
-        ))}
+        {driveList
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map((drive) => (
+            <DriveObject
+              key={drive.drive_id}
+              drive={drive}
+              handleExpand={handleExpand}
+              sensors={sensorData[drive.drive_id] || []}
+              loadingSensors={loadingSensors} // Pass the relevant sensor data
+            />
+          ))}
       </div>
     </div>
   );
