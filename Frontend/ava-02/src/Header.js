@@ -1,6 +1,7 @@
 import React from "react";
 import { AppBar, Tabs, Tab, Toolbar } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
+import Typography from "@mui/material/Typography";
 import "./App.css";
 
 const Header = () => {
@@ -23,13 +24,14 @@ const Header = () => {
           padding: 0, // Remove extra padding
         }}
       >
-        <img
-          src="avaLogoWHITE.png"
-          alt="LOGO"
-          style={{
-            maxHeight: "40px", // Reduce the logo size to fit the smaller header
-          }}
-        />
+        <Typography
+          variant="h4"
+          component="div"
+          fontFamily="avaFont"
+          sx={{ flexGrow: 1 }}
+        >
+          AVA-02
+        </Typography>
         <Tabs
           value={value}
           textColor="inherit"
