@@ -37,7 +37,7 @@ function DriveObject({ drive, handleExpand, sensors, loadingSensors }) {
         id="panel2-header"
       >
         <Typography>
-          {drive.driver.name} - {formattedDate}
+          {formattedDate} - {drive.driver.name}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>

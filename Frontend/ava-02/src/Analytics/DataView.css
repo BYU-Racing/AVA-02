@@ -34,7 +34,7 @@
   height: 100%;
 }
 
-/* Optional: Hover effect for feedback */
+/* Optional: Hover effect for feedback
 .chart:hover {
-  border: 1px solid #cccccc; /* Visual feedback on hover */
-}
+  border: 1px solid #cccccc; 
+} */

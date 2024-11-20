@@ -12,9 +12,7 @@ const Header = () => {
       sx={{ backgroundColor: "#2C3E50", padding: "0 2rem" }}
     >
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          AVA-02
-        </Typography>
+        <img src="avaLogoWHITE.png" alt="LOGO" style={{ maxHeight: "50px" }} />
         <Tabs
           value={value}
           textColor="inherit"
