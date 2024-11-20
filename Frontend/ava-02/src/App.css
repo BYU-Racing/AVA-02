@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+
+@font-face {
+  font-family: "avaFont"; /* Name of your font */
+  src: url("./Assets/skyrox-mediumcondensed.otf") format("opentype");
+  font-weight: normal; /* Adjust if needed: normal, bold, etc. */
+  font-style: normal; /* Adjust if needed: normal, italic, etc. */
+}
