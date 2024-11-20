@@ -100,7 +100,7 @@ function SensorChart({
     >
       <CardHeader
         title={
-          <Typography variant="h6">
+          <Typography variant="subtitle1">
             {sensorIds.map((id) => id_map[id]).join(", ")}
           </Typography>
         }
@@ -133,6 +133,7 @@ function SensorChart({
                   aria-haspopup="true"
                   aria-expanded={open ? "true" : undefined}
                   onClick={handleOpen}
+                  size="small"
                 >
                   <TuneIcon />
                 </IconButton>
