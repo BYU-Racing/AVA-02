@@ -99,8 +99,17 @@ function SensorChart({
       }}
     >
       <CardHeader
+        sx={{
+          padding: "10px 28px", // Slightly increase padding for more breathing room
+          "& .MuiTypography-root": {
+            fontSize: "1rem", // Moderate font size for better readability
+          },
+          "& .MuiIconButton-root": {
+            padding: "5px", // Slightly larger icon buttons
+          },
+        }}
         title={
-          <Typography variant="subtitle1">
+          <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
             {sensorIds.map((id) => id_map[id]).join(", ")}
           </Typography>
         }
