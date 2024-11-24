@@ -2,6 +2,7 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import SensorChart from "./SensorChart";
 import {
+  transforCANMessagesToTimeSeriesHEALTH,
   transformCANMessagesToTimeSeriesACCEL,
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
@@ -57,6 +58,8 @@ function DataView() {
         sensorId === "405"
       ) {
         timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+      } else if (sensorId === "201" || sensorId === "202") {
+        timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }

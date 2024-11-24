@@ -12,6 +12,13 @@ export const transformCANMessagesToTimeSeriesANALOG = (canMessages) => {
   }));
 };
 
+export const transforCANMessagesToTimeSeriesHEALTH = (canMessages) => {
+  return canMessages.map((message) => ({
+    timestamp: message.time,
+    value: message.raw_data[0],
+  }));
+};
+
 export const transformCANMessagesToTimeSeriesTORQUE = (canMessages) => {
   return canMessages.map((message) => ({
     timestamp: message.time,
