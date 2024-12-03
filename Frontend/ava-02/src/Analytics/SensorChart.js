@@ -19,6 +19,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Menu from "@mui/material/Menu";
 import TuneIcon from "@mui/icons-material/Tune";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
+import GPSMap from "./GPSMap";
 
 function SensorChart({
   chartId,
@@ -86,7 +87,9 @@ function SensorChart({
       globalZoomBounds.left !== "dataMin" &&
       globalZoomBounds.right !== "dataMax");
 
-  let isTable = sensorIds.length === 1 && sensorIds[0] === "204";
+  // Determine the type of visualization
+  const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
+  const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
 
   return (
     <Card
@@ -100,12 +103,12 @@ function SensorChart({
     >
       <CardHeader
         sx={{
-          padding: "10px 28px", // Slightly increase padding for more breathing room
+          padding: "10px 28px",
           "& .MuiTypography-root": {
-            fontSize: "1rem", // Moderate font size for better readability
+            fontSize: "1rem",
           },
           "& .MuiIconButton-root": {
-            padding: "5px", // Slightly larger icon buttons
+            padding: "5px",
           },
         }}
         title={
@@ -134,7 +137,7 @@ function SensorChart({
               </Button>
             )}
 
-            {!isTable && (
+            {!isTable && !isGPS && (
               <>
                 <IconButton
                   aria-label="delete"
@@ -194,6 +197,20 @@ function SensorChart({
             data={dataSets[0].data}
             errorMap={errorMap}
             onRemove={onRemove}
+          />
+        ) : isGPS ? (
+          <GPSMap
+            sensorIds={sensorIds}
+            dataSets={dataSets}
+            left={left}
+            right={right}
+            setLeft={setLeft}
+            setRight={setRight}
+            setZoomed={setZoomed}
+            globalZoomBounds={globalZoomBounds}
+            setGlobalZoomBounds={setGlobalZoomBounds}
+            globalZoom={globalZoom}
+            setGlobalZoom={setGlobalZoom}
           />
         ) : (
           <LineChartComponent

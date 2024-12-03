@@ -6,6 +6,7 @@ import {
   transformCANMessagesToTimeSeriesACCEL,
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
+  transformCANmessagesToTimeSeriesGPS,
   transformCANMessagesToTimeSeriesHOTBOX,
   transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
@@ -60,6 +61,8 @@ function DataView() {
         timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
       } else if (sensorId === "201" || sensorId === "202") {
         timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
+      } else if (sensorId === "9") {
+        timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
       } else {
         timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
       }

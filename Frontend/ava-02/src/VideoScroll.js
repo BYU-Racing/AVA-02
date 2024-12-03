@@ -55,6 +55,16 @@ function VideoScroll() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Render the first frame after images are loaded
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (images[0]?.complete) {
+        clearInterval(interval); // Ensure the first frame renders only after it's loaded
+        render(1); // Render the first frame
+      }
+    }, 10); // Check every 50ms until the first image is loaded
+  }, [images, render]);
+
   return (
     <canvas
       ref={ref}
@@ -65,6 +75,7 @@ function VideoScroll() {
         width: "100%",
         height: "100%",
         zIndex: -1,
+        backgroundColor: "black",
       }}
     />
   );

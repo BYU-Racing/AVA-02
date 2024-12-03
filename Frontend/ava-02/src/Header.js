@@ -12,7 +12,7 @@ const Header = () => {
     <AppBar
       position="static"
       sx={{
-        backgroundColor: "#2C3E50", // Background color
+        backgroundColor: "#121212", // Background color
         padding: "0 2rem", // Horizontal padding
         height: "50px", // Adjust height
         justifyContent: "center", // Align content
@@ -38,7 +38,10 @@ const Header = () => {
           aria-label="navigation tabs"
           sx={{
             ml: "auto", // Push tabs to the right
-            "& .MuiTabs-indicator": { backgroundColor: "red" },
+            "& .MuiTabs-indicator": {
+              backgroundColor: "#1d41a3",
+              height: "3px",
+            },
           }}
         >
           <Tab label="Home" component={Link} to="/" value="/" />

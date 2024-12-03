@@ -62,3 +62,30 @@ export const transformCANMessagesToTimeSeriesACCEL = (canMessages) => {
     }
   });
 };
+
+export const transformCANmessagesToTimeSeriesGPS = (canMessages) => {
+  return canMessages.map((message) => {
+    let buffer = new ArrayBuffer(4);
+    let view = new DataView(buffer);
+
+    for (let i = 0; i < 4; i++) {
+      view.setUint8(i, message.raw_data[i]);
+    }
+
+    let lat = view.getFloat32(0, true);
+
+    buffer = new ArrayBuffer(4);
+    view = new DataView(buffer);
+
+    for (let i = 0; i < 4; i++) {
+      view.setUint8(i, message.raw_data[i + 4]);
+    }
+
+    let long = view.getFloat32(0, true);
+
+    return {
+      timestamp: message.time,
+      value: { lat: lat, long: long },
+    };
+  });
+};
