@@ -2,8 +2,7 @@
 .chart-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 16px;
+  padding: 8px;
   box-sizing: border-box;
   position: relative;
 }
@@ -17,7 +16,7 @@
   resize: both; /* Enable resizing from the bottom-right corner */
   min-width: 390px;
   min-height: 350px;
-  max-width: 96%; /* Prevent chart from growing beyond container width */
+  max-width: 97%; /* Prevent chart from growing beyond container width */
   height: 350px;
   box-sizing: border-box;
   position: relative;

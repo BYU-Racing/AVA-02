@@ -6,7 +6,14 @@ import { Box } from "@mui/material";
 
 function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
   return (
-    <div>
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", // Prevent overflow on the outer container
+      }}
+    >
       <Box
         display="flex"
         justifyContent="space-between"
@@ -18,10 +25,16 @@ function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
         </Typography>
         <AddDataModal />
       </Box>
-
       <Divider />
-      <br />
-      <div style={{ padding: 10, height: "730px", overflow: "auto" }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: "auto", // Enable scrolling for this container
+          padding: 1,
+          minHeight: 0, // Allow the box to shrink below its content size
+          maxHeight: "calc(100vh - 145px)",
+        }}
+      >
         {driveList
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .map((drive) => (
@@ -30,11 +43,11 @@ function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
               drive={drive}
               handleExpand={handleExpand}
               sensors={sensorData[drive.drive_id] || []}
-              loadingSensors={loadingSensors} // Pass the relevant sensor data
+              loadingSensors={loadingSensors}
             />
           ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 

@@ -28,7 +28,7 @@ function App() {
     }
   }, []);
   return (
-    <LoadScript googleMapsApiKey="AIzaSyD9fgXKH7vBQRfI1CP7jWygkY3gOktxmiQ">
+    <LoadScript googleMapsApiKey="">
       <Router>
         <Header />
         <Routes>

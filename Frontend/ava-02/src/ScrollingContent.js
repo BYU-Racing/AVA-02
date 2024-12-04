@@ -47,26 +47,26 @@ const ScrollingContent = () => {
       <motion.div
         style={{
           position: "fixed",
-          top: "2%", // Move to top of screen
-          left: "30%", // Center horizontally
-          transform: "translateX(-25%)", // Only horizontal centering
+          top: "2%",
+          transform: "translateX(-50%)",
           zIndex: 10,
           color: "white",
           textAlign: "center",
           opacity,
           scale,
+          width: "100%",
         }}
       >
         <motion.h1
           style={{
             fontFamily: "avaFont, sans-serif",
             marginBottom: "1px",
-            fontSize: "10rem",
+            fontSize: "10vw",
           }}
         >
           AVA-02
         </motion.h1>
-        <motion.p style={{ fontSize: "1.0rem", marginTop: "1px" }}>
+        <motion.p style={{ fontSize: "1.0vw", marginTop: "1px" }}>
           Advanced Vehicle Analytics by BYU Racing Electronics Team
         </motion.p>
       </motion.div>

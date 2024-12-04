@@ -106,13 +106,14 @@ function DataView() {
     <Box
       sx={{
         backgroundColor: "#ffffff",
-        margin: "16px",
+        margin: "8px",
         height: "100%",
         width: "100%",
         boxSizing: "border-box",
         position: "relative",
         minHeight: "400px",
-        overflow: "auto",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
       className={`chart-container ${loading ? "loading" : ""}`}
       onDrop={(event) => handleDrop(event, null)}

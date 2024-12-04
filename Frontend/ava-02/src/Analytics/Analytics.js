@@ -43,7 +43,7 @@ function Analytics({ driveList, setDriveList }) {
   }, [driveList]);
 
   return (
-    <Box sx={{ flexGrow: 1, height: "90vh" }}>
+    <Box sx={{ flexGrow: 1, height: "calc(100vh - 70px)" }}>
       <Grid container spacing={2} sx={{ height: "100%" }}>
         <Grid item xs={12} sm={3}>
           <ListView
