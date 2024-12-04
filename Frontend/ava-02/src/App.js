@@ -28,21 +28,19 @@ function App() {
     }
   }, []);
   return (
-    <LoadScript googleMapsApiKey="AIzaSyD9fgXKH7vBQRfI1CP7jWygkY3gOktxmiQ">
-      <Router>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/analytics"
-            element={
-              <Analytics driveList={driveList} setDriveList={setDriveList} />
-            }
-          />
-          <Route path="/live-telemetry" element={<LiveTelemetry />} />
-        </Routes>
-      </Router>
-    </LoadScript>
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/analytics"
+          element={
+            <Analytics driveList={driveList} setDriveList={setDriveList} />
+          }
+        />
+        <Route path="/live-telemetry" element={<LiveTelemetry />} />
+      </Routes>
+    </Router>
   );
 }
 
