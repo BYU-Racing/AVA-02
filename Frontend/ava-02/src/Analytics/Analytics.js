@@ -45,15 +45,24 @@ function Analytics({ driveList, setDriveList }) {
   return (
     <Box sx={{ flexGrow: 1, height: "calc(100vh - 70px)" }}>
       <Grid container spacing={2} sx={{ height: "100%" }}>
-        <Grid item xs={12} sm={3}>
+        <Grid
+          item
+          xs={12}
+          sm={3}
+          sx={{
+            maxWidth: "15vw",
+            flexBasis: "auto",
+            flexGrow: 0,
+          }}
+        >
           <ListView
             driveList={driveList}
             handleExpand={handleExpand}
             sensorData={sensorData}
-            loadingSensor={loadingSensors} // Pass sensor data to ListView
+            loadingSensor={loadingSensors}
           />
         </Grid>
-        <Grid item xs={12} sm={9} sx={{ height: "100%" }}>
+        <Grid item xs={12} sm={true} sx={{ height: "100%" }}>
           <DataView />
         </Grid>
       </Grid>

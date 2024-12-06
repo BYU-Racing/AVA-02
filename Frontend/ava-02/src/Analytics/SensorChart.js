@@ -197,6 +197,8 @@ function SensorChart({
             data={dataSets[0].data}
             errorMap={errorMap}
             onRemove={onRemove}
+            left={globalZoom ? globalZoomBounds.left : left}
+            right={globalZoom ? globalZoomBounds.right : right}
           />
         ) : isGPS ? (
           <GPSMap
