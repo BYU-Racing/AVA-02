@@ -9,10 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceArea,
 } from "recharts";
-import { useState } from "react";
-import { Button } from "@mui/material";
-
-import { useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 function LineChartComponent({
   dataSets,
@@ -35,9 +32,46 @@ function LineChartComponent({
   const [refAreaRight, setRefAreaRight] = useState("");
 
   // Calculate the minimum value from all datasets
-  const minValue = Math.min(
-    ...dataSets.flatMap(({ data }) => data.map((point) => point.value))
+  const minValue = useMemo(
+    () =>
+      Math.min(
+        ...dataSets.flatMap(({ data }) => data.map((point) => point.value))
+      ),
+    [dataSets]
   );
+
+  useEffect(() => {
+    setLeft(globalZoomBounds.left);
+    setRight(globalZoomBounds.right);
+  }, [globalZoomBounds]);
+
+  // Filter and downsample data based on zoom level
+  const optimizedDataSets = useMemo(() => {
+    const maxPoints = 1000;
+    return dataSets.map((dataset) => {
+      let filteredData = dataset.data;
+
+      // Only filter if we have zoom bounds
+      if (left !== "dataMin" && right !== "dataMax") {
+        const buffer = (right - left) * 0.1;
+        filteredData = dataset.data.filter((point) => {
+          const timestamp = point.timestamp;
+          return timestamp >= left - buffer && timestamp <= right + buffer;
+        });
+      }
+
+      // Downsample if we have too many points
+      if (filteredData.length > maxPoints) {
+        const skip = Math.ceil(filteredData.length / maxPoints);
+        filteredData = filteredData.filter((_, index) => index % skip === 0);
+      }
+
+      return {
+        ...dataset,
+        data: filteredData,
+      };
+    });
+  }, [dataSets, left, right]);
 
   const zoom = () => {
     if (refAreaLeft === refAreaRight || !refAreaRight) {
@@ -55,6 +89,7 @@ function LineChartComponent({
       setGlobalZoomBounds({ left: newLeft, right: newRight });
       setGlobalZoomed(true);
       setZoomed(true);
+      console.log("SET GLOBAL ZOOM");
     } else {
       setLeft(newLeft);
       setRight(newRight);
@@ -65,17 +100,10 @@ function LineChartComponent({
     setRefAreaRight("");
   };
 
-  useEffect(() => {
-    if (globalZoom) {
-      setLeft(globalZoomBounds.left);
-      setRight(globalZoomBounds.right);
-    }
-  }, [globalZoomBounds, globalZoom]);
-
   return (
     <ResponsiveContainer className="charts" width="100%" height="100%">
       <LineChart
-        data={dataSets[0].data}
+        data={optimizedDataSets[0].data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
         onMouseMove={(e) => refAreaLeft && e && setRefAreaRight(e.activeLabel)}
@@ -91,7 +119,7 @@ function LineChartComponent({
         <YAxis domain={min0 ? [0, "dataMax+1"] : [minValue, "dataMax+1"]} />
         <Tooltip />
         <Legend />
-        {dataSets.map(({ sensorId, data }, index) => (
+        {optimizedDataSets.map(({ sensorId, data }, index) => (
           <Line
             key={sensorId}
             type="monotone"
@@ -100,6 +128,7 @@ function LineChartComponent({
             stroke={colors[index % colors.length]}
             name={id_map[sensorId]}
             dot={false}
+            isAnimationActive={false}
           />
         ))}
         {refAreaLeft && refAreaRight ? (
