@@ -1,99 +1,95 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
-function LiveTelemetry() {
-  const [port, setPort] = useState(null);
-  const [dataById, setDataById] = useState({});
-  const [latestMessage, setLatestMessage] = useState("");
+function SerialReader() {
+  const [port, setPort] = useState(null); // To store the selected port
+  const [isReading, setIsReading] = useState(false); // Track if reading is in progress
+  const [connectionError, setConnectionError] = useState(null); // Track any connection errors
 
+  // Function to request a serial port, open it, and read data continuously
   const connectSerial = async () => {
     try {
+      console.log('Requesting Serial Port...');
+      
+      // Request the user to select a serial port
       const selectedPort = await navigator.serial.requestPort();
+      console.log('Selected Port:', selectedPort);
 
-      // Open the port with the desired configuration
+      // Open the serial port with the desired baud rate (e.g., 9600)
       await selectedPort.open({ baudRate: 9600 });
-
-      // Set the port in the state
+      console.log('Serial Port Opened:', selectedPort);
+      
+      // Set the port to the state
       setPort(selectedPort);
-
-      // Set up a reader to read from the serial port
+      setIsReading(true);
+      
+      // Create a reader for the serial port's readable stream
       const reader = selectedPort.readable.getReader();
+      console.log('Reader created for port:', selectedPort);
+      console.log(isReading);
 
-      // Continuously read from the port
-      while (true) {
+      let messageBuf = [];
+      // Continuously read from the serial port
+      while (1) {
+        console.log("I'm reading");
         const { value, done } = await reader.read();
+
+        
+        messageBuf = messageBuf.concat(Array.from(value));
+        console.log(messageBuf);
+
         if (done) {
-          // Allow the serial port to be closed
+          // If the reader is done (port closed), release the lock and break out of the loop
           reader.releaseLock();
+          console.log('Serial Port Closed.');
           break;
         }
-        // Convert the incoming data
-        const decodedData = new TextDecoder().decode(value);
-        handleIncomingData(decodedData);
+        
+        // Log the raw byte array data (value)
+        console.log('Raw Data (bytes): ', messageBuf);
+
+        // Check if we received any data
+        if (messageBuf && messageBuf.length > 0) {
+          // If we received data, attempt to decode it as text (if possible)
+           // Convert the plain array to a Uint8Array
+          const uint8message = new Uint8Array(messageBuf);  // This creates a typed array
+          const buffer = uint8message.buffer;  // Turn to ArrayBuffer for decoding
+
+          const decodedData = new TextDecoder().decode(buffer);
+          console.log('Decoded Data: ', decodedData);
+        } else {
+          console.log('No data received.');
+        }
       }
     } catch (err) {
-      console.error("Error connecting to serial port: ", err);
+      console.error('Error connecting to serial port: ', err);
+      setConnectionError(err.message || 'Unknown Error');
     }
   };
 
-  const handleIncomingData = (decodedData) => {
-    // Set the latest incoming message for display purposes
-    setLatestMessage(decodedData);
-
-    // Parse the data format {ID, [DATA]}
-    const regex = /\{(\d+),\[(\d+)\]\}/g;
-    let match;
-
-    while ((match = regex.exec(decodedData)) !== null) {
-      const id = match[1];
-      const data = match[2];
-
-      // Update the state by ID
-      setDataById((prevState) => ({
-        ...prevState,
-        [id]: data,
-      }));
-    }
-  };
-
+  // Function to disconnect from the serial port
   const disconnectSerial = async () => {
     if (port) {
       await port.close();
       setPort(null);
+      setIsReading(false);
+      console.log('Disconnected from Serial Port.');
     }
   };
 
   return (
     <div>
       <h1>Serial Port Reader</h1>
-      <button onClick={connectSerial}>Connect to Serial Port</button>
-      <button onClick={disconnectSerial} disabled={!port}>
-        Disconnect
+      
+      {connectionError && <p style={{ color: 'red' }}>Error: {connectionError}</p>}
+      
+      <button onClick={connectSerial} disabled={isReading}>
+        Connect to Serial Port
       </button>
-      <div>
-        <ul>
-          {/* {Object.keys(dataById).map((id) => (
-            <li key={id}>
-              ID: {id}, Data: {dataById[id]}
-            </li>
-          ))} */}
-        </ul>
-        <p>{latestMessage}</p>
-        <p>Live Telemetry 2</p>
-
-        <div>
-          <h1 style={{ display: "inline-block", marginRight: "10px" }}>
-            Counter Stream -
-          </h1>
-          <h1 style={{ display: "inline-block" }}>{dataById[1]}</h1>
-        </div>
-
-        <div>
-          <h1>Switch - </h1>
-          {dataById[2] === "0" ? <h1>OFF</h1> : <h1>ON</h1>}
-        </div>
-      </div>
+      <button onClick={disconnectSerial} disabled={!port}>
+        Disconnect from Serial Port
+      </button>
     </div>
   );
 }
 
-export default LiveTelemetry;
+export default SerialReader;
