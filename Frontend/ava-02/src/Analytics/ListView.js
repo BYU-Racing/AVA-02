@@ -4,7 +4,16 @@ import { Typography } from "@mui/material";
 import AddDataModal from "./AddDataModal";
 import { Box } from "@mui/material";
 
-function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
+function ListView({
+  driveList,
+  handleExpand,
+  sensorData,
+  loadingSensors,
+  cachedData,
+  setCachedData,
+  setSensorData,
+  pendingFetches,
+}) {
   return (
     <Box
       sx={{
@@ -44,6 +53,11 @@ function ListView({ driveList, handleExpand, sensorData, loadingSensors }) {
               handleExpand={handleExpand}
               sensors={sensorData[drive.drive_id] || []}
               loadingSensors={loadingSensors}
+              cachedData={cachedData}
+              setCachedData={setCachedData}
+              sensorData={sensorData}
+              setSensorData={setSensorData}
+              pendingFetches={pendingFetches}
             />
           ))}
       </Box>

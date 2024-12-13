@@ -43,7 +43,7 @@ function LineChartComponent({
   useEffect(() => {
     setLeft(globalZoomBounds.left);
     setRight(globalZoomBounds.right);
-  }, [globalZoomBounds]);
+  }, [globalZoomBounds, globalZoom]);
 
   // Filter and downsample data based on zoom level
   const optimizedDataSets = useMemo(() => {
@@ -71,7 +71,7 @@ function LineChartComponent({
         data: filteredData,
       };
     });
-  }, [dataSets, left, right]);
+  }, [dataSets.length, left, right]);
 
   const zoom = () => {
     if (refAreaLeft === refAreaRight || !refAreaRight) {
@@ -89,7 +89,6 @@ function LineChartComponent({
       setGlobalZoomBounds({ left: newLeft, right: newRight });
       setGlobalZoomed(true);
       setZoomed(true);
-      console.log("SET GLOBAL ZOOM");
     } else {
       setLeft(newLeft);
       setRight(newRight);

@@ -9,6 +9,7 @@ import { LoadScript } from "@react-google-maps/api";
 
 function App() {
   const [driveList, setDriveList] = useState([]);
+  const [cachedData, setCachedData] = useState({});
 
   // Fetch drives on component mount
   const getDrives = async () => {
@@ -19,6 +20,12 @@ function App() {
     }
 
     const drives = await fetchDrives();
+
+    let cacheStart = {};
+    for (let i = 0; i < drives.length; i++) {
+      cacheStart[drives[i].drive_id] = {};
+    }
+    setCachedData(cacheStart);
     setDriveList(drives);
   };
 
@@ -36,10 +43,19 @@ function App() {
           <Route
             path="/analytics"
             element={
-              <Analytics driveList={driveList} setDriveList={setDriveList} />
+              <Analytics
+                driveList={driveList}
+                setDriveList={setDriveList}
+                setCachedData={setCachedData}
+                cachedData={cachedData}
+              />
             }
           />
           <Route path="/live-telemetry" element={<LiveTelemetry />} />
+          <Route
+            path="/*"
+            element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
+          />
         </Routes>
       </Router>
     </LoadScript>

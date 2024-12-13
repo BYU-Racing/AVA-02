@@ -2,23 +2,29 @@ import DataView from "./DataView";
 import ListView from "./ListView";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid"; // Use Grid instead of Grid2
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LoadScript } from "@react-google-maps/api";
 
-function Analytics({ driveList, setDriveList }) {
+function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Ensure correct destructuring
   const [sensorData, setSensorData] = useState({}); // Stores sensor data for each drive
   const [loadingSensors, setLoadingSensors] = useState(false);
-
+  const pendingFetches = useRef({});
   // Function to handle accordion expand and fetch sensors
   const handleExpand = async (driveId, isExpanded) => {
     if (isExpanded && !sensorData[driveId]) {
       setLoadingSensors(true);
       const response = await fetch(`http://127.0.0.1:8000/sensors/${driveId}`);
       const sensors = await response.json();
+
+      var sensorsV2 = {};
+
+      for (let i = 0; i < sensors.length; i++) {
+        sensorsV2[sensors[i]] = false;
+      }
       setSensorData((prevData) => ({
         ...prevData,
-        [driveId]: sensors, // Store sensors for the specific drive
+        [driveId]: sensorsV2, // Store sensors for the specific drive
       }));
       setLoadingSensors(false);
     }
@@ -60,10 +66,20 @@ function Analytics({ driveList, setDriveList }) {
             handleExpand={handleExpand}
             sensorData={sensorData}
             loadingSensor={loadingSensors}
+            cachedData={cachedData}
+            setCachedData={setCachedData}
+            setSensorData={setSensorData}
+            pendingFetches={pendingFetches}
           />
         </Grid>
         <Grid item xs={12} sm={true} sx={{ height: "100%" }}>
-          <DataView />
+          <DataView
+            cachedData={cachedData}
+            setCachedData={setCachedData}
+            sensorData={sensorData}
+            setSensorData={setSensorData}
+            pendingFetches={pendingFetches}
+          />
         </Grid>
       </Grid>
     </Box>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import SensorChart from "./SensorChart";
 import {
@@ -13,13 +13,20 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import "./DataView.css";
 
-function DataView() {
+function DataView({
+  cachedData,
+  setCachedData,
+  sensorData,
+  setSensorData,
+  pendingFetches,
+}) {
   const [sensorDataArray, setSensorDataArray] = useState([]);
   const [loading, setLoading] = useState(false);
   const [globalZoomBounds, setGlobalZoomBounds] = useState({
     left: "dataMin",
     right: "dataMax",
   });
+
   const [globalZoomed, setGlobalZoomed] = useState(false);
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
@@ -32,46 +39,67 @@ function DataView() {
       ({ chartId }) => chartId === targetChartId
     );
 
+    const updateSensorData = (driveId, sensorId, newArray) => {
+      setCachedData((prevState) => ({
+        ...prevState, // Spread the top-level dictionary (drive_ids)
+        [driveId]: {
+          ...prevState[driveId], // Spread the sensors for the specified drive_id
+          [sensorId]: newArray, // Overwrite the array for the specific sensorId
+        },
+      }));
+    };
     setLoading(true);
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
-      );
-      const canMessages = await response.json();
 
+    try {
       let timeSeriesData;
-      if (sensorId === "0") {
-        timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
-      } else if (sensorId === "192") {
-        timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
-      } else if (
-        sensorId === "500" ||
-        sensorId === "501" ||
-        sensorId === "502"
-      ) {
-        timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
-      } else if (
-        sensorId === "400" ||
-        sensorId === "401" ||
-        sensorId === "402" ||
-        sensorId === "403" ||
-        sensorId === "404" ||
-        sensorId === "405"
-      ) {
-        timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
-      } else if (sensorId === "201" || sensorId === "202") {
-        timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
-      } else if (sensorId === "9") {
-        timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+      let canMessages;
+
+      if (sensorId in cachedData[driveId]) {
+        timeSeriesData = cachedData[driveId][sensorId] || []; // Default to empty array if not found
+      } else if (sensorData[driveId][sensorId] === true) {
+        console.log("Waiting for Hover Fetch");
+        timeSeriesData = await pendingFetches.current[sensorId]; // Wait for the promise to resolve
+        console.log("Wait success");
       } else {
-        timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+        const response = await fetch(
+          `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+        );
+        canMessages = await response.json();
+
+        if (sensorId === "0") {
+          timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+        } else if (sensorId === "192") {
+          timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
+        } else if (
+          sensorId === "500" ||
+          sensorId === "501" ||
+          sensorId === "502"
+        ) {
+          timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
+        } else if (
+          sensorId === "400" ||
+          sensorId === "401" ||
+          sensorId === "402" ||
+          sensorId === "403" ||
+          sensorId === "404" ||
+          sensorId === "405"
+        ) {
+          timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+        } else if (sensorId === "201" || sensorId === "202") {
+          timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
+        } else if (sensorId === "9") {
+          timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+        } else {
+          timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+        }
+        updateSensorData(driveId, sensorId, timeSeriesData);
       }
 
       if (targetChartIndex >= 0) {
         const updatedCharts = [...sensorDataArray];
         updatedCharts[targetChartIndex].dataSets.push({
           sensorId,
-          data: timeSeriesData,
+          data: timeSeriesData ?? [],
         });
         updatedCharts[targetChartIndex].sensorIds.push(sensorId);
         setSensorDataArray(updatedCharts);
@@ -81,7 +109,7 @@ function DataView() {
           {
             chartId: uuidv4(),
             sensorIds: [sensorId],
-            dataSets: [{ sensorId, data: timeSeriesData }],
+            dataSets: [{ sensorId, data: timeSeriesData ?? [] }],
           },
         ]);
       }
