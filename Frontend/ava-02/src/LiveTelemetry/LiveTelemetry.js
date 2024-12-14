@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { cursorTo } from 'readline';
 
 function SerialReader() {
   const [port, setPort] = useState(null); // To store the selected port
   const [isReading, setIsReading] = useState(false); // Track if reading is in progress
   const [connectionError, setConnectionError] = useState(null); // Track any connection errors
+  const [loraMessage, setMessage] = useState(null); // Message received from LoRA
 
   // Function to request a serial port, open it, and read data continuously
   const connectSerial = async () => {
@@ -27,15 +29,54 @@ function SerialReader() {
       console.log('Reader created for port:', selectedPort);
       console.log(isReading);
 
-      let messageBuf = [];
       // Continuously read from the serial port
       while (1) {
+        // let left = 0;
+        let curPosition = 1;
+        let messageStart = 0;
+        let messageEnd = 0;
+        let messageBuf = "";
         console.log("I'm reading");
         const { value, done } = await reader.read();
-
         
-        messageBuf = messageBuf.concat(Array.from(value));
+        messageBuf = messageBuf += value;
         console.log(messageBuf);
+
+        while(curPosition < messageBuf.length) {
+            if (messageBuf.slice(curPosition - 1, curPosition + 1) === "*&"){
+                messageStart = curPosition-1;
+            } else if (messageBuf.slice(curPosition - 1, curPosition + 1) === "&*") {
+                messageEnd = curPosition;
+
+                if ((messageStart !== 0) && ((messageEnd - messageStart) === 9)) {
+                  let newMessage = messageBuf.slice(messageStart, messageEnd + 1)
+                  console.log("Recieved New Message: " + newMessage);
+                  setMessage(newMessage)
+                  messageStart = 0;
+                  messageEnd = 0;
+                }
+            }
+            curPosition ++; // processed the message so increment current index
+
+          if (curPosition === messageBuf.length) {
+            if (messageStart !== 0) {
+              messageBuf = messageBuf.slice(messageStart);
+              curPosition = 1;
+            }
+          }
+        }
+          // check if buff < 2
+          // if message[right-1: 1] === "*&"
+              // messageStart = right
+          // elif same thing for end of message
+              // 
+              // if (start != 0 && end-start=expected)
+                // newBuf = mesageBuf[start:end]
+                  // setMessage(newBuf)
+                  // reset start and end to 0
+            // if end of messageBuf
+              // get rid of everyting before messageStart
+          // right + 1
 
         if (done) {
           // If the reader is done (port closed), release the lock and break out of the loop
@@ -51,11 +92,7 @@ function SerialReader() {
         if (messageBuf && messageBuf.length > 0) {
           // If we received data, attempt to decode it as text (if possible)
            // Convert the plain array to a Uint8Array
-          const uint8message = new Uint8Array(messageBuf);  // This creates a typed array
-          const buffer = uint8message.buffer;  // Turn to ArrayBuffer for decoding
-
-          const decodedData = new TextDecoder().decode(buffer);
-          console.log('Decoded Data: ', decodedData);
+          
         } else {
           console.log('No data received.');
         }
@@ -76,6 +113,7 @@ function SerialReader() {
     }
   };
 
+
   return (
     <div>
       <h1>Serial Port Reader</h1>
@@ -88,7 +126,10 @@ function SerialReader() {
       <button onClick={disconnectSerial} disabled={!port}>
         Disconnect from Serial Port
       </button>
+
+      <p>Received Message: {loraMessage}</p>
     </div>
+
   );
 }
 
