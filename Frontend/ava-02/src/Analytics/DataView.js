@@ -27,6 +27,8 @@ function DataView({
     right: "dataMax",
   });
 
+  const [globalZoomHistory, setGlobalZoomHistory] = useState([]);
+
   const [globalZoomed, setGlobalZoomed] = useState(false);
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
@@ -165,6 +167,8 @@ function DataView({
                   setGlobalZoomBounds={setGlobalZoomBounds}
                   globalZoomed={globalZoomed}
                   setGlobalZoomed={setGlobalZoomed}
+                  setGlobalZoomHistory={setGlobalZoomHistory}
+                  globalZoomHistory={globalZoomHistory}
                 />
               </div>
             </div>

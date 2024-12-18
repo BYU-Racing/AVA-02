@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -20,6 +20,10 @@ import Menu from "@mui/material/Menu";
 import TuneIcon from "@mui/icons-material/Tune";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import GPSMap from "./GPSMap";
+import { Icon } from "react-materialize";
+import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 function SensorChart({
   chartId,
@@ -31,6 +35,8 @@ function SensorChart({
   globalZoomBounds,
   globalZoomed,
   setGlobalZoomed,
+  setGlobalZoomHistory,
+  globalZoomHistory,
 }) {
   const colors = [
     "#8884d8",
@@ -46,11 +52,58 @@ function SensorChart({
   const [left, setLeft] = useState("dataMin");
   const [right, setRight] = useState("dataMax");
   const [min0, setMin0] = useState(true);
+  const [zoomHistory, setZoomHistory] = useState([]);
 
   const [globalZoom, setGlobalZoom] = useState(true);
 
   const handleGlobalZoomExcludeSwitch = (event) => {
     setGlobalZoom(event.target.checked);
+    if (event.target.checked) {
+      setZoomHistory(globalZoomHistory);
+    }
+  };
+
+  const handleZoomHistoryUpdate = (zoomObject) => {
+    if (globalZoom) {
+      setGlobalZoomHistory((prevGlobalZoomHistory) => [
+        ...prevGlobalZoomHistory,
+        zoomObject,
+      ]);
+    } else {
+      setZoomHistory((prevZoomHistory) => [
+        ...prevZoomHistory,
+        { left: left, right: right },
+      ]);
+    }
+
+    console.log("ZOOM UPDATED");
+    console.log("local: ", zoomHistory);
+    console.log("global: ", globalZoomHistory);
+  };
+
+  useEffect(() => {
+    if (globalZoom) {
+      setZoomHistory(globalZoomHistory);
+    }
+  }, [globalZoomHistory]);
+
+  const zoomToPrevious = () => {
+    let prevZoom;
+
+    if (globalZoom) {
+      prevZoom = globalZoomHistory.at(globalZoomHistory.length - 2);
+      setGlobalZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
+    } else {
+      prevZoom = zoomHistory.at(zoomHistory.length - 2);
+      setZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
+    }
+    // Handle zoom based on `globalZoom`
+    if (globalZoom) {
+      setGlobalZoomBounds(prevZoom);
+    } else {
+      setLeft(prevZoom.left);
+      setRight(prevZoom.right);
+    }
   };
 
   const handleZoomOut = () => {
@@ -62,6 +115,12 @@ function SensorChart({
       setLeft("dataMin");
       setRight("dataMax");
       setZoomed(false);
+    }
+
+    if (globalZoom) {
+      setGlobalZoomHistory([]);
+    } else {
+      setZoomHistory([]);
     }
   };
 
@@ -126,17 +185,16 @@ function SensorChart({
                 }}
               />
             )}
-            {amIZoomed && (
-              <Button
-                variant="outlined"
-                onClick={handleZoomOut}
-                size="small"
-                style={{ marginRight: 8 }}
-              >
-                Reset
-              </Button>
+            {amIZoomed && zoomHistory.length > 1 && (
+              <IconButton onClick={zoomToPrevious} size="small">
+                <NavigateBeforeIcon />
+              </IconButton>
             )}
-
+            {amIZoomed && (
+              <IconButton onClick={handleZoomOut} size="small">
+                <RestartAltIcon />
+              </IconButton>
+            )}
             {!isTable && !isGPS && (
               <>
                 <IconButton
@@ -231,6 +289,9 @@ function SensorChart({
             globalZoom={globalZoom}
             globalZoomed={globalZoomed}
             setGlobalZoomed={setGlobalZoomed}
+            setZoomHistory={setZoomHistory}
+            zoomHistory={zoomHistory}
+            handleZoomHistoryUpdate={handleZoomHistoryUpdate}
           />
         )}
       </CardContent>

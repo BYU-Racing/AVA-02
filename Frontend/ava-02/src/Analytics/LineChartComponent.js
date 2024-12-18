@@ -27,6 +27,9 @@ function LineChartComponent({
   globalZoom,
   globalZoomed,
   setGlobalZoomed,
+  setZoomHistory,
+  zoomHistory,
+  handleZoomHistoryUpdate,
 }) {
   const [refAreaLeft, setRefAreaLeft] = useState("");
   const [refAreaRight, setRefAreaRight] = useState("");
@@ -94,6 +97,8 @@ function LineChartComponent({
       setRight(newRight);
       setZoomed(true);
     }
+
+    handleZoomHistoryUpdate({ left: newLeft, right: newRight });
 
     setRefAreaLeft("");
     setRefAreaRight("");
