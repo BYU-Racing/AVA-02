@@ -132,6 +132,13 @@ function DataView({
     );
   };
 
+  useEffect(() => {
+    if (sensorDataArray.length === 0) {
+      setGlobalZoomBounds({ left: "dataMin", right: "dataMax" });
+      setGlobalZoomed(false);
+    }
+  }, [sensorDataArray.length]);
+
   return (
     <Box
       sx={{

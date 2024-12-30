@@ -75,10 +75,6 @@ function SensorChart({
         { left: left, right: right },
       ]);
     }
-
-    console.log("ZOOM UPDATED");
-    console.log("local: ", zoomHistory);
-    console.log("global: ", globalZoomHistory);
   };
 
   useEffect(() => {
