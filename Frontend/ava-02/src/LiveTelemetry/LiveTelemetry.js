@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { cursorTo } from 'readline';
 
 function SerialReader() {
   const [port, setPort] = useState(null); // To store the selected port
@@ -27,74 +26,41 @@ function SerialReader() {
       // Create a reader for the serial port's readable stream
       const reader = selectedPort.readable.getReader();
       console.log('Reader created for port:', selectedPort);
-      console.log(isReading);
+
+      let messageBuf = ""; // Initialize an empty buffer
 
       // Continuously read from the serial port
-      while (1) {
-        // let left = 0;
-        let curPosition = 1;
-        let messageStart = 0;
-        let messageEnd = 0;
-        let messageBuf = "";
-        console.log("I'm reading");
-        const { value, done } = await reader.read();
-        
-        messageBuf = messageBuf += value;
-        console.log(messageBuf);
-
-        while(curPosition < messageBuf.length) {
-            if (messageBuf.slice(curPosition - 1, curPosition + 1) === "*&"){
-                messageStart = curPosition-1;
-            } else if (messageBuf.slice(curPosition - 1, curPosition + 1) === "&*") {
-                messageEnd = curPosition;
-
-                if ((messageStart !== 0) && ((messageEnd - messageStart) === 9)) {
-                  let newMessage = messageBuf.slice(messageStart, messageEnd + 1)
-                  console.log("Recieved New Message: " + newMessage);
-                  setMessage(newMessage)
-                  messageStart = 0;
-                  messageEnd = 0;
-                }
-            }
-            curPosition ++; // processed the message so increment current index
-
-          if (curPosition === messageBuf.length) {
-            if (messageStart !== 0) {
-              messageBuf = messageBuf.slice(messageStart);
-              curPosition = 1;
-            }
-          }
-        }
-          // check if buff < 2
-          // if message[right-1: 1] === "*&"
-              // messageStart = right
-          // elif same thing for end of message
-              // 
-              // if (start != 0 && end-start=expected)
-                // newBuf = mesageBuf[start:end]
-                  // setMessage(newBuf)
-                  // reset start and end to 0
-            // if end of messageBuf
-              // get rid of everyting before messageStart
-          // right + 1
-
+      while (true) {
+        let { value, done } = await reader.read();
         if (done) {
           // If the reader is done (port closed), release the lock and break out of the loop
           reader.releaseLock();
           console.log('Serial Port Closed.');
           break;
         }
-        
-        // Log the raw byte array data (value)
-        console.log('Raw Data (bytes): ', messageBuf);
+        // Convert the received value (Uint8Array) to a string and append to the buffer
+        messageBuf += new TextDecoder().decode(value);
+        console.log("Raw messageBuf: ", messageBuf);
 
-        // Check if we received any data
-        if (messageBuf && messageBuf.length > 0) {
-          // If we received data, attempt to decode it as text (if possible)
-           // Convert the plain array to a Uint8Array
+        // Look for messages within the buffer
+        let startIdx = messageBuf.indexOf('*&');
+        let endIdx = messageBuf.indexOf('&*');
+
+        // If both start and end markers are found
+        while (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+          // Extract the message and update the buffer
+          const message = messageBuf.slice(startIdx + 2, endIdx); // Skip "*&" and "&*"
+          console.log("Received Message: ", message);
+
+          // Update the React state with the new message
+          setMessage(message);
+
+          // Remove the processed message from the buffer
+          messageBuf = messageBuf.slice(endIdx + 2); // Keep everything after the "&*"
           
-        } else {
-          console.log('No data received.');
+          // Look for the next start and end markers
+          startIdx = messageBuf.indexOf('*&');
+          endIdx = messageBuf.indexOf('&*');
         }
       }
     } catch (err) {
@@ -113,7 +79,6 @@ function SerialReader() {
     }
   };
 
-
   return (
     <div>
       <h1>Serial Port Reader</h1>
@@ -129,7 +94,6 @@ function SerialReader() {
 
       <p>Received Message: {loraMessage}</p>
     </div>
-
   );
 }
 
