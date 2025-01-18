@@ -30,7 +30,7 @@ const Header = () => {
           fontFamily="avaFont"
           sx={{ flexGrow: 1 }}
         >
-          AVA-02
+          {value === "/live-telemetry" ? "AVA-02 LIVE" : "AVA-02"}
         </Typography>
         <Tabs
           value={value}
