@@ -112,7 +112,7 @@ function LiveTelemetry() {
         onClick={connectSerial}
         disabled={isReading}
       >
-        Connect AVA-Wireless Module
+        Connect AVA-LIVE Module
       </Button>
 
       <p>Received Message: {loraMessage}</p>
