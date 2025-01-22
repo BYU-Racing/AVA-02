@@ -11,6 +11,12 @@ function LiveTelemetry() {
   const [loraMessage, setMessage] = useState(null); // Message received from LoRA
 
   const [throttle1Val, setThrottle1Val] = useState(0);
+  const [throttle2Val, setThrottle2Val] = useState(0);
+  const [torque, setTorque] = useState(0);
+  const [brakeP, setBrakeP] = useState(0);
+  const [batteryP, setBatteryP] = useState(0);
+  const [batteryTemp, setBatteryTemp] = useState(0);
+  const [tractive, setTractice] = useState(false);
 
   const handleMessage = (stringMessage) => {
     // Split the string by spaces
@@ -29,7 +35,37 @@ function LiveTelemetry() {
       if (int16Value >= 1024) {
         return hexArray;
       }
+      setThrottle2Val(int16Value);
+    }
+
+    if (hexArray[0] === "1") {
+      const highByte = parseInt(hexArray[1], 16); // Convert hex string to int
+      const lowByte = parseInt(hexArray[2], 16); // Convert hex string to int
+
+      // Combine into a single int16
+      let int16Value = (lowByte << 8) | highByte;
+
+      // Set the throttle value
+
+      if (int16Value >= 1024) {
+        return hexArray;
+      }
       setThrottle1Val(int16Value);
+    }
+
+    if (hexArray[0] === "3") {
+      const highByte = parseInt(hexArray[1], 16); // Convert hex string to int
+      const lowByte = parseInt(hexArray[2], 16); // Convert hex string to int
+
+      // Combine into a single int16
+      let int16Value = (lowByte << 8) | highByte;
+
+      // Set the throttle value
+
+      if (int16Value >= 1024) {
+        return hexArray;
+      }
+      setBrakeP(int16Value);
     }
 
     return hexArray;
@@ -112,11 +148,14 @@ function LiveTelemetry() {
         onClick={connectSerial}
         disabled={isReading}
       >
-        Connect AVA-LIVE Module
+        Connect
       </Button>
 
-      <p>Received Message: {loraMessage}</p>
+      <p>Raw Received Message: {loraMessage}</p>
       <h1>Throttle 1: {throttle1Val}</h1>
+      <h1>Throttle 2: {throttle2Val}</h1>
+      <h1>Brake: {brakeP}</h1>
+      <h1>Torque: {torque}</h1>
     </div>
   );
 }
