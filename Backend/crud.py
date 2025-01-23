@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import distinct
-from . import models, schemas
+from Backend import models, schemas
 from datetime import datetime
 import logging
 
