@@ -18,16 +18,17 @@ const style = {
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  border: "1px solid #000",
   boxShadow: 24,
   p: 4,
+  borderRadius: 4,
 };
 
 export default function AddDataModal() {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  const [value, setValue] = React.useState("1");
+  const [value, setValue] = React.useState("3");
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -50,16 +51,12 @@ export default function AddDataModal() {
                   onChange={handleChange}
                   aria-label="lab API tabs example"
                 >
-                  <Tab label="Add Driver" value="1" />
-                  <Tab label="Add Data" value="2" />
                   <Tab label="Add Drive" value="3" />
+                  <Tab label="Add Driver" value="1" />
                 </TabList>
               </Box>
               <TabPanel value="1">
                 <AddDriver />
-              </TabPanel>
-              <TabPanel value="2">
-                <AddData />
               </TabPanel>
               <TabPanel value="3">
                 <AddDrive />

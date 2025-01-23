@@ -1,22 +1,43 @@
-import { useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ReferenceArea,
-} from "recharts";
+import { useState, useEffect } from "react";
+import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import CardContent from "@mui/material/CardContent";
 import id_map from "../idMap";
-import { Button } from "@mui/material";
+import errorMap from "../errorMap";
+import LineChartComponent from "./LineChartComponent";
+import ErrorCodesTableComponent from "./ErrorCodesTableComponent";
+import "react-resizable/css/styles.css";
+import "./SensorChart.css";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Menu from "@mui/material/Menu";
+import TuneIcon from "@mui/icons-material/Tune";
+import PublicOffIcon from "@mui/icons-material/PublicOff";
+import GPSMap from "./GPSMap";
+import { Icon } from "react-materialize";
+import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
-function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
+function SensorChart({
+  chartId,
+  sensorIds,
+  dataSets,
+  onRemove,
+  onDrop,
+  setGlobalZoomBounds,
+  globalZoomBounds,
+  globalZoomed,
+  setGlobalZoomed,
+  setGlobalZoomHistory,
+  globalZoomHistory,
+}) {
   const colors = [
     "#8884d8",
     "#82ca9d",
@@ -27,112 +48,250 @@ function SensorChart({ chartId, sensorIds, dataSets, onRemove, onDrop }) {
     "#00c49f",
     "#f33e77",
   ];
-
+  const [zoomed, setZoomed] = useState(false);
   const [left, setLeft] = useState("dataMin");
   const [right, setRight] = useState("dataMax");
-  const [refAreaLeft, setRefAreaLeft] = useState("");
-  const [refAreaRight, setRefAreaRight] = useState("");
-  const [zoomed, setZoomed] = useState(false);
+  const [min0, setMin0] = useState(true);
+  const [zoomHistory, setZoomHistory] = useState([]);
 
-  // Zoom functionality (only for the X-axis)
-  const zoom = () => {
-    if (refAreaLeft === refAreaRight || !refAreaRight) {
-      setRefAreaLeft("");
-      setRefAreaRight("");
-      return;
+  const [globalZoom, setGlobalZoom] = useState(true);
+
+  const handleGlobalZoomExcludeSwitch = (event) => {
+    setGlobalZoom(event.target.checked);
+    if (event.target.checked) {
+      setZoomHistory(globalZoomHistory);
+    }
+  };
+
+  const handleZoomHistoryUpdate = (zoomObject) => {
+    if (globalZoom) {
+      setGlobalZoomHistory((prevGlobalZoomHistory) => [
+        ...prevGlobalZoomHistory,
+        zoomObject,
+      ]);
+    } else {
+      setZoomHistory((prevZoomHistory) => [
+        ...prevZoomHistory,
+        { left: left, right: right },
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    if (globalZoom) {
+      setZoomHistory(globalZoomHistory);
+    }
+  }, [globalZoomHistory]);
+
+  const zoomToPrevious = () => {
+    let prevZoom;
+
+    if (globalZoom) {
+      prevZoom = globalZoomHistory.at(globalZoomHistory.length - 2);
+      setGlobalZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
+    } else {
+      prevZoom = zoomHistory.at(zoomHistory.length - 2);
+      setZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
+    }
+    // Handle zoom based on `globalZoom`
+    if (globalZoom) {
+      setGlobalZoomBounds(prevZoom);
+    } else {
+      setLeft(prevZoom.left);
+      setRight(prevZoom.right);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (globalZoom) {
+      setGlobalZoomBounds({ left: "dataMin", right: "dataMax" });
+      setGlobalZoomed(false);
+      setZoomed(false);
+    } else {
+      setLeft("dataMin");
+      setRight("dataMax");
+      setZoomed(false);
     }
 
-    // Ensure correct ordering of left and right timestamps
-    let [newLeft, newRight] =
-      refAreaLeft > refAreaRight
-        ? [refAreaRight, refAreaLeft]
-        : [refAreaLeft, refAreaRight];
-
-    setLeft(newLeft);
-    setRight(newRight);
-    setRefAreaLeft("");
-    setRefAreaRight("");
-    setZoomed(true);
+    if (globalZoom) {
+      setGlobalZoomHistory([]);
+    } else {
+      setZoomHistory([]);
+    }
   };
 
-  // Reset zoom to initial state
-  const zoomOut = () => {
-    setLeft("dataMin");
-    setRight("dataMax");
-    setZoomed(false);
+  const handleSwitch = (event) => {
+    setMin0(event.target.checked);
   };
+
+  const [menuOpen, setMenuOpen] = useState(null);
+  const open = Boolean(menuOpen);
+
+  const handleOpen = (event) => {
+    setMenuOpen(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setMenuOpen(null);
+  };
+
+  let amIZoomed =
+    left !== "dataMin" ||
+    right !== "dataMax" ||
+    (globalZoom &&
+      globalZoomBounds.left !== "dataMin" &&
+      globalZoomBounds.right !== "dataMax");
+
+  // Determine the type of visualization
+  const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
+  const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
 
   return (
-    <div
-      style={{ position: "relative", marginBottom: "16px" }}
-      onDrop={onDrop} // Allow dropping on the chart
-      onDragOver={(e) => e.preventDefault()}
+    <Card
+      style={{
+        borderRadius: "12px",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+        marginBottom: "16px",
+        overflow: "hidden",
+        height: "100%",
+      }}
     >
-      <Typography variant="h6">
-        {sensorIds.map((id) => id_map[id]).join(", ")}:
-        <IconButton onClick={onRemove} size="small">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </Typography>
+      <CardHeader
+        sx={{
+          padding: "10px 28px",
+          "& .MuiTypography-root": {
+            fontSize: "1rem",
+          },
+          "& .MuiIconButton-root": {
+            padding: "5px",
+          },
+        }}
+        title={
+          <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
+            {sensorIds.map((id) => id_map[id]).join(", ")}
+          </Typography>
+        }
+        action={
+          <>
+            {!globalZoom && (
+              <PublicOffIcon
+                style={{
+                  marginRight: 8,
+                  verticalAlign: "middle",
+                }}
+              />
+            )}
+            {amIZoomed && zoomHistory.length > 1 && (
+              <IconButton onClick={zoomToPrevious} size="small">
+                <NavigateBeforeIcon />
+              </IconButton>
+            )}
+            {amIZoomed && (
+              <IconButton onClick={handleZoomOut} size="small">
+                <RestartAltIcon />
+              </IconButton>
+            )}
+            {!isTable && !isGPS && (
+              <>
+                <IconButton
+                  aria-label="delete"
+                  aria-controls={open ? "basic-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={open ? "true" : undefined}
+                  onClick={handleOpen}
+                  size="small"
+                >
+                  <TuneIcon />
+                </IconButton>
+                <Menu
+                  id="basic-menu"
+                  anchorEl={menuOpen}
+                  open={open}
+                  onClose={handleClose}
+                  MenuListProps={{
+                    "aria-labelledby": "basic-button",
+                  }}
+                >
+                  <FormControlLabel
+                    control={<Switch checked={min0} onChange={handleSwitch} />}
+                    label="Min 0"
+                    labelPlacement="end"
+                    style={{ marginRight: 8, padding: 8 }}
+                  />
+                  <Divider />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={globalZoom}
+                        onChange={handleGlobalZoomExcludeSwitch}
+                      />
+                    }
+                    label="Global Zoom"
+                    labelPlacement="end"
+                    style={{ marginRight: 8, padding: 8 }}
+                  />
+                </Menu>
+              </>
+            )}
 
-      {zoomed && (
-        <Button
-          variant="outlined"
-          type="button"
-          className="btn update"
-          onClick={zoomOut}
-        >
-          Zoom Out
-        </Button>
-      )}
-
-      {/* Wrapping the chart in ResponsiveContainer */}
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={dataSets[0].data} // Pass in the actual data for the chart
-          margin={{
-            top: 10,
-            right: 30,
-            left: 0,
-            bottom: 0,
-          }}
-          onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)} // Start zoom selection
-          onMouseMove={(e) =>
-            refAreaLeft && e && setRefAreaRight(e.activeLabel)
-          } // Adjust right bound of zoom
-          onMouseUp={zoom} // Apply zoom on mouse up
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="timestamp"
-            allowDataOverflow
-            domain={[left, right]}
-            type="number"
+            <IconButton onClick={onRemove} size="small">
+              <CloseIcon />
+            </IconButton>
+          </>
+        }
+      />
+      <Divider />
+      <CardContent
+        onDrop={onDrop}
+        onDragOver={(e) => e.preventDefault()}
+        className="CardContent"
+      >
+        {isTable ? (
+          <ErrorCodesTableComponent
+            data={dataSets[0].data}
+            errorMap={errorMap}
+            onRemove={onRemove}
+            left={globalZoom ? globalZoomBounds.left : left}
+            right={globalZoom ? globalZoomBounds.right : right}
           />
-          <YAxis domain={[0, "dataMax+1"]} /> {/* Always starts Y-axis at 0 */}
-          <Tooltip />
-          <Legend />
-          {dataSets.map(({ sensorId, data }, index) => (
-            <Line
-              key={sensorId}
-              type="monotone"
-              data={data}
-              dataKey="value"
-              stroke={colors[index % colors.length]} // Assign color based on index
-              name={id_map[sensorId]} // Name for the legend
-              dot={false} // Disable dots on the line
-            />
-          ))}
-          {refAreaLeft && refAreaRight ? (
-            <ReferenceArea
-              x1={refAreaLeft}
-              x2={refAreaRight}
-              strokeOpacity={0.3}
-            />
-          ) : null}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+        ) : isGPS ? (
+          <GPSMap
+            sensorIds={sensorIds}
+            dataSets={dataSets}
+            left={left}
+            right={right}
+            setLeft={setLeft}
+            setRight={setRight}
+            setZoomed={setZoomed}
+            globalZoomBounds={globalZoomBounds}
+            setGlobalZoomBounds={setGlobalZoomBounds}
+            globalZoom={globalZoom}
+            setGlobalZoom={setGlobalZoom}
+          />
+        ) : (
+          <LineChartComponent
+            dataSets={dataSets}
+            sensorIds={sensorIds}
+            colors={colors}
+            id_map={id_map}
+            left={left}
+            right={right}
+            setLeft={setLeft}
+            setRight={setRight}
+            setZoomed={setZoomed}
+            min0={min0}
+            setGlobalZoomBounds={setGlobalZoomBounds}
+            globalZoomBounds={globalZoomBounds}
+            globalZoom={globalZoom}
+            globalZoomed={globalZoomed}
+            setGlobalZoomed={setGlobalZoomed}
+            setZoomHistory={setZoomHistory}
+            zoomHistory={zoomHistory}
+            handleZoomHistoryUpdate={handleZoomHistoryUpdate}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

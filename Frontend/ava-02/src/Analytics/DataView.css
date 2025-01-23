@@ -1,0 +1,40 @@
+/* Main container for all charts */
+.chart-container {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 8px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Individual resizable chart container */
+.chart {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  resize: both; /* Enable resizing from the bottom-right corner */
+  min-width: 390px;
+  min-height: 350px;
+  max-width: 97%; /* Prevent chart from growing beyond container width */
+  height: 350px;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 8px;
+}
+
+/* Style the contents to stretch and fit the container */
+.chart-content {
+  flex-grow: 1; /* Ensure content expands to fit */
+  overflow: hidden; /* Allows content to resize within */
+  min-height: 200px;
+  height: 100%;
+}
+
+/* Optional: Hover effect for feedback
+.chart:hover {
+  border: 1px solid #cccccc; 
+} */

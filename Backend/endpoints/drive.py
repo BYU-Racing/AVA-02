@@ -39,9 +39,10 @@ def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):
 @router.post("/drive", response_model=schemas.Drive)
 def create_drive(drive: schemas.DriveCreate, db: Session = Depends(get_db)):
     #Need an endpoint for getting a drive by driveID
-    db_drive = None
+    db_drive = crud.get_drive_by_hash(db, drive.hash)
+
     if db_drive:
-        raise HTTPException(status_code=400, detail="Drive already registered")
+        raise HTTPException(status_code=400, detail="Drive already uploaded")
     
     return crud.create_drive(db=db, drive=drive)
 
@@ -68,13 +69,47 @@ async def add_data_to_drive_from_file(
         # Iterate through the rows of the CSV
         for index, row in df.iterrows():
             msg_id, time, *buffers = row[:10]  # Adjust as needed
-            db_data = models.RawData(
-                drive_id=drive_id, 
-                msg_id=msg_id, 
-                raw_data=buffers, 
-                time=time
-            )
-            db.add(db_data)
+
+            if(msg_id >= 50 and  msg_id <= 54): ##HOT BOX CASE
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 0),
+                    raw_data=[buffers[0], buffers[1], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 1),
+                    raw_data=[buffers[2], buffers[3], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=((msg_id * 10) + 2),
+                    raw_data=[buffers[4], buffers[5], 0, 0, 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+
+            elif(msg_id == 4): #Accelerometer CASE
+                db_data = models.RawData(
+                    drive_id=drive_id,
+                    msg_id=(((msg_id) * 100) + buffers[0]),
+                    raw_data=[buffers[1],buffers[2], buffers[3], buffers[4], 0, 0, 0, 0],
+                    time=time
+                )
+                db.add(db_data)
+
+            else:
+                db_data = models.RawData(
+                    drive_id=drive_id, 
+                    msg_id=msg_id, 
+                    raw_data=buffers, 
+                    time=time
+                )
+                db.add(db_data)
 
         # Commit all changes at once
         db.commit()

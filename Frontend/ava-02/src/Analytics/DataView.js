@@ -1,61 +1,117 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import SensorChart from "./SensorChart";
 import {
+  transforCANMessagesToTimeSeriesHEALTH,
+  transformCANMessagesToTimeSeriesACCEL,
   transformCANMessagesToTimeSeriesANALOG,
   transformCANMessagesToTimeSeriesDIGITAL,
+  transformCANmessagesToTimeSeriesGPS,
+  transformCANMessagesToTimeSeriesHOTBOX,
+  transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
-import { v4 as uuidv4 } from "uuid"; // Use uuid to generate unique IDs
+import { v4 as uuidv4 } from "uuid";
+import "./DataView.css";
 
-function DataView() {
+function DataView({
+  cachedData,
+  setCachedData,
+  sensorData,
+  setSensorData,
+  pendingFetches,
+}) {
   const [sensorDataArray, setSensorDataArray] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [globalZoomBounds, setGlobalZoomBounds] = useState({
+    left: "dataMin",
+    right: "dataMax",
+  });
 
+  const [globalZoomHistory, setGlobalZoomHistory] = useState([]);
+
+  const [globalZoomed, setGlobalZoomed] = useState(false);
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
-    event.stopPropagation(); // Ensure drop does not propagate further
+    event.stopPropagation();
 
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
-    // Find the chart that the data is being dropped onto
     const targetChartIndex = sensorDataArray.findIndex(
       ({ chartId }) => chartId === targetChartId
     );
 
+    const updateSensorData = (driveId, sensorId, newArray) => {
+      setCachedData((prevState) => ({
+        ...prevState, // Spread the top-level dictionary (drive_ids)
+        [driveId]: {
+          ...prevState[driveId], // Spread the sensors for the specified drive_id
+          [sensorId]: newArray, // Overwrite the array for the specific sensorId
+        },
+      }));
+    };
     setLoading(true);
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
-      );
-      const canMessages = await response.json();
 
-      // Transform the CAN messages to time series
+    try {
       let timeSeriesData;
-      if (sensorId === "1") {
-        timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+      let canMessages;
+
+      if (sensorId in cachedData[driveId]) {
+        timeSeriesData = cachedData[driveId][sensorId] || []; // Default to empty array if not found
+      } else if (sensorData[driveId][sensorId] === true) {
+        console.log("Waiting for Hover Fetch");
+        timeSeriesData = await pendingFetches.current[sensorId]; // Wait for the promise to resolve
+        console.log("Wait success");
       } else {
-        timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+        const response = await fetch(
+          `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+        );
+        canMessages = await response.json();
+
+        if (sensorId === "0") {
+          timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+        } else if (sensorId === "192") {
+          timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
+        } else if (
+          sensorId === "500" ||
+          sensorId === "501" ||
+          sensorId === "502"
+        ) {
+          timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
+        } else if (
+          sensorId === "400" ||
+          sensorId === "401" ||
+          sensorId === "402" ||
+          sensorId === "403" ||
+          sensorId === "404" ||
+          sensorId === "405"
+        ) {
+          timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+        } else if (sensorId === "201" || sensorId === "202") {
+          timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
+        } else if (sensorId === "9") {
+          timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+        } else {
+          timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+        }
+        updateSensorData(driveId, sensorId, timeSeriesData);
       }
 
       if (targetChartIndex >= 0) {
-        // If dropped onto an existing chart, add the new line data
         const updatedCharts = [...sensorDataArray];
         updatedCharts[targetChartIndex].dataSets.push({
           sensorId,
-          data: timeSeriesData,
+          data: timeSeriesData ?? [],
         });
-        updatedCharts[targetChartIndex].sensorIds.push(sensorId); // Add the sensorId to the chart
+        updatedCharts[targetChartIndex].sensorIds.push(sensorId);
         setSensorDataArray(updatedCharts);
       } else if (targetChartId === null) {
-        // If dropped in a blank space, create a new chart with a unique chartId
         setSensorDataArray((prevArray) => [
           ...prevArray,
           {
-            chartId: uuidv4(), // Generate a unique ID for the chart
+            chartId: uuidv4(),
             sensorIds: [sensorId],
-            dataSets: [{ sensorId, data: timeSeriesData }],
+            dataSets: [{ sensorId, data: timeSeriesData ?? [] }],
           },
         ]);
       }
@@ -71,43 +127,60 @@ function DataView() {
   };
 
   const removeChart = (chartId) => {
-    setSensorDataArray(
-      (prevArray) => prevArray.filter(({ chartId: id }) => id !== chartId) // Remove chart by its unique chartId
+    setSensorDataArray((prevArray) =>
+      prevArray.filter(({ chartId: id }) => id !== chartId)
     );
   };
+
+  useEffect(() => {
+    if (sensorDataArray.length === 0) {
+      setGlobalZoomBounds({ left: "dataMin", right: "dataMax" });
+      setGlobalZoomed(false);
+    }
+  }, [sensorDataArray.length]);
 
   return (
     <Box
       sx={{
         backgroundColor: "#ffffff",
-        margin: "16px",
+        margin: "8px",
         height: "100%",
-        width: "120%",
+        width: "100%",
         boxSizing: "border-box",
+        position: "relative",
+        minHeight: "400px",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
-      onDrop={(event) => handleDrop(event, null)} // Only create new chart if targetChartId is null
+      className={`chart-container ${loading ? "loading" : ""}`}
+      onDrop={(event) => handleDrop(event, null)}
       onDragOver={handleDragOver}
     >
-      {loading ? (
-        <Typography>Loading...</Typography>
-      ) : (
-        sensorDataArray.length > 0 && (
-          <div>
-            {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
-              <SensorChart
-                key={chartId} // Use the unique chartId as key
-                chartId={chartId} // Pass chartId to the SensorChart component
-                sensorIds={sensorIds}
-                dataSets={dataSets}
-                onRemove={() => removeChart(chartId)} // Remove by unique chartId
-                onDrop={(event) => {
-                  event.stopPropagation(); // Stop propagation so only one drop event is triggered
-                  handleDrop(event, chartId); // Allow dropping onto this chart
-                }}
-              />
-            ))}
-          </div>
-        )
+      {sensorDataArray.length > 0 && (
+        <div className="chart-container">
+          {sensorDataArray.map(({ chartId, sensorIds, dataSets }) => (
+            <div className="chart" key={chartId}>
+              <div className="chart-content">
+                <SensorChart
+                  chartId={chartId}
+                  sensorIds={sensorIds}
+                  dataSets={dataSets}
+                  onRemove={() => removeChart(chartId)}
+                  onDrop={(event) => {
+                    event.stopPropagation();
+                    handleDrop(event, chartId);
+                  }}
+                  globalZoomBounds={globalZoomBounds}
+                  setGlobalZoomBounds={setGlobalZoomBounds}
+                  globalZoomed={globalZoomed}
+                  setGlobalZoomed={setGlobalZoomed}
+                  setGlobalZoomHistory={setGlobalZoomHistory}
+                  globalZoomHistory={globalZoomHistory}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </Box>
   );

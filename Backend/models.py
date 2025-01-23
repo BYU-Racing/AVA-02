@@ -20,12 +20,15 @@ class Drive(Base):
     driver_id = Column(Integer, ForeignKey("drivers.driver_id"))
     date = Column(DateTime)
     notes = Column(String)
+    hash = Column(String)
 
 
     driver = relationship("Driver", back_populates="drives")
 
 
     raw_data = relationship("RawData", back_populates="drive")
+
+
 
 
 class RawData(Base):

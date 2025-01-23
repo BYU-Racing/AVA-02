@@ -1,8 +1,13 @@
+import React from "react";
+import "./App.css";
+import VideoScroll from "./VideoScroll";
+import ScrollingContent from "./ScrollingContent";
+
 function Home() {
   return (
-    <div>
-      <h1>AVA-02</h1>
-      <h4>BYU-Racing In House analytics application</h4>
+    <div style={{ position: "relative" }}>
+      <VideoScroll />
+      <ScrollingContent />
     </div>
   );
 }
