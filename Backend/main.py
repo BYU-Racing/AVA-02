@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from Backend.endpoints import drive, driver, data
+from .endpoints import drive, driver, data
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import crud, models, schemas

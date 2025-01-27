@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
 
-from Backend.database import Base
+from .database import Base
 
 
 class Driver(Base):
