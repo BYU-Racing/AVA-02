@@ -21,7 +21,7 @@ function AddDriver() {
     setFailure(false);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/driver", {
+      const response = await fetch("http://192.168.86.25:8000/driver", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

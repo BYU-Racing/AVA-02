@@ -14,7 +14,7 @@ function App() {
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
-      const response = await fetch("http://127.0.0.1:8000/drive");
+      const response = await fetch("http://192.168.86.25:8000/drive");
       const data = await response.json();
       return data;
     }
