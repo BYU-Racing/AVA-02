@@ -232,8 +232,8 @@ function SensorChart({
       globalZoomBounds.right !== "dataMax");
 
   // Determine the type of visualization
-  const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
-  const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
+  const isTable = sensorIds.length === 1 && sensorIds[0].sensorId === "204";
+  const isGPS = sensorIds.length === 1 && sensorIds[0].sensorId === "9";
 
   //NOTES FOR GRABBING THE PENDING FETCHES EVENTUALLY
   // if (sensorId in cachedData[driveId]) {
@@ -388,7 +388,7 @@ function SensorChart({
       >
         {isTable ? (
           <ErrorCodesTableComponent
-            data={dataSets[0].data}
+            data={newDataSets[0].data}
             errorMap={errorMap}
             onRemove={onRemove}
             left={globalZoom ? globalZoomBounds.left : left}
@@ -397,7 +397,7 @@ function SensorChart({
         ) : isGPS ? (
           <GPSMap
             sensorIds={sensorIds}
-            dataSets={dataSets}
+            dataSets={newDataSets}
             left={left}
             right={right}
             setLeft={setLeft}
