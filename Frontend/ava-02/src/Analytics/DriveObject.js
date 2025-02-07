@@ -165,8 +165,8 @@ function DriveObject({
               .map((sensor, index, array) => (
                 <div
                   key={sensor}
-                  onMouseEnter={() => handleMouseEnter(drive.drive_id, sensor)}
-                  onMouseLeave={handleMouseLeave}
+                  // onMouseEnter={() => handleMouseEnter(drive.drive_id, sensor)}
+                  // onMouseLeave={handleMouseLeave}
                 >
                   <ListItem
                     draggable

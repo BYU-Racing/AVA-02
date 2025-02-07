@@ -40,62 +40,10 @@ function DataView({
       ({ chartId }) => chartId === targetChartId
     );
 
-    const updateSensorData = (driveId, sensorId, newArray) => {
-      setCachedData((prevState) => ({
-        ...prevState,
-        [driveId]: {
-          ...prevState[driveId],
-          [sensorId]: newArray,
-        },
-      }));
-    };
-
     setLoading(true);
 
     try {
-      let timeSeriesData;
-      let canMessages;
-
-      if (sensorId in cachedData[driveId]) {
-        timeSeriesData = cachedData[driveId][sensorId] || [];
-      } else if (sensorData[driveId][sensorId] === true) {
-        console.log("Waiting for Hover Fetch");
-        timeSeriesData = await pendingFetches.current[sensorId];
-        console.log("Wait success");
-      } else {
-        const response = await fetch(
-          `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
-        );
-        canMessages = await response.json();
-
-        if (sensorId === "0") {
-          timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
-        } else if (sensorId === "192") {
-          timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
-        } else if (
-          sensorId === "500" ||
-          sensorId === "501" ||
-          sensorId === "502"
-        ) {
-          timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
-        } else if (
-          sensorId === "400" ||
-          sensorId === "401" ||
-          sensorId === "402" ||
-          sensorId === "403" ||
-          sensorId === "404" ||
-          sensorId === "405"
-        ) {
-          timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
-        } else if (sensorId === "201" || sensorId === "202") {
-          timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
-        } else if (sensorId === "9") {
-          timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
-        } else {
-          timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
-        }
-        updateSensorData(driveId, sensorId, timeSeriesData);
-      }
+      let timeSeriesData = [];
 
       if (targetChartIndex >= 0) {
         const updatedCharts = [...sensorDataArray];

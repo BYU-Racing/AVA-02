@@ -33,6 +33,7 @@ import {
   transformCANMessagesToTimeSeriesHOTBOX,
   transformCANMessagesToTimeSeriesTORQUE,
 } from "./CANtransformations";
+import Skeleton from "@mui/material/Skeleton";
 
 function SensorChart({
   chartId,
@@ -99,7 +100,7 @@ function SensorChart({
   useEffect(() => {
     console.log("left", left, "right", right);
     handleZoomQuery(left, right);
-  }, [left, right]);
+  }, [left, right, sensorIds.length]);
 
   const zoomToPrevious = () => {
     let prevZoom;
@@ -234,11 +235,55 @@ function SensorChart({
   const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
   const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
 
+  //NOTES FOR GRABBING THE PENDING FETCHES EVENTUALLY
+  // if (sensorId in cachedData[driveId]) {
+  //   timeSeriesData = cachedData[driveId][sensorId] || [];
+  // } else if (sensorData[driveId][sensorId] === true) {
+  //   console.log("Waiting for Hover Fetch");
+  //   timeSeriesData = await pendingFetches.current[sensorId];
+  //   console.log("Wait success");
+  // } else {
+  //   const response = await fetch(
+  //     `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+  //   );
+
   if (loadingData && newDataSets.length === 0) {
     return (
-      <div>
-        <h1>LOADING</h1>
-      </div>
+      <Card
+        style={{
+          borderRadius: "12px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          marginBottom: "16px",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <CardHeader
+          sx={{
+            padding: "10px 28px",
+            "& .MuiTypography-root": {
+              fontSize: "1rem",
+            },
+            "& .MuiIconButton-root": {
+              padding: "5px",
+            },
+          }}
+          title={
+            <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
+              {sensorIds.map((id, id2) => id_map[id.sensorId]).join(", ")}
+            </Typography>
+          }
+          action={
+            <>
+              <Skeleton variant="rounded" />
+            </>
+          }
+        />
+        <Divider />
+        <CardContent className="CardContent">
+          <Skeleton variant="rounded" height={250} />
+        </CardContent>
+      </Card>
     );
   }
   return (
