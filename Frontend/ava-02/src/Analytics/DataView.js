@@ -36,6 +36,10 @@ function DataView({
     const sensorId = event.dataTransfer.getData("sensorId");
     const driveId = event.dataTransfer.getData("driveId");
 
+    if (driveId === "" || sensorId === "") {
+      return;
+    }
+
     const targetChartIndex = sensorDataArray.findIndex(
       ({ chartId }) => chartId === targetChartId
     );

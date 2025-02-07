@@ -183,8 +183,6 @@ function SensorChart({
       );
 
       setNewDataSets(tempDataSets);
-      console.log("NEW", tempDataSets);
-      console.log("OLD", dataSets);
       return tempDataSets;
     } catch (error) {
       console.error("Error in handleZoomQuery:", error);
