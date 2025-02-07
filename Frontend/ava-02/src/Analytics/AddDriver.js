@@ -70,7 +70,9 @@ function AddDriver() {
           sx={{ margin: 2 }}
         />
         <br />
-        <Button onClick={PrintSomething}>Submit</Button>
+        <Button variant="contained" disabled="true" onClick={PrintSomething}>
+          Submit
+        </Button>
       </div>
     );
   }

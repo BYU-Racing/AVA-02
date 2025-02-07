@@ -162,7 +162,7 @@ function AddDrive() {
 
       <FormControl fullWidth margin="normal">
         <input
-          accept=".csv, .ava, .txt"
+          accept=".ava"
           style={{ display: "none" }}
           id="file-upload"
           type="file"
