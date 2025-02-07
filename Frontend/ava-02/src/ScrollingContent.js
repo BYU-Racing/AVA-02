@@ -41,6 +41,8 @@ const ScrollingContent = () => {
     [0, 1, 1, 0]
   );
 
+  const opacitySong = useTransform(scrollYProgress, [0.98, 0.99], [0, 1]);
+
   return (
     <>
       {/* Sticky Header */}
@@ -193,6 +195,47 @@ const ScrollingContent = () => {
         >
           <CardContent>
             <img src="SuspensionALLCom.png" alt="All suspension" />
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div
+        style={{
+          position: "fixed",
+          top: "10%", // Move to top of screen
+          left: "10%", // Center horizontally
+          transform: "translateX(-25%)", // Only horizontal centering
+          zIndex: 10,
+          color: "white",
+          textAlign: "center",
+          opacity: opacitySong,
+        }}
+      >
+        <Card
+          sx={{
+            minWidth: 275,
+            width: 500,
+            marginTop: "3rem",
+            borderRadius: "16px", // Rounded corners
+            backgroundColor: "rgba(220, 220, 220, 0.9)", // Transparent white
+            backdropFilter: "blur(21px)", // Frosted glass effect
+            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)", // Optional shadow for depth
+            border: "1px solid rgba(255, 255, 255, 0.3)", // Subtle border for effect
+          }}
+        >
+          <CardContent>
+            <p>congrats, you found one of my favorite songs</p>
+            <iframe
+              style={{ borderRadius: "6px" }} // React style object format
+              src="https://open.spotify.com/embed/track/0eKZ6adRBIyXFxdqimhImY?utm_source=generator"
+              width="100%"
+              height="180"
+              frameBorder="0" // Correct React prop name
+              allowFullScreen // CamelCase boolean prop
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              title="Spotify Embed" // Required for accessibility
+            />
           </CardContent>
         </Card>
       </motion.div>
