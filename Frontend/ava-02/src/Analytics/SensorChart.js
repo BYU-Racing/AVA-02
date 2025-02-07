@@ -382,8 +382,8 @@ function SensorChart({
       />
       <Divider />
       <CardContent
-        onDrop={onDrop}
-        onDragOver={(e) => e.preventDefault()}
+        onDrop={!isTable && !isGPS ? onDrop : undefined}
+        onDragOver={!isTable && !isGPS ? (e) => e.preventDefault() : undefined}
         className="CardContent"
       >
         {isTable ? (
