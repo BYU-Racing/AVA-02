@@ -14,7 +14,9 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   const handleExpand = async (driveId, isExpanded) => {
     if (isExpanded && !sensorData[driveId]) {
       setLoadingSensors(true);
-      const response = await fetch(`http://127.0.0.1:8000/sensors/${driveId}`);
+      const response = await fetch(
+        `http://fe.brycewhitworth.com:8000/sensors/${driveId}`
+      );
       const sensors = await response.json();
 
       var sensorsV2 = {};
@@ -33,7 +35,7 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
-      const response = await fetch("http://127.0.0.1:8000/drive");
+      const response = await fetch("http://fe.brycewhitworth.com:8000/drive");
       const data = await response.json();
       return data;
     }

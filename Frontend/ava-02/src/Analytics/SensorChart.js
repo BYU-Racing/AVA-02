@@ -140,7 +140,7 @@ function SensorChart({
       const tempDataSets = await Promise.all(
         sensorIds.map(async ({ driveId, sensorId }) => {
           const response = await fetch(
-            `http://127.0.0.1:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
+            `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
           );
           const canMessages = await response.json();
           let timeSeriesData;
@@ -244,7 +244,7 @@ function SensorChart({
   //   console.log("Wait success");
   // } else {
   //   const response = await fetch(
-  //     `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+  //     `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}`
   //   );
 
   if (loadingData && newDataSets.length === 0) {

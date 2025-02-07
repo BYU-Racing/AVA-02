@@ -64,7 +64,7 @@ function AddDrive() {
       const fileHash = await calculateFileHash(file);
 
       console.log("FILE HASH: ", fileHash);
-      const response = await fetch("http://127.0.0.1:8000/drive", {
+      const response = await fetch("http://fe.brycewhitworth.com:8000/drive", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,10 +89,13 @@ function AddDrive() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response2 = await fetch(`http://127.0.0.1:8000/drive/${driveId}`, {
-        method: "POST",
-        body: formData,
-      });
+      const response2 = await fetch(
+        `http://fe.brycewhitworth.com:8000/drive/${driveId}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response2.ok) {
         throw new Error("Failed to complete second request");
@@ -111,7 +114,9 @@ function AddDrive() {
     const fetchDrivers = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://127.0.0.1:8000/driver");
+        const response = await fetch(
+          "http://fe.brycewhitworth.com:8000/driver"
+        );
         if (response.ok) {
           const data = await response.json();
           setDrivers(data);
