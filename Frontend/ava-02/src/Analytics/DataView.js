@@ -26,10 +26,9 @@ function DataView({
     left: "dataMin",
     right: "dataMax",
   });
-
   const [globalZoomHistory, setGlobalZoomHistory] = useState([]);
-
   const [globalZoomed, setGlobalZoomed] = useState(false);
+
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
     event.stopPropagation();
@@ -43,13 +42,14 @@ function DataView({
 
     const updateSensorData = (driveId, sensorId, newArray) => {
       setCachedData((prevState) => ({
-        ...prevState, // Spread the top-level dictionary (drive_ids)
+        ...prevState,
         [driveId]: {
-          ...prevState[driveId], // Spread the sensors for the specified drive_id
-          [sensorId]: newArray, // Overwrite the array for the specific sensorId
+          ...prevState[driveId],
+          [sensorId]: newArray,
         },
       }));
     };
+
     setLoading(true);
 
     try {
@@ -57,10 +57,10 @@ function DataView({
       let canMessages;
 
       if (sensorId in cachedData[driveId]) {
-        timeSeriesData = cachedData[driveId][sensorId] || []; // Default to empty array if not found
+        timeSeriesData = cachedData[driveId][sensorId] || [];
       } else if (sensorData[driveId][sensorId] === true) {
         console.log("Waiting for Hover Fetch");
-        timeSeriesData = await pendingFetches.current[sensorId]; // Wait for the promise to resolve
+        timeSeriesData = await pendingFetches.current[sensorId];
         console.log("Wait success");
       } else {
         const response = await fetch(
@@ -100,18 +100,19 @@ function DataView({
       if (targetChartIndex >= 0) {
         const updatedCharts = [...sensorDataArray];
         updatedCharts[targetChartIndex].dataSets.push({
+          driveId,
           sensorId,
           data: timeSeriesData ?? [],
         });
-        updatedCharts[targetChartIndex].sensorIds.push(sensorId);
+        updatedCharts[targetChartIndex].sensorIds.push({ driveId, sensorId });
         setSensorDataArray(updatedCharts);
       } else if (targetChartId === null) {
         setSensorDataArray((prevArray) => [
           ...prevArray,
           {
             chartId: uuidv4(),
-            sensorIds: [sensorId],
-            dataSets: [{ sensorId, data: timeSeriesData ?? [] }],
+            sensorIds: [{ driveId, sensorId }],
+            dataSets: [{ driveId, sensorId, data: timeSeriesData ?? [] }],
           },
         ]);
       }

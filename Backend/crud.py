@@ -85,7 +85,7 @@ def get_downsample_data_from_drive(db: Session, drive_id: int, sensor_id: int, s
     # Create subquery with grouping buckets
     grouped_subq = (
         base_query.add_columns(
-            func.ntile(100).over(order_by=models.RawData.time).label('bucket')
+            func.ntile(250).over(order_by=models.RawData.time).label('bucket')
         )
         .subquery()
     )
@@ -98,7 +98,7 @@ def get_downsample_data_from_drive(db: Session, drive_id: int, sensor_id: int, s
         db.query(grouped_alias)
         .distinct(grouped_subq.c.bucket)
         .order_by(grouped_subq.c.bucket, grouped_subq.c.time)
-        .limit(100)
+        .limit(250)
         .all()
     )
 

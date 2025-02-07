@@ -24,6 +24,15 @@ import { Icon } from "react-materialize";
 import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import {
+  transforCANMessagesToTimeSeriesHEALTH,
+  transformCANMessagesToTimeSeriesACCEL,
+  transformCANMessagesToTimeSeriesANALOG,
+  transformCANMessagesToTimeSeriesDIGITAL,
+  transformCANmessagesToTimeSeriesGPS,
+  transformCANMessagesToTimeSeriesHOTBOX,
+  transformCANMessagesToTimeSeriesTORQUE,
+} from "./CANtransformations";
 
 function SensorChart({
   chartId,
@@ -56,6 +65,10 @@ function SensorChart({
 
   const [globalZoom, setGlobalZoom] = useState(true);
 
+  const [newDataSets, setNewDataSets] = useState([]);
+
+  const [loadingData, setLoadingData] = useState(true);
+
   const handleGlobalZoomExcludeSwitch = (event) => {
     setGlobalZoom(event.target.checked);
     if (event.target.checked) {
@@ -83,6 +96,11 @@ function SensorChart({
     }
   }, [globalZoomHistory]);
 
+  useEffect(() => {
+    console.log("left", left, "right", right);
+    handleZoomQuery(left, right);
+  }, [left, right]);
+
   const zoomToPrevious = () => {
     let prevZoom;
 
@@ -99,6 +117,76 @@ function SensorChart({
     } else {
       setLeft(prevZoom.left);
       setRight(prevZoom.right);
+    }
+  };
+
+  useEffect(() => {
+    handleZoomQuery(globalZoomBounds.left, globalZoomBounds.right);
+  }, []);
+
+  const handleZoomQuery = async (nLeft, nRight) => {
+    setLoadingData(true);
+    try {
+      if (nLeft === "dataMin") {
+        nLeft = 0;
+      }
+      if (nRight === "dataMax") {
+        nRight = 10000000000;
+      }
+
+      console.log("left: ", nLeft, "right: ", nRight);
+
+      const tempDataSets = await Promise.all(
+        sensorIds.map(async ({ driveId, sensorId }) => {
+          const response = await fetch(
+            `http://127.0.0.1:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
+          );
+          const canMessages = await response.json();
+          let timeSeriesData;
+
+          if (sensorId === "0") {
+            timeSeriesData =
+              transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+          } else if (sensorId === "192") {
+            timeSeriesData =
+              transformCANMessagesToTimeSeriesTORQUE(canMessages);
+          } else if (
+            sensorId === "500" ||
+            sensorId === "501" ||
+            sensorId === "502"
+          ) {
+            timeSeriesData =
+              transformCANMessagesToTimeSeriesHOTBOX(canMessages);
+          } else if (
+            sensorId === "400" ||
+            sensorId === "401" ||
+            sensorId === "402" ||
+            sensorId === "403" ||
+            sensorId === "404" ||
+            sensorId === "405"
+          ) {
+            timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+          } else if (sensorId === "201" || sensorId === "202") {
+            timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
+          } else if (sensorId === "9") {
+            timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+          } else {
+            timeSeriesData =
+              transformCANMessagesToTimeSeriesANALOG(canMessages);
+          }
+
+          setLoadingData(false);
+
+          return { driveId, sensorId, data: timeSeriesData };
+        })
+      );
+
+      setNewDataSets(tempDataSets);
+      console.log("NEW", tempDataSets);
+      console.log("OLD", dataSets);
+      return tempDataSets;
+    } catch (error) {
+      console.error("Error in handleZoomQuery:", error);
     }
   };
 
@@ -146,6 +234,13 @@ function SensorChart({
   const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
   const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
 
+  if (loadingData && newDataSets.length === 0) {
+    return (
+      <div>
+        <h1>LOADING</h1>
+      </div>
+    );
+  }
   return (
     <Card
       style={{
@@ -168,7 +263,7 @@ function SensorChart({
         }}
         title={
           <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
-            {sensorIds.map((id) => id_map[id]).join(", ")}
+            {sensorIds.map((id, id2) => id_map[id.sensorId]).join(", ")}
           </Typography>
         }
         action={
@@ -270,7 +365,7 @@ function SensorChart({
           />
         ) : (
           <LineChartComponent
-            dataSets={dataSets}
+            dataSets={newDataSets}
             sensorIds={sensorIds}
             colors={colors}
             id_map={id_map}
