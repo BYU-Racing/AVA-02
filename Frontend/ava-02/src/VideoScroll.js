@@ -1,13 +1,21 @@
-import { useRef, useMemo, useCallback, useEffect } from "react";
+import { useRef, useMemo, useCallback, useEffect, useState } from "react";
 import { useScroll, useMotionValueEvent, useTransform } from "framer-motion";
 
 function VideoScroll() {
   const ref = useRef(null);
+  const [aspectRatio, setAspectRatio] = useState(16 / 9);
+  const [isFirstImageLoaded, setIsFirstImageLoaded] = useState(false);
 
   const images = useMemo(() => {
     const loadedImages = [];
     for (let i = 1; i <= 700; i++) {
       const img = new Image();
+      img.onload = () => {
+        if (i === 1) {
+          setAspectRatio(img.naturalWidth / img.naturalHeight);
+          setIsFirstImageLoaded(true);
+        }
+      };
       img.src = `/AVA_Scroll/${i.toString().padStart(4, "0")}.webp`;
       loadedImages.push(img);
     }
@@ -15,54 +23,96 @@ function VideoScroll() {
   }, []);
 
   const { scrollYProgress } = useScroll();
-
   const currentIndex = useTransform(scrollYProgress, [0, 1], [1, 700]);
+
+  const calculateDimensions = useCallback(() => {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const imageRatio = aspectRatio;
+    const windowRatio = windowWidth / windowHeight;
+
+    let canvasWidth,
+      canvasHeight,
+      offsetX = 0,
+      offsetY = 0;
+
+    // Calculate dimensions to cover the window
+    if (windowRatio > imageRatio) {
+      canvasWidth = windowWidth;
+      canvasHeight = canvasWidth / imageRatio;
+      offsetY = (windowHeight - canvasHeight) / 2;
+    } else {
+      canvasHeight = windowHeight;
+      canvasWidth = canvasHeight * imageRatio;
+      offsetX = (windowWidth - canvasWidth) / 2;
+    }
+
+    return {
+      canvasWidth,
+      canvasHeight,
+      offsetX,
+      offsetY,
+    };
+  }, [aspectRatio]);
 
   const render = useCallback(
     (index) => {
-      if (images[index - 1]) {
+      if (images[index - 1] && ref.current) {
         const canvas = ref.current;
         const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(images[index - 1], 0, 0, canvas.width, canvas.height);
-        }
+        const { canvasWidth, canvasHeight, offsetX, offsetY } =
+          calculateDimensions();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          images[index - 1],
+          offsetX,
+          offsetY,
+          canvasWidth,
+          canvasHeight
+        );
       }
     },
-    [images]
+    [images, calculateDimensions]
   );
 
   useMotionValueEvent(currentIndex, "change", (latest) => {
     render(Math.floor(latest));
   });
 
-  // Set the canvas dimensions dynamically to match the viewport
   useEffect(() => {
+    if (!isFirstImageLoaded) return;
+
+    const canvas = ref.current;
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      render(Math.floor(currentIndex.get()));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isFirstImageLoaded, render, currentIndex]);
+
+  useEffect(() => {
+    if (!isFirstImageLoaded) return;
+
     const canvas = ref.current;
     if (canvas) {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
+  }, [isFirstImageLoaded]);
 
-    const handleResize = () => {
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Render the first frame after images are loaded
   useEffect(() => {
     const interval = setInterval(() => {
       if (images[0]?.complete) {
-        clearInterval(interval); // Ensure the first frame renders only after it's loaded
-        render(1); // Render the first frame
+        clearInterval(interval);
+        render(1);
       }
-    }, 10); // Check every 50ms until the first image is loaded
+    }, 10);
+
+    return () => clearInterval(interval);
   }, [images, render]);
 
   return (
