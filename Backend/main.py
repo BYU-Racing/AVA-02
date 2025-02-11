@@ -36,4 +36,4 @@ app.include_router(data.router)
 # Root endpoint (optional)
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to FastAPI!"}
+    return {"Special thanks from": "Coleman Hardy, Landon Wheeler, Connor Mabey, Bryce Whitworth, Braden Toone, Bradford Bawden, and the rest of the BYU Racing Electronics Team"}
