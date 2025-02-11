@@ -20,3 +20,4 @@ Frontend/ava-02/yarn-debug.log*
 Frontend/ava-02/yarn-error.log*
 
 Backend/secrets.py
+Backend/configDB.py
