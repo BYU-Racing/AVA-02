@@ -44,6 +44,10 @@ function DataView({
       ({ chartId }) => chartId === targetChartId
     );
 
+    if (sensorId === "204" || sensorId === "9") {
+      return;
+    }
+
     setLoading(true);
 
     try {
