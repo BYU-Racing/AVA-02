@@ -10,6 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import { useState, useMemo, useEffect } from "react";
+import "./LineChartComponent.css";
 
 function LineChartComponent({
   dataSets,
@@ -79,7 +80,11 @@ function LineChartComponent({
   };
 
   return (
-    <ResponsiveContainer className="charts" width="100%" height="100%">
+    <ResponsiveContainer
+      className="charts disable-highlight"
+      width="100%"
+      height="100%"
+    >
       <LineChart
         data={dataSets[0].data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
