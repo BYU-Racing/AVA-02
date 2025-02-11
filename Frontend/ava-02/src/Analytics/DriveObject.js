@@ -75,7 +75,6 @@ function DriveObject({
 
     const fetchPromise = (async () => {
       if (!(sensorId in cachedData[driveId])) {
-        console.log("HOVER FETCH: driveID: ", driveId, " sensorID: ", sensorId);
         const response = await fetch(
           `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}`
         );
@@ -111,7 +110,6 @@ function DriveObject({
           timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
         }
         updateCachedData(driveId, sensorId, timeSeriesData);
-        console.log("CACHED");
         return timeSeriesData;
       }
       updateHoverFetch(driveId, sensorId, false);

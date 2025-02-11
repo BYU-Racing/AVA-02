@@ -44,8 +44,10 @@ function LineChartComponent({
   );
 
   useEffect(() => {
-    setLeft(globalZoomBounds.left);
-    setRight(globalZoomBounds.right);
+    if (globalZoom) {
+      setLeft(globalZoomBounds.left);
+      setRight(globalZoomBounds.right);
+    }
   }, [globalZoomBounds, globalZoom]);
 
   const zoom = () => {

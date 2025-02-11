@@ -98,7 +98,6 @@ function SensorChart({
   }, [globalZoomHistory]);
 
   useEffect(() => {
-    console.log("left", left, "right", right);
     handleZoomQuery(left, right);
   }, [left, right, sensorIds.length]);
 
@@ -112,6 +111,7 @@ function SensorChart({
       prevZoom = zoomHistory.at(zoomHistory.length - 2);
       setZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
     }
+
     // Handle zoom based on `globalZoom`
     if (globalZoom) {
       setGlobalZoomBounds(prevZoom);
@@ -135,12 +135,10 @@ function SensorChart({
         nRight = 10000000000;
       }
 
-      console.log("left: ", nLeft, "right: ", nRight);
-
       const tempDataSets = await Promise.all(
         sensorIds.map(async ({ driveId, sensorId }) => {
           const response = await fetch(
-            `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
+            `http://127.0.0.1:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
           );
           const canMessages = await response.json();
           let timeSeriesData;
@@ -242,7 +240,7 @@ function SensorChart({
   //   console.log("Wait success");
   // } else {
   //   const response = await fetch(
-  //     `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}`
+  //     `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
   //   );
 
   if (loadingData && newDataSets.length === 0) {
