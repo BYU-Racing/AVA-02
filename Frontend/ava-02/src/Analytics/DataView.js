@@ -44,7 +44,7 @@ function DataView({
       ({ chartId }) => chartId === targetChartId
     );
 
-    if (sensorId === "204" || sensorId === "9") {
+    if ((sensorId === "204" || sensorId === "9") && targetChartIndex >= 0) {
       return;
     }
 
