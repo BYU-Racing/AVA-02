@@ -224,7 +224,7 @@ const ScrollingContent = () => {
           }}
         >
           <CardContent>
-            <p>congrats, you found one of my favorite songs</p>
+            <p>Congrats, you found one of my favorite songs</p>
             <iframe
               style={{ borderRadius: "6px" }} // React style object format
               src="https://open.spotify.com/embed/track/0eKZ6adRBIyXFxdqimhImY?utm_source=generator"
