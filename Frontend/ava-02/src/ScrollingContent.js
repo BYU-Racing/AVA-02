@@ -51,7 +51,7 @@ const ScrollingContent = () => {
           position: "fixed",
           top: "2%",
           transform: "translateX(-50%)",
-          zIndex: 10,
+          zIndex: -1,
           color: "white",
           textAlign: "center",
           opacity,
