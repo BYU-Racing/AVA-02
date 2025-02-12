@@ -126,6 +126,7 @@ function SensorChart({
   }, []);
 
   const handleZoomQuery = async (nLeft, nRight) => {
+    console.log("handling zoom query for ", sensorIds);
     setLoadingData(true);
     try {
       if (nLeft === "dataMin") {

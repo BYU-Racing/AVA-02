@@ -21,3 +21,4 @@ Frontend/ava-02/yarn-error.log*
 
 Backend/secrets.py
 Backend/configDB.py
+Backend/__pycache__/*
