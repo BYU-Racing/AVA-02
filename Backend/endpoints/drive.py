@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 import pandas as pd
 import io
-from .. import crud, models, schemas
-from ..database import SessionLocal, engine
+from Backend import crud, models, schemas
+from Backend.database import SessionLocal, engine
 from sqlalchemy.orm import Session
 router = APIRouter()
 

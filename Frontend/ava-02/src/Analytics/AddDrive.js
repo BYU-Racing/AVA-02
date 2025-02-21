@@ -64,7 +64,7 @@ function AddDrive() {
       const fileHash = await calculateFileHash(file);
 
       console.log("FILE HASH: ", fileHash);
-      const response = await fetch("http://fe.brycewhitworth.com:8000/drive", {
+      const response = await fetch("https://fe.brycewhitworth.com/api/drive", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +90,7 @@ function AddDrive() {
       formData.append("file", file);
 
       const response2 = await fetch(
-        `http://fe.brycewhitworth.com:8000/drive/${driveId}`,
+        `https://fe.brycewhitworth.com/api/drive/${driveId}`,
         {
           method: "POST",
           body: formData,
@@ -115,7 +115,7 @@ function AddDrive() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          "http://fe.brycewhitworth.com:8000/driver"
+          "https://fe.brycewhitworth.com/api/driver"
         );
         if (response.ok) {
           const data = await response.json();

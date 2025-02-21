@@ -1,16 +1,16 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from .endpoints import drive, driver, data
+from endpoints import drive, driver, data
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import crud, models, schemas
-from .database import SessionLocal, engine
+from Backend import crud, models, schemas
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
 #fastapi dev main.py
 
-app = FastAPI()
+app = FastAPI(root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,

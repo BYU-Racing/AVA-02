@@ -139,7 +139,7 @@ function SensorChart({
       const tempDataSets = await Promise.all(
         sensorIds.map(async ({ driveId, sensorId }) => {
           const response = await fetch(
-            `http://fe.brycewhitworth.com:8000/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
+            `https://fe.brycewhitworth.com/api/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
           );
           const canMessages = await response.json();
           let timeSeriesData;
