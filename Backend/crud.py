@@ -73,19 +73,36 @@ def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
 
 def get_downsample_data_from_drive(db: Session, drive_id: int, sensor_id: int, start: int, end: int):
     # Base query with time filtering
-    base_query = (
-        db.query(models.RawData)
-        .filter(models.RawData.drive_id == drive_id)
-        .filter(models.RawData.msg_id == sensor_id)
-        .filter(models.RawData.time >= start)
-        .filter(models.RawData.time <= end)
-        .order_by(models.RawData.time.asc())
-    )
+
+    if end == -1 and start == 0:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .order_by(models.RawData.time.asc())
+        )
+    elif end == -1:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .filter(models.RawData.time >= start)
+            .order_by(models.RawData.time.asc())
+        )
+    else:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .filter(models.RawData.time >= start)
+            .filter(models.RawData.time <= end)
+            .order_by(models.RawData.time.asc())
+        )
 
     # Create subquery with grouping buckets
     grouped_subq = (
         base_query.add_columns(
-            func.ntile(250).over(order_by=models.RawData.time).label('bucket')
+            func.ntile(500).over(order_by=models.RawData.time).label('bucket')
         )
         .subquery()
     )
@@ -98,7 +115,7 @@ def get_downsample_data_from_drive(db: Session, drive_id: int, sensor_id: int, s
         db.query(grouped_alias)
         .distinct(grouped_subq.c.bucket)
         .order_by(grouped_subq.c.bucket, grouped_subq.c.time)
-        .limit(250)
+        .limit(500)
         .all()
     )
 

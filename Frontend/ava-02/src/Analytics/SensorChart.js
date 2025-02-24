@@ -133,7 +133,7 @@ function SensorChart({
         nLeft = 0;
       }
       if (nRight === "dataMax") {
-        nRight = 10000000000;
+        nRight = -1;
       }
 
       const tempDataSets = await Promise.all(
