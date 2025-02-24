@@ -1,15 +1,6 @@
 import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import SensorChart from "./SensorChart";
-import {
-  transforCANMessagesToTimeSeriesHEALTH,
-  transformCANMessagesToTimeSeriesACCEL,
-  transformCANMessagesToTimeSeriesANALOG,
-  transformCANMessagesToTimeSeriesDIGITAL,
-  transformCANmessagesToTimeSeriesGPS,
-  transformCANMessagesToTimeSeriesHOTBOX,
-  transformCANMessagesToTimeSeriesTORQUE,
-} from "./CANtransformations";
 import { v4 as uuidv4 } from "uuid";
 import "./DataView.css";
 

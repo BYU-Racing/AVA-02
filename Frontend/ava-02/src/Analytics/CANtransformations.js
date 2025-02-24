@@ -89,3 +89,32 @@ export const transformCANmessagesToTimeSeriesGPS = (canMessages) => {
     };
   });
 };
+
+export const CANtoTimeseries = (canMessages, sensorId) => {
+  let timeSeriesData;
+
+  if (sensorId === "0") {
+    timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+  } else if (sensorId === "192") {
+    timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
+  } else if (sensorId === "500" || sensorId === "501" || sensorId === "502") {
+    timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
+  } else if (
+    sensorId === "400" ||
+    sensorId === "401" ||
+    sensorId === "402" ||
+    sensorId === "403" ||
+    sensorId === "404" ||
+    sensorId === "405"
+  ) {
+    timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
+  } else if (sensorId === "201" || sensorId === "202") {
+    timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
+  } else if (sensorId === "9") {
+    timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+  } else {
+    timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
+  }
+
+  return timeSeriesData;
+};

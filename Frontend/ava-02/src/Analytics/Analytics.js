@@ -3,7 +3,6 @@ import ListView from "./ListView";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid"; // Use Grid instead of Grid2
 import { useState, useEffect, useRef } from "react";
-import { LoadScript } from "@react-google-maps/api";
 
 function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Ensure correct destructuring
@@ -76,7 +75,18 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
             pendingFetches={pendingFetches}
           />
         </Grid>
-        <Grid item xs={12} sm={true} sx={{ height: "100%", maxWidth: "85vw", flexGrow: 1, overflowX: "hidden", overflowY: "hidden" }}>
+        <Grid
+          item
+          xs={12}
+          sm={true}
+          sx={{
+            height: "100%",
+            maxWidth: "85vw",
+            flexGrow: 1,
+            overflowX: "hidden",
+            overflowY: "hidden",
+          }}
+        >
           <DataView
             cachedData={cachedData}
             setCachedData={setCachedData}

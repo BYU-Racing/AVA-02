@@ -137,7 +137,9 @@ function LiveTelemetry() {
   };
 
   return (
-     <div><h1>Please message Cole for the LiveTelemetry Beta Build</h1></div>
+    <div>
+      <h1>Please message Cole for the LiveTelemetry Beta Build</h1>
+    </div>
   );
 
   return (

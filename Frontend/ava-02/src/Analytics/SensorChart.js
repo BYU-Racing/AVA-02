@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
@@ -20,19 +18,9 @@ import Menu from "@mui/material/Menu";
 import TuneIcon from "@mui/icons-material/Tune";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import GPSMap from "./GPSMap";
-import { Icon } from "react-materialize";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import {
-  transforCANMessagesToTimeSeriesHEALTH,
-  transformCANMessagesToTimeSeriesACCEL,
-  transformCANMessagesToTimeSeriesANALOG,
-  transformCANMessagesToTimeSeriesDIGITAL,
-  transformCANmessagesToTimeSeriesGPS,
-  transformCANMessagesToTimeSeriesHOTBOX,
-  transformCANMessagesToTimeSeriesTORQUE,
-} from "./CANtransformations";
+import { CANtoTimeseries } from "./CANtransformations";
 import Skeleton from "@mui/material/Skeleton";
 
 function SensorChart({
@@ -144,36 +132,7 @@ function SensorChart({
           const canMessages = await response.json();
           let timeSeriesData;
 
-          if (sensorId === "0") {
-            timeSeriesData =
-              transformCANMessagesToTimeSeriesDIGITAL(canMessages);
-          } else if (sensorId === "192") {
-            timeSeriesData =
-              transformCANMessagesToTimeSeriesTORQUE(canMessages);
-          } else if (
-            sensorId === "500" ||
-            sensorId === "501" ||
-            sensorId === "502"
-          ) {
-            timeSeriesData =
-              transformCANMessagesToTimeSeriesHOTBOX(canMessages);
-          } else if (
-            sensorId === "400" ||
-            sensorId === "401" ||
-            sensorId === "402" ||
-            sensorId === "403" ||
-            sensorId === "404" ||
-            sensorId === "405"
-          ) {
-            timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
-          } else if (sensorId === "201" || sensorId === "202") {
-            timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
-          } else if (sensorId === "9") {
-            timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
-          } else {
-            timeSeriesData =
-              transformCANMessagesToTimeSeriesANALOG(canMessages);
-          }
+          timeSeriesData = CANtoTimeseries(canMessages, sensorId);
 
           setLoadingData(false);
 
