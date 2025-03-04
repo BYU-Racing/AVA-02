@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import { useState, useEffect, React } from "react";
 // import Typography from "@mui/material/Typography";
 import "../App.css";
+import "./LiveTelemetry.css";
+import { connectSerial } from "./Communication";
 import Button from "@mui/material/Button";
 import RssFeedIcon from "@mui/icons-material/RssFeed";
 import SensorSidebar from "./components/SensorSelector";
 import Dashboard from "./components/Dashboard";
+import { TableBody } from "@mui/material";
 
 function LiveTelemetry() {
   // const [port, setPort] = useState(null); // To store the selected port
@@ -19,125 +22,46 @@ function LiveTelemetry() {
   // const [batteryP, setBatteryP] = useState(0);
   // const [batteryTemp, setBatteryTemp] = useState(0);
   // const [tractive, setTractice] = useState(false);
+    const [sensorData, setSensorData] = useState({
+      throttle1: [0, 0, 0, 0, 0],
+      throttle2: [0, 0, 0, 0, 0],
+      brake: [0, 0, 0, 0, 0],
+      torque: [0, 0, 0, 0, 0],
+      batteryP: [0, 0, 0, 0, 0],
+      batteryTemp: [0, 0, 0, 0, 0],
+      tractive: [0, 0, 0, 0, 0],
+    });
 
-  const handleMessage = (stringMessage) => {
-    // Split the string by spaces
-    const hexArray = stringMessage.split(" ");
-
-    if (hexArray[0] === "2") {
-      // Parse the hex values as integers
-      const highByte = parseInt(hexArray[1], 16); // Convert hex string to int
-      const lowByte = parseInt(hexArray[2], 16); // Convert hex string to int
-
-      // Combine into a single int16
-      let int16Value = (lowByte << 8) | highByte;
-
-      // Set the throttle value
-
-      if (int16Value >= 1024) {
-        return hexArray;
-      }
-      setThrottle2Val(int16Value);
+  useEffect(() => {
+    if (isReading) {
+      connectSerial(
+        setIsReading,
+        setMessage,
+        setConnectionError,
+        setThrottle1Val,
+        setThrottle2Val,
+        setBrakeP
+      );
     }
+  }, [isReading]);
 
-    if (hexArray[0] === "1") {
-      const highByte = parseInt(hexArray[1], 16); // Convert hex string to int
-      const lowByte = parseInt(hexArray[2], 16); // Convert hex string to int
 
-      // Combine into a single int16
-      let int16Value = (lowByte << 8) | highByte;
+  useEffect(() => {
+    // Simulate receiving new data (in real scenario, it would come from your car's system)
+    const interval = setInterval(() => {
+      setSensorData((prevData) => ({
+        throttle1: [...prevData.throttle1.slice(1), Math.random() * 100],
+        throttle2: [...prevData.throttle2.slice(1), Math.random() * 100],
+        brake: [...prevData.brake.slice(1), Math.random() * 100],
+        torque: [...prevData.torque.slice(1), Math.random() * 100],
+        batteryP: [...prevData.batteryP.slice(1), Math.random() * 100],
+        batteryTemp: [...prevData.batteryTemp.slice(1), Math.random() * 100],
+        tractive: [...prevData.tractive.slice(1), Math.random() * 100],
+      }));
+    }, 1000); // Simulating data every second
 
-      // Set the throttle value
-
-      if (int16Value >= 1024) {
-        return hexArray;
-      }
-      setThrottle1Val(int16Value);
-    }
-
-    if (hexArray[0] === "3") {
-      const highByte = parseInt(hexArray[1], 16); // Convert hex string to int
-      const lowByte = parseInt(hexArray[2], 16); // Convert hex string to int
-
-      // Combine into a single int16
-      let int16Value = (lowByte << 8) | highByte;
-
-      // Set the throttle value
-
-      if (int16Value >= 1024) {
-        return hexArray;
-      }
-      setBrakeP(int16Value);
-    }
-
-    return hexArray;
-  };
-
-  // Function to request a serial port, open it, and read data continuously
-  const connectSerial = async () => {
-    try {
-      console.log("Requesting Serial Port...");
-
-      // Request the user to select a serial port
-      const selectedPort = await navigator.serial.requestPort();
-      console.log("Selected Port:", selectedPort);
-
-      // Open the serial port with the desired baud rate (e.g., 9600)
-      await selectedPort.open({ baudRate: 9600 });
-      console.log("Serial Port Opened:", selectedPort);
-
-      // Set the port to the state
-      // setPort(selectedPort);
-      setIsReading(true);
-
-      // Create a reader for the serial port's readable stream
-      const reader = selectedPort.readable.getReader();
-      console.log("Reader created for port:", selectedPort);
-
-      let messageBuf = ""; // Initialize an empty buffer
-
-      // Continuously read from the serial port
-      while (true) {
-        let { value, done } = await reader.read();
-        if (done) {
-          // If the reader is done (port closed), release the lock and break out of the loop
-          reader.releaseLock();
-          console.log("Serial Port Closed.");
-          break;
-        }
-        // Convert the received value (Uint8Array) to a string and append to the buffer
-        messageBuf += new TextDecoder().decode(value);
-        //console.log("Raw messageBuf: ", messageBuf);
-
-        // Look for messages within the buffer
-        let startIdx = messageBuf.indexOf("*&");
-        let endIdx = messageBuf.indexOf("&*");
-
-        // If both start and end markers are found
-        while (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-          // Extract the message and update the buffer
-          const message = messageBuf.slice(startIdx + 2, endIdx); // Skip "*&" and "&*"
-          //console.log("Received Message: ", message);
-
-          // Update the React state with the new message
-          setMessage(message);
-
-          handleMessage(message);
-
-          // Remove the processed message from the buffer
-          messageBuf = messageBuf.slice(endIdx + 2); // Keep everything after the "&*"
-
-          // Look for the next start and end markers
-          startIdx = messageBuf.indexOf("*&");
-          endIdx = messageBuf.indexOf("&*");
-        }
-      }
-    } catch (err) {
-      console.error("Error connecting to serial port: ", err);
-      setConnectionError(err.message || "Unknown Error");
-    }
-  };
-
+    return () => clearInterval(interval); // Clean up on unmount
+  }, []);
   // return (
   //   <div>
   //     <h1>Please message Cole for the LiveTelemetry Beta Build</h1>
@@ -146,31 +70,30 @@ function LiveTelemetry() {
 
   return (
     <>
-      <div>
-        {connectionError && (
-          <p style={{ color: "red" }}>Error: {connectionError}</p>
-        )}
+      <body className="liveTelemetryBody">
+        <div>
+          {connectionError && (
+            <p style={{ color: "red" }}>Error: {connectionError}</p>
+          )}
 
-        <Button
-          variant="contained"
-          startIcon={<RssFeedIcon />}
-          onClick={connectSerial}
-          disabled={isReading}
-        >
-          Connect
-        </Button>
-
-        <p>Raw Received Message: {loraMessage}</p>
-        <h1>Throttle 1: {throttle1Val}</h1>
-        <h1>Throttle 2: {throttle2Val}</h1>
-        <h1>Brake: {brakeP}</h1>
-        {/* <h1>Torque: {torque}</h1> */}
-      </div>
-      <SensorSidebar
-        selectedSensors={selectedSensors}
-        setSelectedSensors={setSelectedSensors} // Passing setSelectedSensors here
-      />
-      <Dashboard />
+          <Button
+            variant="contained"
+            startIcon={<RssFeedIcon />}
+            onClick={connectSerial}
+            disabled={isReading}
+          >
+            Connect
+          </Button>
+        </div>
+        <div className="sensorBody">
+          <SensorSidebar
+            selectedSensors={selectedSensors}
+            setSelectedSensors={setSelectedSensors} // Passing setSelectedSensors here
+            sensorData={sensorData}
+          />
+          <Dashboard />
+        </div>
+      </body>
     </>
   );
 }

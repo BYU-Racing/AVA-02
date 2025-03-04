@@ -2,6 +2,7 @@ import React from "react";
 import GridLayout from "react-grid-layout";
 import SensorGraph from "./SensorBox";
 import "react-grid-layout/css/styles.css";
+import './componentCSS/Dashboard.css'
 
 const Dashboard = ({ selectedSensors = [], sensorData = {} }) => {
   // Ensure selectedSensors is always an array and sensorData is an object

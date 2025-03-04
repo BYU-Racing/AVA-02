@@ -1,24 +1,73 @@
 // components/SensorGraph.js
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-const SensorGraph = ({ sensorName, data }) => {
-  const chartData = {
-    labels: data.map((_, index) => index),
+// Register the required components (scales, elements, etc.)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const SensorGraph = ({ title, sensorName, data }) => {
+  const [chartData, setChartData] = useState({
+    labels: Array(data.length).fill("0"), // Default labels if no data
     datasets: [
       {
         label: sensorName,
-        data: data,
+        data: Array(data.length).fill(0), // Default data set to 0
         borderColor: "blue",
         borderWidth: 2,
         fill: false,
       },
     ],
-  };
+  });
 
+  useEffect(() => {
+    // Update the chart data whenever new data comes in
+    if (data.length > 0) {
+      setChartData({
+        labels: data.map((_, index) => index),
+        datasets: [
+          {
+            label: sensorName,
+            data: data,
+            borderColor: "blue",
+            borderWidth: 2,
+            fill: false,
+          },
+        ],
+      });
+    }
+  }, [data, sensorName]);
+
+  useEffect(() => {
+    // Cleanup the chart on unmount to prevent "Canvas already in use" error
+    return () => {
+      if (window.myChart) {
+        window.myChart.destroy();
+      }
+    };
+  }, []);
+
+  
   return (
     <div style={{ width: "100%", height: "100%" }}>
-      <h3>{sensorName}</h3>
+      <h3>{title}</h3>
       <Line data={chartData} />
     </div>
   );

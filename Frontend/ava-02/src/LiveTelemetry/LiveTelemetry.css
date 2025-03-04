@@ -1,0 +1,14 @@
+.liveTelemetryBody {
+  background-color: black;
+  height: 100vh;
+  width: 100%;
+}
+
+.sensorBody {
+  display: flex; /* Use flexbox layout */
+  flex-direction: row; /* Align children horizontally */
+  justify-content: flex-start; /* Align items to the left (you can adjust this as needed) */
+  align-items: flex-start; /* Align items at the top (you can adjust this as needed) */
+  height: 80vh;
+  width: 100vh;
+}
