@@ -1,22 +1,24 @@
 import React, { useState } from "react";
-import Typography from "@mui/material/Typography";
+// import Typography from "@mui/material/Typography";
 import "../App.css";
 import Button from "@mui/material/Button";
 import RssFeedIcon from "@mui/icons-material/RssFeed";
+import SensorSidebar from "./components/SensorSelector";
+import Dashboard from "./components/Dashboard";
 
 function LiveTelemetry() {
-  const [port, setPort] = useState(null); // To store the selected port
+  // const [port, setPort] = useState(null); // To store the selected port
   const [isReading, setIsReading] = useState(false); // Track if reading is in progress
   const [connectionError, setConnectionError] = useState(null); // Track any connection errors
   const [loraMessage, setMessage] = useState(null); // Message received from LoRA
-
+  const [selectedSensors, setSelectedSensors] = useState([]);
   const [throttle1Val, setThrottle1Val] = useState(0);
   const [throttle2Val, setThrottle2Val] = useState(0);
-  const [torque, setTorque] = useState(0);
+  // const [torque, setTorque] = useState(0);
   const [brakeP, setBrakeP] = useState(0);
-  const [batteryP, setBatteryP] = useState(0);
-  const [batteryTemp, setBatteryTemp] = useState(0);
-  const [tractive, setTractice] = useState(false);
+  // const [batteryP, setBatteryP] = useState(0);
+  // const [batteryTemp, setBatteryTemp] = useState(0);
+  // const [tractive, setTractice] = useState(false);
 
   const handleMessage = (stringMessage) => {
     // Split the string by spaces
@@ -85,7 +87,7 @@ function LiveTelemetry() {
       console.log("Serial Port Opened:", selectedPort);
 
       // Set the port to the state
-      setPort(selectedPort);
+      // setPort(selectedPort);
       setIsReading(true);
 
       // Create a reader for the serial port's readable stream
@@ -136,33 +138,40 @@ function LiveTelemetry() {
     }
   };
 
-  return (
-    <div>
-      <h1>Please message Cole for the LiveTelemetry Beta Build</h1>
-    </div>
-  );
+  // return (
+  //   <div>
+  //     <h1>Please message Cole for the LiveTelemetry Beta Build</h1>
+  //   </div>
+  // );
 
   return (
-    <div>
-      {connectionError && (
-        <p style={{ color: "red" }}>Error: {connectionError}</p>
-      )}
+    <>
+      <div>
+        {connectionError && (
+          <p style={{ color: "red" }}>Error: {connectionError}</p>
+        )}
 
-      <Button
-        variant="contained"
-        startIcon={<RssFeedIcon />}
-        onClick={connectSerial}
-        disabled={isReading}
-      >
-        Connect
-      </Button>
+        <Button
+          variant="contained"
+          startIcon={<RssFeedIcon />}
+          onClick={connectSerial}
+          disabled={isReading}
+        >
+          Connect
+        </Button>
 
-      <p>Raw Received Message: {loraMessage}</p>
-      <h1>Throttle 1: {throttle1Val}</h1>
-      <h1>Throttle 2: {throttle2Val}</h1>
-      <h1>Brake: {brakeP}</h1>
-      <h1>Torque: {torque}</h1>
-    </div>
+        <p>Raw Received Message: {loraMessage}</p>
+        <h1>Throttle 1: {throttle1Val}</h1>
+        <h1>Throttle 2: {throttle2Val}</h1>
+        <h1>Brake: {brakeP}</h1>
+        {/* <h1>Torque: {torque}</h1> */}
+      </div>
+      <SensorSidebar
+        selectedSensors={selectedSensors}
+        setSelectedSensors={setSelectedSensors} // Passing setSelectedSensors here
+      />
+      <Dashboard />
+    </>
   );
 }
 
