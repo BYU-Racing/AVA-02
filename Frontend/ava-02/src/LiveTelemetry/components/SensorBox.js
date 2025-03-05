@@ -23,7 +23,8 @@ ChartJS.register(
   Legend
 );
 
-const SensorGraph = ({ title, sensorName, data }) => {
+const SensorGraph = ({ title, sensorName, data, handleRemoveSensor }) => {
+  
   const [chartData, setChartData] = useState({
     labels: Array(data.length).fill("0"), // Default labels if no data
     datasets: [
@@ -55,7 +56,7 @@ const SensorGraph = ({ title, sensorName, data }) => {
     }
   }, [data, sensorName]);
 
-  
+
   useEffect(() => {
     // Cleanup the chart on unmount to prevent "Canvas already in use" error
     return () => {
@@ -67,10 +68,25 @@ const SensorGraph = ({ title, sensorName, data }) => {
 
   
   return (
-    <div style={{ width: "100%", height: "100%" }}>
-      <h3>{title}</h3>
-      <Line data={chartData} />
-    </div>
+    <>
+      <div
+        className="sensor-box"
+        draggable
+        onDragStart={(e) => e.dataTransfer.setData("text", sensorName)}
+      >
+        <button
+          className="close-btn"
+          onClick={() => handleRemoveSensor(sensorName)}
+        >
+          X
+        </button>
+        <p>Latest Value: {data[data.length - 1]}</p>
+        <div style={{ width: "100%", height: "100%" }}>
+          <h3>{title}</h3>
+          <Line data={chartData} />
+        </div>
+      </div>
+    </>
   );
 };
 

@@ -1,0 +1,21 @@
+.close-btn {
+  background-color: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 14px;
+  z-index: 10;
+}
+.sensor-box {
+  position: relative;
+  margin: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}

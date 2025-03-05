@@ -1,9 +1,9 @@
 .layout {
-  background-color: aliceblue;
-  height: 60vh;
-  width: 70vh;
+  /* background-color: aliceblue; */
+  height: 90vh;
+  width: 100vh;
 }
 
 h1, p {
-  color: black;
+  color: whitesmoke;
 }

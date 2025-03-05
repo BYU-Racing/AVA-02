@@ -6,8 +6,7 @@ import Button from "@mui/material/Button";
 import RssFeedIcon from "@mui/icons-material/RssFeed";
 import SensorSidebar from "./components/SensorSidebar";
 import Dashboard from "./components/Dashboard";
-import { TableBody } from "@mui/material";
-import { connectSerial } from "./Communication";
+import {connectSerial} from "./Communication";
 
 function LiveTelemetry() {
   // const [port, setPort] = useState(null); // To store the selected port
@@ -21,20 +20,20 @@ function LiveTelemetry() {
     torque: 0,
     brakePressure: 0,
     batteryPerc: 0,
-    batteryTemp:0,
+    batteryTemp: 0,
     tractive: false,
-    loraMessage: []
   });
   const [sensorData, setSensorData] = useState({
-      throttle1: [0, 0, 0, 0, 0],
-      throttle2: [0, 0, 0, 0, 0],
-      brake: [0, 0, 0, 0, 0],
-      torque: [0, 0, 0, 0, 0],
-      batteryP: [0, 0, 0, 0, 0],
-      batteryTemp: [0, 0, 0, 0, 0],
-      tractive: [0, 0, 0, 0, 0],
-    });
-
+    throttle1: [0, 0, 0, 0, 0],
+    throttle2: [0, 0, 0, 0, 0],
+    torque: [0, 0, 0, 0, 0],
+    brakePressure: [0, 0, 0, 0, 0],
+    batteryPerc: [0, 0, 0, 0, 0],
+    batteryTemp: [0, 0, 0, 0, 0],
+    tractive: [0, 0, 0, 0, 0],
+  });
+  // Dynamically get available sensors from sensorValues
+  const availableSensors = Object.keys(sensorValues);
 
   const handleConnectClick = () => {
     // Call the connectSerial function when the button is clicked
@@ -46,24 +45,30 @@ function LiveTelemetry() {
     );
   };
 
+  // Handle sensor removal from dashboard and sidebar
+  const handleRemoveSensor = (sensor) => {
+    // Remove the sensor from selectedSensors (sidebar)
+    setSelectedSensors((prevSelected) =>
+      prevSelected.filter((s) => s !== sensor)
+    );
+  };
 
   useEffect(() => {
     // Simulate receiving new data (in real scenario, it would come from your car's system)
     const interval = setInterval(() => {
       setSensorData((prevData) => ({
-        throttle1: [...prevData.throttle1.slice(1), Math.random() * 100],
-        throttle2: [...prevData.throttle2.slice(1), Math.random() * 100],
-        brake: [...prevData.brake.slice(1), Math.random() * 100],
-        torque: [...prevData.torque.slice(1), Math.random() * 100],
-        batteryP: [...prevData.batteryP.slice(1), Math.random() * 100],
-        batteryTemp: [...prevData.batteryTemp.slice(1), Math.random() * 100],
-        tractive: [...prevData.tractive.slice(1), Math.random() * 100],
+        throttle1: [Math.random() * 100, ...prevData.throttle1.slice(0, -1)],
+        throttle2: [Math.random() * 100, ...prevData.throttle2.slice(0, -1)],
+        brakePressure: [Math.random() * 100, ...prevData.brakePressure.slice(0, -1)],
+        torque: [Math.random() * 100, ...prevData.torque.slice(0, -1)],
+        batteryPerc: [Math.random() * 100, ...prevData.batteryPerc.slice(0, -1)],
+        batteryTemp: [Math.random() * 100,...prevData.batteryTemp.slice(0, -1)],
+        tractive: [Math.random() * 100, ...prevData.tractive.slice(0, -1)],
       }));
     }, 1000); // Simulating data every second
 
     return () => clearInterval(interval); // Clean up on unmount
   }, []);
-
 
   // return (
   //   <div>
@@ -73,7 +78,7 @@ function LiveTelemetry() {
 
   return (
     <>
-      <body className="liveTelemetryBody">
+      <div className="liveTelemetryBody">
         <div>
           {connectionError && (
             <p style={{ color: "red" }}>Error: {connectionError}</p>
@@ -93,10 +98,18 @@ function LiveTelemetry() {
             selectedSensors={selectedSensors}
             setSelectedSensors={setSelectedSensors} // Passing setSelectedSensors here
             sensorData={sensorData}
+            availableSensors={availableSensors}
+            handleRemoveSensor={handleRemoveSensor}
           />
-          <Dashboard sensorValues={sensorValues} />
+          <Dashboard
+            sensorData={sensorData}
+            sensorValues={sensorValues}
+            setSelectedSensors={setSelectedSensors}
+            selectedSensors={selectedSensors}
+            handleRemoveSensor={handleRemoveSensor}
+          />
         </div>
-      </body>
+      </div>
     </>
   );
 }
