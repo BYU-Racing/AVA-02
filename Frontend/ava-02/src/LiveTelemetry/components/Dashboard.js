@@ -1,14 +1,11 @@
-import {React, useState, useEffect} from "react";
+import {React, useState} from "react";
 import GridLayout from "react-grid-layout";
 import SensorGraph from "./SensorBox";
-
 import "react-grid-layout/css/styles.css";
 import './componentCSS/Dashboard.css'
 
 const Dashboard = ({ 
     sensorData = {}, 
-    sensorValues,
-    selectedSensors, 
     setSelectedSensors, 
     handleRemoveSensor
   }) => {

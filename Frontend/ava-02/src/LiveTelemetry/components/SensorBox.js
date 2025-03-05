@@ -31,7 +31,7 @@ const SensorGraph = ({ title, sensorName, data, handleRemoveSensor }) => {
       {
         label: sensorName,
         data: Array(data.length).fill(0), // Default data set to 0
-        borderColor: "blue",
+        borderColor: "#1876D1",
         borderWidth: 2,
         fill: false,
       },

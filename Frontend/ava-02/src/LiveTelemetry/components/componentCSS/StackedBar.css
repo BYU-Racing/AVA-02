@@ -1,0 +1,24 @@
+.stackedBarGraphContainer {
+  width: 100%;  /* Narrow width */
+  height: 100%; /* Tall height */
+  display: flex;
+  flex-direction: column-reverse; /* Stack bars from bottom to top */
+  align-items: center;
+  justify-content: flex-end; /* Align bars to the bottom */
+  gap: 2px; /* Add spacing between segments */
+  background-color: rgba(255, 255, 255, 0.1); /* Debugging */
+}
+
+.stackedBarSegment {
+  width: 100%;  /* Make each segment take full width */
+  height: 10%; /* Adjust height based on number of segments */
+  background-color: gray; /* Default inactive color */
+  opacity: 0.3; /* Semi-transparent when inactive */
+  transition: opacity 0.3s ease-in-out;
+  padding: 3px;
+  border-radius: 2px;
+}
+.active {
+  background-color: rgb(20, 189, 20); /* Active color */
+  opacity: 1;
+}

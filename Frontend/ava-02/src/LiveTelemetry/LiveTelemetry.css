@@ -1,7 +1,23 @@
+.header{
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.connectBtn {
+  position: fixed;
+  height: fit-content;
+  left: 10px;
+}
+
 .liveTelemetryBody {
   background-color: black;
   height: 100vh;
   width: 100%;
+  z-index: 2;
 }
 
 .sensorBody {
