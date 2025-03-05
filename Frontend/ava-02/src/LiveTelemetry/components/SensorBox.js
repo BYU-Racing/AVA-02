@@ -55,6 +55,7 @@ const SensorGraph = ({ title, sensorName, data }) => {
     }
   }, [data, sensorName]);
 
+  
   useEffect(() => {
     // Cleanup the chart on unmount to prevent "Canvas already in use" error
     return () => {

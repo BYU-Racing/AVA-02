@@ -3,3 +3,7 @@
   height: 60vh;
   width: 70vh;
 }
+
+h1, p {
+  color: black;
+}

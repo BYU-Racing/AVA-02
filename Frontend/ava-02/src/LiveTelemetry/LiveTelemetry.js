@@ -2,12 +2,12 @@ import { useState, useEffect, React } from "react";
 // import Typography from "@mui/material/Typography";
 import "../App.css";
 import "./LiveTelemetry.css";
-import { connectSerial } from "./Communication";
 import Button from "@mui/material/Button";
 import RssFeedIcon from "@mui/icons-material/RssFeed";
-import SensorSidebar from "./components/SensorSelector";
+import SensorSidebar from "./components/SensorSidebar";
 import Dashboard from "./components/Dashboard";
 import { TableBody } from "@mui/material";
+import { connectSerial } from "./Communication";
 
 function LiveTelemetry() {
   // const [port, setPort] = useState(null); // To store the selected port
@@ -15,14 +15,17 @@ function LiveTelemetry() {
   const [connectionError, setConnectionError] = useState(null); // Track any connection errors
   const [loraMessage, setMessage] = useState(null); // Message received from LoRA
   const [selectedSensors, setSelectedSensors] = useState([]);
-  const [throttle1Val, setThrottle1Val] = useState(0);
-  const [throttle2Val, setThrottle2Val] = useState(0);
-  // const [torque, setTorque] = useState(0);
-  const [brakeP, setBrakeP] = useState(0);
-  // const [batteryP, setBatteryP] = useState(0);
-  // const [batteryTemp, setBatteryTemp] = useState(0);
-  // const [tractive, setTractice] = useState(false);
-    const [sensorData, setSensorData] = useState({
+  const [sensorValues, setSensorValues] = useState({
+    throttle1: 0,
+    throttle2: 0,
+    torque: 0,
+    brakePressure: 0,
+    batteryPerc: 0,
+    batteryTemp:0,
+    tractive: false,
+    loraMessage: []
+  });
+  const [sensorData, setSensorData] = useState({
       throttle1: [0, 0, 0, 0, 0],
       throttle2: [0, 0, 0, 0, 0],
       brake: [0, 0, 0, 0, 0],
@@ -32,18 +35,16 @@ function LiveTelemetry() {
       tractive: [0, 0, 0, 0, 0],
     });
 
-  useEffect(() => {
-    if (isReading) {
-      connectSerial(
-        setIsReading,
-        setMessage,
-        setConnectionError,
-        setThrottle1Val,
-        setThrottle2Val,
-        setBrakeP
-      );
-    }
-  }, [isReading]);
+
+  const handleConnectClick = () => {
+    // Call the connectSerial function when the button is clicked
+    connectSerial(
+      setIsReading,
+      setMessage,
+      setConnectionError, // Pass the setConnectionError function
+      setSensorValues
+    );
+  };
 
 
   useEffect(() => {
@@ -62,6 +63,8 @@ function LiveTelemetry() {
 
     return () => clearInterval(interval); // Clean up on unmount
   }, []);
+
+
   // return (
   //   <div>
   //     <h1>Please message Cole for the LiveTelemetry Beta Build</h1>
@@ -79,7 +82,7 @@ function LiveTelemetry() {
           <Button
             variant="contained"
             startIcon={<RssFeedIcon />}
-            onClick={connectSerial}
+            onClick={handleConnectClick}
             disabled={isReading}
           >
             Connect
@@ -91,7 +94,7 @@ function LiveTelemetry() {
             setSelectedSensors={setSelectedSensors} // Passing setSelectedSensors here
             sensorData={sensorData}
           />
-          <Dashboard />
+          <Dashboard sensorValues={sensorValues} />
         </div>
       </body>
     </>
