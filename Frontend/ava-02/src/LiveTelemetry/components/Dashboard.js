@@ -45,12 +45,12 @@ const Dashboard = ({
     // }));
 
     return (
-      <div className="layout">
-        <div
-          className="dashboard"
-          onDrop={(e) => handleDrop(e.dataTransfer.getData("text"))}
-          onDragOver={(e) => e.preventDefault()}
-        >
+      <div
+        className="layout"
+        onDrop={(e) => handleDrop(e.dataTransfer.getData("text"))}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <div className="dashboard">
           <h1>Dashboard</h1>
           <GridLayout cols={6} rowHeight={100} width={1200}>
             {displayedSensors.map((sensor) => (
