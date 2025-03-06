@@ -1,39 +1,43 @@
 // Communication.js
-export const handleMessage = (hexArray, setThrottle1Val, setThrottle2Val, setBrakeP) => {
-  if (hexArray[0] === "2") {
-    const highByte = parseInt(hexArray[1], 16);
-    const lowByte = parseInt(hexArray[2], 16);
-    let int16Value = (lowByte << 8) | highByte;
-    if (int16Value >= 1024) {
-      return hexArray;
-    }
-    setThrottle2Val(int16Value);
+export const handleMessage = (hexArray, setSensorValues) => {
+  if (hexArray.length < 3) return; // Ensure valid message
+
+  const sensorType = hexArray[0];
+  const highByte = parseInt(hexArray[1], 16);
+  const lowByte = parseInt(hexArray[2], 16);
+  let int16Value = (lowByte << 8) | highByte;
+
+  if (int16Value >= 1024) {
+    return; // Ignore invalid values
   }
 
-  if (hexArray[0] === "1") {
-    const highByte = parseInt(hexArray[1], 16);
-    const lowByte = parseInt(hexArray[2], 16);
-    let int16Value = (lowByte << 8) | highByte;
-    if (int16Value >= 1024) {
-      return hexArray;
-    }
-    setThrottle1Val(int16Value);
-  }
+  setSensorValues((prevValues) => {
+    let updatedValues = { ...prevValues };
 
-  if (hexArray[0] === "3") {
-    const highByte = parseInt(hexArray[1], 16);
-    const lowByte = parseInt(hexArray[2], 16);
-    let int16Value = (lowByte << 8) | highByte;
-    if (int16Value >= 1024) {
-      return hexArray;
+    switch (sensorType) {
+      case "1":
+        updatedValues.throttle1 = int16Value;
+        break;
+      case "2":
+        updatedValues.throttle2 = int16Value;
+        break;
+      case "3":
+        updatedValues.brakePressure = int16Value;
+        break;
+      default:
+        return prevValues; // No update if sensor type is unknown
     }
-    setBrakeP(int16Value);
-  }
 
-  return hexArray;
+    return updatedValues;
+  });
 };
 
-export const connectSerial = async (setIsReading, setMessage, setConnectionError, setThrottle1Val, setThrottle2Val, setBrakeP) => {
+
+export const connectSerial = async (
+    setIsReading, 
+    setMessage, 
+    setConnectionError, 
+    setSensorValues) => {
   try {
     console.log("Requesting Serial Port...");
     const selectedPort = await navigator.serial.requestPort();
@@ -61,7 +65,7 @@ export const connectSerial = async (setIsReading, setMessage, setConnectionError
         const message = messageBuf.slice(startIdx + 2, endIdx);
         setMessage(message);
         const hexArray = message.split(" ");
-        handleMessage(hexArray, setThrottle1Val, setThrottle2Val, setBrakeP);
+        handleMessage(hexArray, setSensorValues);
 
         messageBuf = messageBuf.slice(endIdx + 2);
         startIdx = messageBuf.indexOf("*&");

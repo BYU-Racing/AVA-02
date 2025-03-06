@@ -28,6 +28,7 @@ function LiveTelemetry() {
     currentDraw: 0,
     range: 0,
   });
+
   const [sensorData, setSensorData] = useState({
     throttle1: [0, 0, 0, 0, 0],
     throttle2: [0, 0, 0, 0, 0],
@@ -40,6 +41,7 @@ function LiveTelemetry() {
     tractive: [0, 0, 0, 0, 0],
     currentDraw: [0, 0, 0, 0, 0],
   });
+
   // Dynamically get available sensors from sensorValues
   const availableSensors = Object.keys(sensorValues);
 
@@ -62,80 +64,41 @@ function LiveTelemetry() {
   };
 
   useEffect(() => {
-    // Simulate receiving new data (in real scenario, it would come from your car's system)
-    const interval = setInterval(() => {
-      const newData = {
-        throttle1: (Math.random() * 100).toFixed(1),
-        throttle2: (Math.random() * 100).toFixed(1),
-        brakePressure: (Math.random() * 100).toFixed(1),
-        torque: (Math.random() * 100).toFixed(1),
-        speed: (Math.random() * 100).toFixed(1),
-        coolantTemp: (Math.random() * 200).toFixed(1),
-        batteryPerc: (Math.random() * 100).toFixed(1),
-        batteryTemp: (Math.random() * 100).toFixed(1),
-        tractive: (Math.random() * 100).toFixed(1),
-        currentDraw: (Math.random() * 15).toFixed(1),
-        range: (Math.random() * 30).toFixed(1),
-      };
+    setSensorData((prevData) => {
+      const updatedData = { ...prevData };
 
-      setSensorData((prevData) => ({
-        throttle1: [
-          parseFloat(newData.throttle1),
-          ...prevData.throttle1.slice(0, -1),
-        ],
-        throttle2: [
-          parseFloat(newData.throttle2),
-          ...prevData.throttle2.slice(0, -1),
-        ],
-        brakePressure: [
-          parseFloat(newData.brakePressure),
-          ...prevData.brakePressure.slice(0, -1),
-        ],
-        torque: [parseFloat(newData.torque), ...prevData.torque.slice(0, -1)],
-        speed: [parseFloat(newData.speed), ...prevData.speed.slice(0, -1)],
-        coolantTemp: [
-          parseFloat(newData.coolantTemp),
-          ...prevData.coolantTemp.slice(0, -1),
-        ],
-        batteryPerc: [
-          parseFloat(newData.batteryPerc),
-          ...prevData.batteryPerc.slice(0, -1),
-        ],
-        batteryTemp: [
-          parseFloat(newData.batteryTemp),
-          ...prevData.batteryTemp.slice(0, -1),
-        ],
-        tractive: [
-          parseFloat(newData.tractive),
-          ...prevData.tractive.slice(0, -1),
-        ],
-        currentDraw: [
-          parseFloat(newData.tractive),
-          ...prevData.currentDraw.slice(0, -1),
-        ],
-      }));
+      Object.keys(sensorValues).forEach((key) => {
+        if (prevData[key]) {
+          updatedData[key] = [sensorValues[key], ...prevData[key].slice(0, -1)];
+        }
+      });
 
-      // Also update sensorValues with the new data
-      setSensorValues((prevValues) => ({
-        ...prevValues,
-        throttle1: parseFloat(newData.throttle1),
-        throttle2: parseFloat(newData.throttle2),
-        brakePressure: parseFloat(newData.brakePressure),
-        torque: parseFloat(newData.torque),
-        speed: parseFloat(newData.speed),
-        coolantTemp: parseFloat(newData.coolantTemp),
-        batteryPerc: parseFloat(newData.batteryPerc),
-        batteryTemp: parseFloat(newData.batteryTemp),
-        tractive: parseFloat(newData.tractive),
-        currentDraw: parseFloat(newData.currentDraw),
-        range: parseFloat(newData.range),
-      }));
-    }, 1000); // Simulating data every second
+      return updatedData;
+    });
+  }, [sensorValues]); // Runs whenever sensorValues changes
 
-    return () => clearInterval(interval); // Clean up on unmount
-  }, []);
+  useEffect(() => {
+    if (!isReading) {
+      // Only generate random data if not reading from the serial port
+      const interval = setInterval(() => {
+        setSensorValues({
+          throttle1: parseFloat((Math.random() * 100).toFixed(1)),
+          throttle2: parseFloat((Math.random() * 100).toFixed(1)),
+          brakePressure: parseFloat((Math.random() * 100).toFixed(1)),
+          torque: parseFloat((Math.random() * 100).toFixed(1)),
+          speed: parseFloat((Math.random() * 100).toFixed(1)),
+          coolantTemp: parseFloat((Math.random() * 200).toFixed(1)),
+          batteryPerc: parseFloat((Math.random() * 100).toFixed(1)),
+          batteryTemp: parseFloat((Math.random() * 100).toFixed(1)),
+          tractive: parseFloat((Math.random() * 100).toFixed(1)),
+          currentDraw: parseFloat((Math.random() * 15).toFixed(1)),
+          range: parseFloat((Math.random() * 30).toFixed(1)),
+        });
+      }, 1000);
 
-
+      return () => clearInterval(interval); // Cleanup when component unmounts or `isReading` changes
+    }
+  }, [isReading]); // Depend on `isReading` so it updates when the connection status changes
 
   // return (
   //   <div>
@@ -148,7 +111,9 @@ function LiveTelemetry() {
       <div className="liveTelemetryBody">
         <div className="header">
           {connectionError && (
-            <p style={{ color: "red" }}>Error: {connectionError}</p>
+            <p style={{ color: "red", zIndex: 1000, backgroundColor: "white" }}>
+              Error: {connectionError}
+            </p>
           )}
           <Button
             variant="contained"
