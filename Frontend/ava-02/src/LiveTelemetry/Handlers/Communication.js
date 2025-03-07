@@ -53,6 +53,7 @@ export const connectSerial = async (
       let { value, done } = await reader.read();
       if (done) {
         reader.releaseLock();
+        setIsReading(false);
         console.log("Serial Port Closed.");
         break;
       }
@@ -73,6 +74,7 @@ export const connectSerial = async (
       }
     }
   } catch (err) {
+    setIsReading(false);
     console.error("Error connecting to serial port: ", err);
     setConnectionError(err.message || "Unknown Error");
   }

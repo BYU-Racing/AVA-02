@@ -4,7 +4,7 @@ import "../App.css";
 import "./LiveTelemetry.css";
 import Button from "@mui/material/Button";
 import RssFeedIcon from "@mui/icons-material/RssFeed";
-import SensorSidebar from "./components/SensorSidebar";
+import SensorSidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import SpeedDisplay from "./components/SpeedDisplay";
 import {connectSerial} from "./Handlers/Communication";
