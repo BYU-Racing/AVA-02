@@ -1,8 +1,10 @@
-import {React, useState} from "react";
-import GridLayout from "react-grid-layout";
+import {React, useEffect, useState} from "react";
+import RGL, { WidthProvider} from "react-grid-layout";
 import SensorGraph from "./SensorBox";
 import "react-grid-layout/css/styles.css";
 import './componentCSS/Dashboard.css'
+
+const ReactGridLayout = WidthProvider(RGL);
 
 const Dashboard = ({ 
     sensorData = {}, 
@@ -32,15 +34,21 @@ const Dashboard = ({
     };
 
 
-    // // Create the layout based on selectedSensors
-    // const layout = selectedSensors.map((sensor, index) => ({
-    //   i: sensor,
-    //   x: (index % 3) * 2,
-    //   y: Math.floor(index / 3) * 2,
-    //   w: 2,
-    //   h: 2,
-    // }));
-
+    // Create the layout based on selectedSensors
+    const [layout, setLayout] = useState([]);
+    useEffect(() => {
+      const newLayout = displayedSensors.map((sensor, index) => ({
+        i: sensor,
+        x: (index % 3) * 2,
+        y: Math.floor(index / 3) * 2,
+        w: 2,
+        h: 2,
+      }));
+      
+      console.log(newLayout);
+      setLayout(newLayout);
+    }, [displayedSensors]);
+  
     return (
       <div
         className="layout"
@@ -49,7 +57,17 @@ const Dashboard = ({
       >
         <div className="dashboard">
           <h1>Dashboard</h1>
-          <GridLayout cols={6} rowHeight={100} width={1200}>
+          <ReactGridLayout 
+            key={layout.length}
+            layout={layout}
+            onLayoutChange={(layout) => console.log(layout)}
+            cols={6} 
+            rowHeight={100} 
+            width={1200}
+            isResizable={true}
+            isDraggable={true}
+            resizeHandles={['se']}
+          >
             {displayedSensors.map((sensor) => (
               <SensorGraph
                 key={sensor}
@@ -58,7 +76,7 @@ const Dashboard = ({
                 handleRemoveSensor={handleRemoveFromDashboard} // Pass removeSensor function to SensorBox
               />
             ))}
-          </GridLayout>
+          </ReactGridLayout>
         </div>
       </div>
     );
