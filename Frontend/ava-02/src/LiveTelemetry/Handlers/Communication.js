@@ -1,5 +1,5 @@
 // Communication.js
-export const handleMessage = (hexArray, setSensorValues) => {
+export const handleMessage = (hexArray, setSensorData) => {
   if (hexArray.length < 3) return; // Ensure valid message
 
   const sensorType = hexArray[0];
@@ -11,25 +11,27 @@ export const handleMessage = (hexArray, setSensorValues) => {
     return; // Ignore invalid values
   }
 
-  setSensorValues((prevValues) => {
-    let updatedValues = { ...prevValues };
+  setSensorData((prevValues) => {
+  let updatedValues = { ...prevValues };
 
-    switch (sensorType) {
-      case "1":
-        updatedValues.throttle1 = int16Value;
-        break;
-      case "2":
-        updatedValues.throttle2 = int16Value;
-        break;
-      case "3":
-        updatedValues.brakePressure = int16Value;
-        break;
-      default:
-        return prevValues; // No update if sensor type is unknown
+  if (prevValues[sensorType]) {
+    if (Array.isArray(prevValues[sensorType].data)) {
+      // Shift history for array values
+      updatedValues[sensorType] = {
+        ...prevValues[sensorType],
+        data: [int16Value, ...prevValues[sensorType].data.slice(0, -1)],
+      };
+    } else {
+      // Direct update for single values
+      updatedValues[sensorType] = {
+        ...prevValues[sensorType],
+        data: int16Value,
+      };
     }
+  }
 
     return updatedValues;
-  });
+  })
 };
 
 
@@ -37,7 +39,7 @@ export const connectSerial = async (
     setIsReading, 
     setMessage, 
     setConnectionError, 
-    setSensorValues) => {
+    setSensorData) => {
   try {
     console.log("Requesting Serial Port...");
     const selectedPort = await navigator.serial.requestPort();
@@ -66,7 +68,7 @@ export const connectSerial = async (
         const message = messageBuf.slice(startIdx + 2, endIdx);
         setMessage(message);
         const hexArray = message.split(" ");
-        handleMessage(hexArray, setSensorValues);
+        handleMessage(hexArray, setSensorData);
 
         messageBuf = messageBuf.slice(endIdx + 2);
         startIdx = messageBuf.indexOf("*&");

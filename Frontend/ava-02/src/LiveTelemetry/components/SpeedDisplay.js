@@ -1,21 +1,29 @@
 import './componentCSS/SpeedDisplay.css'
 import StackedBar from './StackedBar';
 import './componentCSS/StackedBar.css'
+import React from 'react';
+import { useSensors } from "./context/SensorContext.tsx";
 
-const SpeedDisplay = ({data}) => {
-  console.log(data); // For debugging, to check if data is coming in correctly
+const SpeedDisplay = () => {
+  // console.log(data); // For debugging, to check if data is coming in correctly
+  const { getSensorByName } = useSensors();
+  const speed = getSensorByName("speed");
+  const batteryTemp = getSensorByName("bsm_batteryTemp");
+  const currentDraw = getSensorByName("bsm_current");
+  const expectedRange = getSensorByName("range");
+  const coolantTemp = getSensorByName("mc_coolantTemp");
 
 
   return (
     <div className="displayContainer">
       <div className="leftContainer">
-        <span>Coolant Temp: {data.coolantTemp} F</span>
-        <span>Battery Temp: {data.batteryTemp} F</span>
-        <span>Current Draw: {data.currentDraw} Amps</span>
-        <span>Expected Range: {data.range} min</span>
+        <span>Coolant Temp: {coolantTemp.data[4]} F</span>
+        <span>Battery Temp: {batteryTemp.data[4]} F</span>
+        <span>Current Draw: {currentDraw.data[4]} Amps</span>
+        <span>Expected Range: {expectedRange.data[4]} min</span>
       </div>
       <div className="speed">
-        <span>{data.speed}</span>
+        <span>{speed.data}</span>
         <span>MPH</span>
       </div>
       <div className="modeSelect">

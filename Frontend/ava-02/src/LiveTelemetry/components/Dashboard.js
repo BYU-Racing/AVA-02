@@ -1,67 +1,71 @@
-import {React, useState} from "react";
+import { React } from "react";
 import GridLayout from "react-grid-layout";
-import SensorGraph from "./SensorBox";
+import SensorGraph from "./SensorGraph.js";
 import "react-grid-layout/css/styles.css";
-import './componentCSS/Dashboard.css'
+import "./componentCSS/Dashboard.css";
+import { useSensors } from "./context/SensorContext.tsx";
 
-const Dashboard = ({ 
-    sensorData = {}, 
-    setSelectedSensors, 
-    handleRemoveSensor
-  }) => {
-    // Ensure selectedSensors is always an array and sensorData is an object
-    const [displayedSensors, setDisplayedSensors] = useState([]);
+const Dashboard = () => {
+  // Ensure selectedSensors is always an array and sensorData is an object
+  const { setSelectedSensors, dashboardSensors, setDashboardSensors } =
+    useSensors();
 
-    const handleDrop = (sensorName) => {
-      if (!displayedSensors.includes(sensorName)) {
-        setDisplayedSensors([...displayedSensors, sensorName]);
+  const handleDrop = (e) => {
+    e.preventDefault();
+    console.log("Drop event triggered");
+
+    try {
+      const droppedData = e.dataTransfer.getData("Number");
+      console.log("Dropped data:", droppedData);
+      let sensorId = droppedData;
+
+
+      console.log("Processing drop for sensor ID:", sensorId);
+
+      // Check if the sensor is already in the dashboard
+      if (dashboardSensors.includes(sensorId)) {
+        console.log("Sensor already in dashboard, skipping");
+        return;
       }
-      // Remove the sensor from the Sidebar (update selectedSensors in LiveTelemetry)
+
+      // Add to dashboard sensors
+      setDashboardSensors((prev) => [...prev, sensorId]);
+
+      // Remove from selected sensors (sidebar)
       setSelectedSensors((prev) =>
-        prev.filter((sensor) => sensor !== sensorName)
-      );
-    };
-
-    const handleRemoveFromDashboard = (sensorName) => {
-      // Remove the sensor from displayedSensors (dashboard)
-      setDisplayedSensors((prevDisplayed) =>
-        prevDisplayed.filter((sensor) => sensor !== sensorName)
-      );
-      // Remove the sensor from the Sidebar (selectedSensors)
-      handleRemoveSensor(sensorName);
-    };
-
-
-    // // Create the layout based on selectedSensors
-    // const layout = selectedSensors.map((sensor, index) => ({
-    //   i: sensor,
-    //   x: (index % 3) * 2,
-    //   y: Math.floor(index / 3) * 2,
-    //   w: 2,
-    //   h: 2,
-    // }));
-
-    return (
-      <div
-        className="layout"
-        onDrop={(e) => handleDrop(e.dataTransfer.getData("text"))}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        <div className="dashboard">
-          <h1>Dashboard</h1>
-          <GridLayout cols={6} rowHeight={100} width={1200}>
-            {displayedSensors.map((sensor) => (
-              <SensorGraph
-                key={sensor}
-                sensorName={sensor}
-                data={sensorData[sensor]}
-                handleRemoveSensor={handleRemoveFromDashboard} // Pass removeSensor function to SensorBox
-              />
-            ))}
-          </GridLayout>
-        </div>
-      </div>
-    );
+        prev.filter((id) => Number(id) !== Number(sensorId)));
+      console.log(dashboardSensors)
+      console.log("Sensor moved to dashboard successfully");
+    } catch (error) {
+      console.error("Error in drop handler:", error);
+    }
   };
+
+
+  // console.log(dashboardSensors);
+  return (
+    <div
+      className="layout"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
+      <div className="dashboard">
+        <h1>Dashboard</h1>
+        <GridLayout cols={6} rowHeight={100} width={1200}>
+          {dashboardSensors &&
+            dashboardSensors.map((sensorId) => {
+              console.log("Rendering sensor in dashboard:", sensorId);
+              return (
+                <div
+                  key={`dashboard-${sensorId}`}>
+                  <SensorGraph sensorId={sensorId} />
+                </div>
+              );
+            })}
+        </GridLayout>
+      </div>
+    </div>
+  );
+};
 
 export default Dashboard;
