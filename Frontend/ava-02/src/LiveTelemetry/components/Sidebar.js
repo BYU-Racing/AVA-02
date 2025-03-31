@@ -5,10 +5,10 @@ import { useSensors } from "./context/SensorContext.tsx";
 
 const SensorSidebar = () => {
   const {
-    Sensors,
     selectedSensors,
     setSelectedSensors,
     handleRemoveSelectedSensor,
+    availableSensors,
   } = useSensors();
 
   // Function to handle sensor selection
@@ -27,14 +27,18 @@ const SensorSidebar = () => {
     setSelectedSensors((prevSelected) => [...prevSelected, sensorId]);
   };
 
+    
+
   return (
     <div className="sidebar">
       <h2>Select Sensor</h2>
       <select onChange={handleSensorChange} defaultValue="">
         <option value="" disabled>
-          --Select a sensor--
+          {availableSensors.length > 0
+            ? "--Select a sensor--"
+            : "-- No sensors available --"}
         </option>
-        {Sensors.map((sensor) => (
+        {availableSensors.map((sensor) => (
           <option key={sensor.id} value={sensor.id}>
             {sensor.name}
           </option>
@@ -64,7 +68,7 @@ const SensorSidebar = () => {
           // Render the sensor with data
           return (
             <div key={sensorId} className="sensor-box">
-              <SensorGraph sensorId={sensorId}/>
+              <SensorGraph sensorId={sensorId} />
             </div>
           );
         })}

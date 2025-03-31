@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useState, useContext } from "react";
+import React, { createContext, ReactNode, useState, useContext, useMemo } from "react";
 import { Sensor } from "../../types/sensor";
 
 interface SensorContextType {
@@ -12,6 +12,7 @@ interface SensorContextType {
   dashboardSensors: Number[];
   setDashboardSensors: React.Dispatch<React.SetStateAction<Number[]>>;
   handleRemoveFromDashboard: (id: Number) => void;
+  availableSensors: Sensor[];
 }
 
 const SensorContext = createContext<SensorContextType | undefined>(undefined);
@@ -101,6 +102,19 @@ export const SensorProvider = ({ children }: { children: ReactNode }) => {
     handleRemoveSelectedSensor(id);
   };
 
+  const availableSensors = useMemo(() => {
+    return Sensors.filter((sensor) => {
+      // Check if not already in selectedSensors
+      const notSelected = !selectedSensors.includes(sensor.id);
+
+      // Check if not already in dashboardSensors
+      const notInDashboard = !dashboardSensors.includes(sensor.id);
+
+      return notSelected && notInDashboard;
+    });
+  }, [Sensors, selectedSensors, dashboardSensors]);
+
+
   return (
     <SensorContext.Provider
       value={{
@@ -114,6 +128,7 @@ export const SensorProvider = ({ children }: { children: ReactNode }) => {
         getSensorById,
         getSensorByName,
         handleRemoveFromDashboard,
+        availableSensors,
       }}
     >
       {children}
