@@ -1,37 +1,61 @@
-// Communication.js
-export const handleMessage = (hexArray, setSensorData) => {
-  if (hexArray.length < 3) return; // Ensure valid message
 
-  const sensorType = hexArray[0];
-  const highByte = parseInt(hexArray[1], 16);
-  const lowByte = parseInt(hexArray[2], 16);
-  let int16Value = (lowByte << 8) | highByte;
 
-  if (int16Value >= 1024) {
-    return; // Ignore invalid values
+export const handleMessage = (hexArray) => {
+  // Ensure valid message (at least sensorId and one data byte)
+  if (hexArray.length < 2) {
+    console.warn("Message too short:", hexArray);
+    return null;
   }
 
-  setSensorData((prevValues) => {
-  let updatedValues = { ...prevValues };
-
-  if (prevValues[sensorType]) {
-    if (Array.isArray(prevValues[sensorType].data)) {
-      // Shift history for array values
-      updatedValues[sensorType] = {
-        ...prevValues[sensorType],
-        data: [int16Value, ...prevValues[sensorType].data.slice(0, -1)],
-      };
-    } else {
-      // Direct update for single values
-      updatedValues[sensorType] = {
-        ...prevValues[sensorType],
-        data: int16Value,
-      };
+  try {
+    // Extract sensor ID
+    const sensorId = parseInt(hexArray[0], 16);
+    if (isNaN(sensorId)) {
+      console.warn("Invalid sensor ID:", hexArray[0]);
+      return null;
     }
-  }
 
-    return updatedValues;
-  })
+    // Parse data based on available bytes
+    let value;
+    if (hexArray.length >= 3) {
+      // If we have at least 2 data bytes, interpret as 16-bit value
+      const highByte = parseInt(hexArray[1], 16);
+      const lowByte = parseInt(hexArray[2], 16);
+
+      if (isNaN(highByte) || isNaN(lowByte)) {
+        console.warn("Invalid data bytes:", hexArray.slice(1, 3));
+        return null;
+      }
+
+      value = (lowByte << 8) | highByte;
+
+      // Validate the value (for numeric sensors)
+      if (value >= 1024 && sensorId !== 6) {
+        // Skip validation for startSwitch (ID 6)
+        console.warn(`Value out of range (${value}) for sensor ID ${sensorId}`);
+        return null;
+      }
+    } else {
+      // If only one data byte, use it directly
+      value = parseInt(hexArray[1], 16);
+
+      if (isNaN(value)) {
+        console.warn("Invalid data byte:", hexArray[1]);
+        return null;
+      }
+    }
+
+    // Return the parsed data
+    return {
+      sensorId,
+      value,
+      rawData: hexArray.slice(1), // Include all data bytes
+      timestamp: new Date().getTime(),
+    };
+  } catch (error) {
+    console.error("Error parsing message:", error);
+    return null;
+  }
 };
 
 
@@ -68,7 +92,12 @@ export const connectSerial = async (
         const message = messageBuf.slice(startIdx + 2, endIdx);
         setMessage(message);
         const hexArray = message.split(" ");
-        handleMessage(hexArray, setSensorData);
+        const sensorData = handleMessage(hexArray);
+
+        // If valid data and callback provided, pass the data to the callback
+        if (sensorData && setSensorData) {
+          setSensorData(sensorData);
+        }
 
         messageBuf = messageBuf.slice(endIdx + 2);
         startIdx = messageBuf.indexOf("*&");

@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard";
 import SpeedDisplay from "./components/SpeedDisplay";
 import { connectSerial } from "./Handlers/Communication";
 import { useSensors } from "./components/context/SensorContext.tsx";
+import SerialConnection from "./components/serialConnection.js";
 
 
 function LiveTelemetry() {
@@ -192,6 +193,7 @@ function LiveTelemetry() {
             Connect
           </Button>
         </div>
+        <SerialConnection />
         <SpeedDisplay />
         <h1 style={{ color: "white" }}>{loraMessage}</h1>
         <div className="sensorBody">
