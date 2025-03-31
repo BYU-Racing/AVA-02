@@ -12,11 +12,9 @@ const Dashboard = () => {
 
   const handleDrop = (e) => {
     e.preventDefault();
-    console.log("Drop event triggered");
 
     try {
       const droppedData = e.dataTransfer.getData("Number");
-      console.log("Dropped data:", droppedData);
       let sensorId = droppedData;
 
 
@@ -24,7 +22,6 @@ const Dashboard = () => {
 
       // Check if the sensor is already in the dashboard
       if (dashboardSensors.includes(sensorId)) {
-        console.log("Sensor already in dashboard, skipping");
         return;
       }
 
@@ -34,8 +31,6 @@ const Dashboard = () => {
       // Remove from selected sensors (sidebar)
       setSelectedSensors((prev) =>
         prev.filter((id) => Number(id) !== Number(sensorId)));
-      console.log(dashboardSensors)
-      console.log("Sensor moved to dashboard successfully");
     } catch (error) {
       console.error("Error in drop handler:", error);
     }
