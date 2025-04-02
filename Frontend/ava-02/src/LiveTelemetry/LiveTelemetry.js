@@ -8,7 +8,6 @@ import Dashboard from "./components/Dashboard";
 import SpeedDisplay from "./components/SpeedDisplay";
 import { connectSerial } from "./Handlers/Communication";
 import { useSensors } from "./components/context/SensorContext.tsx";
-import SerialConnection from "./components/serialConnection.js";
 
 
 function LiveTelemetry() {
@@ -22,6 +21,7 @@ function LiveTelemetry() {
     setSensors,
     updateSensor,
     getSensorByName,
+    getSensorById,
     selectedSensors,
     setSelectedSensors,
     handleRemoveSensor,
@@ -33,7 +33,6 @@ function LiveTelemetry() {
       setIsReading,
       setMessage,
       setConnectionError, // Pass the setConnectionError function
-      setSensors
     );
   };
 
@@ -173,6 +172,48 @@ function LiveTelemetry() {
     }
   }, [isReading, updateSensor, getSensorByName]);
 
+  useEffect(() => {
+    // When loraMessage changes, update the sensor data
+    if (loraMessage) {
+      const sensorId = loraMessage.sensorId;
+      const sensorValue = loraMessage.value;
+
+      // Find the sensor to update
+      const sensorToUpdate = getSensorById(sensorId);
+
+      if (sensorToUpdate) {
+        // Create a copy of the sensor
+        const updatedSensor = { ...sensorToUpdate };
+
+        // Handle different data types appropriately
+        if (typeof sensorToUpdate.data === "boolean") {
+          // For boolean sensors (like startSwitch, tractive)
+          // Convert the value to boolean (any non-zero value is true)
+          updatedSensor.data = Boolean(sensorValue);
+        } else if (Array.isArray(sensorToUpdate.data)) {
+          // For array sensors that store history
+          // Add new value to beginning and remove last value to maintain array length
+          updatedSensor.data = [
+            sensorValue,
+            ...sensorToUpdate.data.slice(0, sensorToUpdate.data.length - 1),
+          ];
+        } else {
+          // For simple numeric sensors (like speed)
+          updatedSensor.data = sensorValue;
+        }
+
+        console.log(`Updating sensor ${updatedSensor.name} (ID: ${sensorId}) 
+                  from ${JSON.stringify(sensorToUpdate.data)} 
+                  to ${JSON.stringify(updatedSensor.data)}`);
+
+        // Update the sensor with our changes
+        updateSensor(updatedSensor);
+      } else {
+        console.warn(`Cannot update: sensor with ID ${sensorId} not found`);
+      }
+    }
+  }, [getSensorById, loraMessage, updateSensor]);
+
 
   return (
     <>
@@ -193,7 +234,6 @@ function LiveTelemetry() {
             Connect
           </Button>
         </div>
-        <SerialConnection />
         <SpeedDisplay />
         <h1 style={{ color: "white" }}>{loraMessage}</h1>
         <div className="sensorBody">

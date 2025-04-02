@@ -24,10 +24,10 @@ export const SensorProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize the sensors with default values
   const [Sensors, setSensors] = useState<Sensor[]>([
-    { id: 1, name: "startSwitch", data: false },
-    { id: 2, name: "throttle1", data: [0, 0, 0, 0, 0] },
-    { id: 3, name: "throttle2", data: [0, 0, 0, 0, 0] },
-    { id: 4, name: "brakePressure", data: [0, 0, 0, 0, 0] },
+    { id: 4, name: "startSwitch", data: false },
+    { id: 1, name: "throttle1", data: [0, 0, 0, 0, 0] },
+    { id: 2, name: "throttle2", data: [0, 0, 0, 0, 0] },
+    { id: 3, name: "brakePressure", data: [0, 0, 0, 0, 0] },
     { id: 5, name: "x_acc", data: [0, 0, 0, 0, 0] },
     { id: 6, name: "y_acc", data: 0 },
     { id: 7, name: "z_acc", data: 0 },
