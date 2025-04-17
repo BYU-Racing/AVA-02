@@ -93,7 +93,8 @@ export const connectSerial = async (
     setIsReading, 
     setMessage, 
     setConnectionError, 
-    setSensorData) => {
+    updateSensor,
+    getSensorById) => {
   try {
     console.log("Requesting Serial Port...");
     const selectedPort = await navigator.serial.requestPort();
@@ -124,10 +125,9 @@ export const connectSerial = async (
         const hexArray = message.split(" ");
         const Response = handleMessage(hexArray, setMessage);
 
-
         // If valid data and callback provided, pass the data to the callback
-        if (Response && setSensorData) {
-          setSensorData(Response);
+        if (Response) {
+          handleResponse(Response, updateSensor, getSensorById);
           console.log("Sensor Data:", Response);
         }
 
@@ -142,3 +142,23 @@ export const connectSerial = async (
     setConnectionError(err.message || "Unknown Error");
   }
 };
+
+
+function handleResponse (response, updateSensor, getSensorById) {
+  const { sensorId, value } = response;
+
+  // Update the sensor data in the state
+  const sensor = getSensorById(sensorId);
+  if (sensor) {
+    console.log(`Updating sensor ${sensorId} with value: ${sensor}`);
+    const newData = [value, ...sensor.data.slice(0, 4)];
+    const updatedSensor = {
+      ...sensor,
+      data: newData,
+    };
+    updateSensor(updatedSensor);
+  } else {
+    console.warn(`Sensor with ID ${sensorId} not found.`);
+  }
+
+}

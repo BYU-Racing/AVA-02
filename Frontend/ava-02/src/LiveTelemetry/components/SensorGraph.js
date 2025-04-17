@@ -37,8 +37,6 @@ const SensorGraph = ({ sensorId }) => {
   const barChartSensors = ["brakePressure", "throttle1", "throttle2"];
   const chartRef = useRef(null);
 
-  // Log for debugging
-  console.log(`SensorGraph rendering for sensorId: ${sensorId}`);
 
   // Get the sensor - first try with getSensorById, then fallback to finding it directly
   let sensor = getSensorById(Number(sensorId));
@@ -50,7 +48,7 @@ const SensorGraph = ({ sensorId }) => {
   }
 
   // Log the result
-  console.log(`Sensor for ID ${sensorId}:`, sensor);
+  console.log(`SensorData for sensor ${sensorId}:`, sensor);
 
   // Generate chart data for time series (line chart) with safety checks
   // MOVED TO TOP LEVEL - no conditionals before hooks

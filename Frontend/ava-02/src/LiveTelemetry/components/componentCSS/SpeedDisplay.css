@@ -1,93 +1,182 @@
+/* SpeedDisplay.css */
+
 .displayContainer {
-  position: absolute;
-  width: 80vh;
+  position: relative;
+  width: 50%;
+  max-width: 1000px;
+  margin: 0 auto;
   height: 15vh;
-  top: 7vh;
-  left:45vh;
+  min-height: 120px;
   background-color: whitesmoke;
   border-radius: 7px;
   z-index: 1;
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .leftContainer {
   display: flex;
   flex-direction: column;
-  justify-content: left;
-  height: fit-content;
-  margin-top: 1vh;
-  margin-left: 1vh;
+  justify-content: flex-start;
+  width: 25%;
+  min-width: 180px;
+  height: 100%;
+  gap: 0.5rem;
+}
+
+.leftContainer span {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.speed {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.speed span:first-child {
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.speed span:last-child {
+  font-size: 1rem;
+  margin-top: -0.5rem;
 }
 
 .modeSelect {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%; /* Ensures it spans the full width of displayContainer */
   position: absolute;
-  bottom: 5px; /* Aligns to the bottom */
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
 }
 
 .selectionBox {
-  width: fit-content;
-  height: 3vh;
-  border-width: 1px;
-  border-color: black;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid black;
   border-radius: 5px;
-}
-.speed {
-  position: absolute; /* Position relative to .displayContainer */
-  top: 40%; /* Slightly above center (adjust as needed) */
-  left: 50%; /* Center horizontally */
-  transform: translate(-50%, -50%); /* Ensure exact centering */
-  display: flex;
-  flex-direction: column;
-  font-size: xx-large;
-  align-items: center; /* Center items inside the container */
-  text-align: center; /* Ensure text stays centered */
+  background-color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
-.timer{
-  position: absolute; /* Position relative to .displayContainer */
-  top: 40%; /* Slightly above center (adjust as needed) */
-  right: 20%; /* Center horizontally */
-  transform: translate(30%, -50%); /* Ensure exact centering */
+.timer {
+  position: absolute;
+  top: 40%; 
+  right: 10%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  font-size: x-large;
-  align-items: center; /* Center items inside the container */
-  text-align: center; /* Ensure text stays centered */
+  align-items: center;
+  text-align: center;
 }
+
+.timer span:first-child {
+  font-size: 0.9rem;
+}
+
+.timer span:last-child {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
 .ssiBar {
   position: absolute;
-  right: 2vh;
-  top: 1vh;
-  width: 25px; /* Width of the bar */
-  height: 90%; /* Height of the container */
+  right: 1rem;
+  top: 1rem;
+  width: 25px;
+  height: calc(100% - 2rem);
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center items vertically within the container */
-  align-items: center; /* Center the bar horizontally */
+  justify-content: center;
+  align-items: center;
 }
 
 .ssiTextContainer {
-  display: flex;
-  justify-content: center; /* Center the text horizontally */
-  align-items: center; /* Center text vertically */
+  margin-top: 0.5rem;
+  text-align: center;
+  width: 100%;
 }
 
 .ssiText {
   font-size: 10px;
-  line-height: 1.2; /* Adjust line height if needed */
-  text-align: center; /* Center text horizontally */
-  white-space: normal; /* Allow text to break into multiple lines */
-  max-width: 100%; /* Ensures text wraps */
-  word-wrap: break-word; /* Wrap long words if needed */
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  max-width: 100%;
+  /* writing-mode: vertical-rl; */
+  transform: rotate(180deg);
+  margin-right: 2px;
 }
 
-
-p, span, h1{
+p, span, h1 {
   color: black;
-  padding: 3px;
+  padding: 0;
+  margin: 0;
 }
 
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .displayContainer {
+    width: 95%;
+    height: auto;
+    min-height: 180px;
+    padding: 0.8rem;
+  }
+  
+  .leftContainer {
+    width: 40%;
+    font-size: 0.8rem;
+  }
+  
+  .speed span:first-child {
+    font-size: 2rem;
+  }
+  
+  .timer {
+    right: 15%;
+  }
+  
+  .timer span:last-child {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .displayContainer {
+    padding: 0.5rem;
+    min-height: 220px;
+  }
+  
+  .leftContainer {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .speed {
+    top: 50%;
+    left: 30%;
+  }
+  
+  .timer {
+    top: 50%;
+    right: 5%;
+  }
+  
+  .modeSelect {
+    bottom: 0.5rem;
+  }
+  
+  .ssiBar {
+    height: calc(100% - 1rem);
+  }
+}

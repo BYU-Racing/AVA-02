@@ -18,7 +18,6 @@ function LiveTelemetry() {
   const {
     Sensors,
     availableSensors,
-    setSensors,
     updateSensor,
     getSensorByName,
     getSensorById,
@@ -32,7 +31,9 @@ function LiveTelemetry() {
     connectSerial(
       setIsReading,
       setMessage,
-      setConnectionError, // Pass the setConnectionError function
+      setConnectionError,
+      updateSensor,
+      getSensorById
     );
   };
 
