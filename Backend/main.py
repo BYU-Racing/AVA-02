@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from endpoints import drive, driver, data
+from .endpoints import drive, driver, data
 from fastapi.middleware.cors import CORSMiddleware
 
-from Backend import crud, models, schemas
-from database import SessionLocal, engine
+from . import crud, models, schemas
+from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 

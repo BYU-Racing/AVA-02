@@ -68,7 +68,7 @@ function DriveObject({
     const fetchPromise = (async () => {
       if (!(sensorId in cachedData[driveId])) {
         const response = await fetch(
-          `https://fe.brycewhitworth.com/api/data/${driveId}/${sensorId}`
+          `http://localhost:8000/api/data/${driveId}/${sensorId}`
         );
         const canMessages = await response.json();
         let timeSeriesData;

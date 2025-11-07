@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from Backend import crud, models, schemas
-from Backend.database import SessionLocal, engine
+from .. import crud, models, schemas
+from ..database import SessionLocal, engine
 from sqlalchemy.orm import Session
 
 

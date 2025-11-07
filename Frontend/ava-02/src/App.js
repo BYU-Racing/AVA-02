@@ -14,7 +14,7 @@ function App() {
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
-      const response = await fetch("https://fe.brycewhitworth.com/api/drive");
+      const response = await fetch("http://localhost:8000/api/drive");
       const data = await response.json();
       return data;
     }

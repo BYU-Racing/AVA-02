@@ -21,7 +21,7 @@ function AddDriver() {
     setFailure(false);
 
     try {
-      const response = await fetch("https://fe.brycewhitworth.com/api/driver", {
+      const response = await fetch("http://localhost:8000/api/driver", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
