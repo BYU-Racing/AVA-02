@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# SQL dumps
+*.sql
+Backend/2025_dump.sql
+
+# Node modules (we only need the build folder)
+Frontend/ava-02/node_modules/
+Frontend/ava-02/src/
+Frontend/ava-02/public/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# EB files
+.elasticbeanstalk/
+*.zip

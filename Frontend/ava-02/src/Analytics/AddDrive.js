@@ -63,7 +63,7 @@ function AddDrive() {
       const fileHash = await calculateFileHash(file);
 
       console.log("FILE HASH: ", fileHash);
-      const response = await fetch("http://localhost:8000/api/drive", {
+      const response = await fetch("/api/drive", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,7 +89,7 @@ function AddDrive() {
       formData.append("file", file);
 
       const response2 = await fetch(
-        `http://localhost:8000/api/drive/${driveId}`,
+        `/api/drive/${driveId}`,
         {
           method: "POST",
           body: formData,
@@ -113,7 +113,7 @@ function AddDrive() {
     const fetchDrivers = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:8000/api/driver");
+        const response = await fetch("/api/driver");
         if (response.ok) {
           const data = await response.json();
           setDrivers(data);
