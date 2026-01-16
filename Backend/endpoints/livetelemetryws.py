@@ -27,11 +27,16 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
             self.connection_count -= 1
             logger.info(f"Connection closed. Total connections: {self.connection_count}")
-    
+
+manager = ConnectionManager()
+
 @router.websocket("/ws/livetelemetry")
 async def websocket_endpoint(websocket: WebSocket):
+    '''WS handler for sending live telemetry data to clients'''
     await manager.connect(websocket)
+    
 
 @router.websocket("/ws/send")
 async def websocket_sendpoint(websocket: WebSocket):
+    '''WS handler for data sent from pi'''
     await manager.connect(websocket)
