@@ -28,3 +28,10 @@ class ConnectionManager:
             self.connection_count -= 1
             logger.info(f"Connection closed. Total connections: {self.connection_count}")
     
+@router.websocket("/ws/livetelemetry")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+
+@router.websocket("/ws/send")
+async def websocket_sendpoint(websocket: WebSocket):
+    await manager.connect(websocket)
