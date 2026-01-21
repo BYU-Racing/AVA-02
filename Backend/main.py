@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from .endpoints import drive, driver, data
+from .endpoints import drive, driver, data, livetelemetryws
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +41,7 @@ def health_check():
 app.include_router(drive.router, prefix="/api")
 app.include_router(driver.router, prefix="/api")
 app.include_router(data.router, prefix="/api")
+app.include_router(livetelemetryws.router, prefix="/api")
 
 # Mount static files LAST (catch-all route)
 app.mount("/", StaticFiles(directory="Frontend/ava-02/build", html=True), name="static")

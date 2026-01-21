@@ -20,13 +20,15 @@ class ConnectionManager:
         await websocket.accept()
         if client:
             self.active_connections.append(websocket)
-        logger.info(f"New connection established. Total connections: {self.connection_count}")
+        logger.info(f"New connection established. Total clients: {len(self.active_connections)}")
         
     async def disconnect(self, websocket: WebSocket, client = True):
-        if websocket in self.active_connections:
-            if client:
+        if client:
+            if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
-            logger.info(f"Connection closed. Total connections: {self.connection_count}")
+                logger.info(f"Connection closed. Total clients: {len(self.active_connections)}")
+        else:
+            logger.info("Sender disconnected (/ws/send)")
     
     async def broadcast(self, message: Dict):
         disconnected: List[WebSocket] = []
@@ -48,9 +50,11 @@ manager = ConnectionManager()
 def convert_data(data: Dict) -> Dict:
     '''Convert incoming data from CAN to JSON for AVA'''
     sensor_data = {
+        "type": "telemetry",
         "time": data.get("time", 0),
         "msg_id": data.get("msg_id", []),
-        "raw_data": data.get("raw_data", [])
+        "raw_data": data.get("raw_data", []),
+        "timestamp": datetime.now().isoformat()
     }
     return sensor_data
 

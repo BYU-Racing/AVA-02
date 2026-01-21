@@ -1,0 +1,485 @@
+/* ========================================
+   AVA-02 LIVE TELEMETRY - FORMULA E STYLE
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Dark Theme Colors */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #141824;
+  --bg-panel: #1a1f2e;
+  --bg-panel-hover: #22283a;
+
+  /* Accent Colors */
+  --accent-primary: #00d9ff;
+  --accent-secondary: #7c3aed;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Border Colors */
+  --border-color: #2d3548;
+  --border-accent: #00d9ff;
+
+  /* Chart Colors */
+  --chart-speed: #00d9ff;
+  --chart-battery: #10b981;
+  --chart-throttle: #3b82f6;
+  --chart-brake: #ef4444;
+}
+
+.telemetry-dashboard {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.telemetry-header {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-accent);
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.telemetry-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--accent-primary);
+  text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+  margin: 0;
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.session-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.session-status {
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.session-status.connected {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--accent-success);
+  border: 1px solid var(--accent-success);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.session-status.disconnected {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--accent-danger);
+  border: 1px solid var(--accent-danger);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+.control-panel {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-panel);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+
+.control-btn:hover {
+  transform: translateY(-2px);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.connect-btn {
+  border-color: var(--accent-success);
+  color: var(--accent-success);
+}
+
+.connect-btn:hover:not(:disabled) {
+  background: var(--accent-success);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+}
+
+.disconnect-btn {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+.disconnect-btn:hover:not(:disabled) {
+  background: var(--accent-danger);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+}
+
+/* ========================================
+   DASHBOARD GRID
+   ======================================== */
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  min-height: calc(100vh - 100px);
+}
+
+/* ========================================
+   STAT PANELS
+   ======================================== */
+
+.stat-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.stat-panel:hover {
+  border-color: var(--border-accent);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+}
+
+.stat-header {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.stat-value-large {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent-primary);
+  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+  margin: 0.5rem 0;
+}
+
+.stat-value-medium {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  margin: 0.5rem 0;
+}
+
+.stat-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ========================================
+   LEFT PANEL
+   ======================================== */
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.primary-stat {
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+
+.speed-value {
+  color: var(--chart-speed);
+  text-shadow: 0 0 30px rgba(0, 217, 255, 0.7);
+}
+
+.battery-value {
+  color: var(--chart-battery);
+  text-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
+}
+
+.secondary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.secondary-stat {
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+
+/* ========================================
+   CENTER PANEL - CHARTS
+   ======================================== */
+
+.center-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.chart-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.chart-section:hover {
+  border-color: var(--border-accent);
+}
+
+.section-header {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 180px;
+}
+
+/* ========================================
+   RIGHT PANEL
+   ======================================== */
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.info-stat {
+  text-align: center;
+  padding: 1rem;
+}
+
+.telemetry-feed {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  flex: 1;
+  min-height: 300px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.feed-content {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.8;
+}
+
+.feed-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.feed-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
+}
+
+.feed-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.feed-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-accent);
+}
+
+.log-entry {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  transition: background 0.2s ease;
+}
+
+.log-entry:hover {
+  background: var(--bg-panel-hover);
+}
+
+.log-time {
+  color: var(--accent-primary);
+  font-weight: 700;
+  min-width: 80px;
+  font-size: 0.7rem;
+}
+
+.log-data {
+  color: var(--text-secondary);
+  flex: 1;
+  font-size: 0.7rem;
+}
+
+.log-sensor-name {
+  color: var(--accent-success);
+  font-weight: 700;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1400px) {
+  .telemetry-grid {
+    grid-template-columns: 250px 1fr 250px;
+  }
+
+  .stat-value-large {
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .telemetry-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .left-panel,
+  .right-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .secondary-stats {
+    flex: 1;
+  }
+
+  .telemetry-feed {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .telemetry-header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .header-left {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .telemetry-title {
+    font-size: 1.5rem;
+  }
+
+  .control-panel {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .control-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .telemetry-grid {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .stat-value-large {
+    font-size: 2.5rem;
+  }
+
+  .chart-wrapper {
+    height: 150px;
+  }
+}

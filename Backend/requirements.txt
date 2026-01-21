@@ -5,3 +5,4 @@ psycopg2-binary==2.9.10
 python-multipart==0.0.20
 pydantic==2.10.3
 pandas==2.2.3
+websockets==13.1
