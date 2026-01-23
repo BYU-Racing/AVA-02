@@ -2,10 +2,14 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from .endpoints import drive, driver, data, livetelemetryws
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+from .configDB import DATABASE_URL
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
+
+BASE_DIR = Path(__file__).resolve().parent  # Backend/
 
 # Only create tables if database is available (skip if RDS not configured yet)
 try:
@@ -44,4 +48,11 @@ app.include_router(data.router, prefix="/api")
 app.include_router(livetelemetryws.router, prefix="/api")
 
 # Mount static files LAST (catch-all route)
-app.mount("/", StaticFiles(directory="Frontend/ava-02/build", html=True), name="static")
+build_dir = (BASE_DIR / ".." / "Frontend" / "ava-02" / "build").resolve()
+
+app.mount(
+    "/",
+    StaticFiles(directory=str(build_dir), html=True),
+    name="static"
+)
+

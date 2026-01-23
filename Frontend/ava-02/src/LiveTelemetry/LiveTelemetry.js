@@ -25,7 +25,7 @@ ChartJS.register(
 );
 
 // Configuration (prod-safe: auto picks ws/wss + current host)
-const WS_URL = "ws://Ava-2-docker-env.eba-tdbxjxdq.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+const WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
 
 const RECONNECT_INTERVAL = 3000; // 3 seconds
 const MAX_DATA_POINTS = 50; // Rolling window for charts

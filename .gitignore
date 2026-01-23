@@ -22,3 +22,9 @@ Frontend/ava-02/yarn-error.log*
 Backend/secrets.py
 Backend/configDB.py
 Backend/__pycache__/*
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+eb_bundle
