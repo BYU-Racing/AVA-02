@@ -38,25 +38,27 @@ function App() {
     <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Router>
         <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/analytics"
-            element={
-              <Analytics
-                driveList={driveList}
-                setDriveList={setDriveList}
-                setCachedData={setCachedData}
-                cachedData={cachedData}
-              />
-            }
-          />
-          <Route path="/live-telemetry" element={<LiveTelemetry />} />
-          <Route
-            path="/*"
-            element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
-          />
-        </Routes>
+        <div style={{ paddingTop: '50px' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/analytics"
+              element={
+                <Analytics
+                  driveList={driveList}
+                  setDriveList={setDriveList}
+                  setCachedData={setCachedData}
+                  cachedData={cachedData}
+                />
+              }
+            />
+            <Route path="/live-telemetry" element={<LiveTelemetry />} />
+            <Route
+              path="/*"
+              element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
+            />
+          </Routes>
+        </div>
       </Router>
     </LoadScript>
   );
