@@ -310,7 +310,6 @@ function LiveTelemetry() {
       {/* Header */}
       <header className="telemetry-header">
         <div className="header-left">
-          <h1 className="telemetry-title">AVA-02 LIVE TELEMETRY</h1>
           <div className="session-info">
             <span className="session-label">LIVE SESSION</span>
             <div

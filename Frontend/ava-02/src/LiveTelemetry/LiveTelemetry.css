@@ -2,40 +2,37 @@
    AVA-02 LIVE TELEMETRY - FORMULA E STYLE
    ======================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  /* Dark Theme Colors */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #141824;
-  --bg-panel: #1a1f2e;
-  --bg-panel-hover: #22283a;
+  /* Dark Theme Colors - Aligned with navbar */
+  --bg-primary: #121212;
+  --bg-secondary: #1a1a1a;
+  --bg-panel: #1e1e1e;
+  --bg-panel-hover: #252525;
 
-  /* Accent Colors */
-  --accent-primary: #00d9ff;
-  --accent-secondary: #7c3aed;
+  /* Accent Colors - Simplified */
+  --accent-primary: #1d41a3;
   --accent-success: #10b981;
-  --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
 
   /* Text Colors */
   --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
 
-  /* Border Colors */
-  --border-color: #2d3548;
-  --border-accent: #00d9ff;
+  /* Border Colors - Minimal */
+  --border-color: #333333;
+  --border-accent: #1d41a3;
 
   /* Chart Colors */
-  --chart-speed: #00d9ff;
+  --chart-speed: #1d41a3;
   --chart-battery: #10b981;
   --chart-throttle: #3b82f6;
   --chart-brake: #ef4444;
 }
 
 .telemetry-dashboard {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'avaFont', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
@@ -49,28 +46,17 @@
 
 .telemetry-header {
   background: var(--bg-secondary);
-  border-bottom: 2px solid var(--border-accent);
-  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 2rem;
-}
-
-.telemetry-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: 3px;
-  color: var(--accent-primary);
-  text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
-  margin: 0;
 }
 
 .session-info {
@@ -100,14 +86,13 @@
 }
 
 .session-status.connected {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.15);
   color: var(--accent-success);
   border: 1px solid var(--accent-success);
-  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .session-status.disconnected {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.15);
   color: var(--accent-danger);
   border: 1px solid var(--accent-danger);
 }
@@ -119,15 +104,6 @@
   background: currentColor;
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
-  }
-}
-
 .control-panel {
   display: flex;
   gap: 0.75rem;
@@ -137,22 +113,22 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   background: var(--bg-panel);
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'avaFont', sans-serif;
   font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
   text-transform: uppercase;
   border-radius: 4px;
 }
 
 .control-btn:hover {
-  transform: translateY(-2px);
+  background: var(--bg-panel-hover);
+  border-color: var(--border-accent);
 }
 
 .control-btn:disabled {
@@ -166,9 +142,7 @@
 }
 
 .connect-btn:hover:not(:disabled) {
-  background: var(--accent-success);
-  color: var(--bg-primary);
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .disconnect-btn {
@@ -177,9 +151,7 @@
 }
 
 .disconnect-btn:hover:not(:disabled) {
-  background: var(--accent-danger);
-  color: var(--bg-primary);
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.1);
 }
 
 /* ========================================
@@ -201,40 +173,38 @@
 .stat-panel {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 
 .stat-panel:hover {
   border-color: var(--border-accent);
-  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
 }
 
 .stat-header {
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'avaFont', sans-serif;
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 2px;
+  font-weight: 600;
+  letter-spacing: 1px;
   color: var(--text-secondary);
   text-transform: uppercase;
   margin-bottom: 0.75rem;
 }
 
 .stat-value-large {
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'avaFont', sans-serif;
   font-size: 4rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   color: var(--accent-primary);
-  text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
   margin: 0.5rem 0;
 }
 
 .stat-value-medium {
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'avaFont', sans-serif;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   color: var(--text-primary);
   margin: 0.5rem 0;
@@ -265,12 +235,10 @@
 
 .speed-value {
   color: var(--chart-speed);
-  text-shadow: 0 0 30px rgba(0, 217, 255, 0.7);
 }
 
 .battery-value {
   color: var(--chart-battery);
-  text-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
 }
 
 .secondary-stats {
@@ -297,9 +265,9 @@
 .chart-section {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 
 .chart-section:hover {
@@ -307,11 +275,11 @@
 }
 
 .section-header {
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'avaFont', sans-serif;
   font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--accent-primary);
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
   text-transform: uppercase;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
@@ -341,7 +309,7 @@
 .telemetry-feed {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1rem;
   flex: 1;
   min-height: 300px;
