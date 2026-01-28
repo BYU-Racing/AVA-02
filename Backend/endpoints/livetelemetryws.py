@@ -47,7 +47,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def convert_data(data: Dict) -> Dict:
-    '''Convert incoming data from CAN to JSON for AVA'''
+    '''Convert incoming data for AVA; currently just adds a timestamp'''
     sensor_data = {
         "type": "telemetry",
         "time": data.get("time", 0),
@@ -57,34 +57,27 @@ def convert_data(data: Dict) -> Dict:
     }
     return sensor_data
 
-def decode_to_u16(b0: int, b1: int) -> int:
-    return (b0 << 8) | b1
+def decode_u16_le(bytes: List[int]) -> int:
+    return (bytes[1] << 8) | bytes[0]
 
-#TODO: data conversion from CAN to AVA format
-def convert_data_from_can(data: Dict) -> Dict:
-    '''Convert incoming data from CAN to JSON for AVA'''
-    msg_ids = data.get("msg_id", [])
-    raw_data_bytes = data.get("raw_data", [])
-    
-    if(len(msg_ids) != 4):
-        logger.error("Invalid msg_id length received from Pi")
-        return {}
-    if(len(raw_data_bytes) != 8):
-        logger.error("Invalid raw_data length received from Pi")
-        return {}
-    
-    raw_data = []
-    for i in range(4):
-        raw_data = decode_to_u16(raw_data_bytes[i*2], raw_data_bytes[(i*2)+1])
-
-    sensor_data = {
-        "type": "telemetry",
-        "time": data.get("time", 0),
-        "msg_id": data.get("msg_id", []),
-        "raw_data": raw_data,
-        "timestamp": datetime.now().isoformat()
+def convert_can_data(data: Dict) -> Dict:
+    '''Convert incoming CAN data to AVA usable format
+    Incoming data:
+    {
+        timestamp: int,
+        id: int,
+        length: int, // up to 8
+        bytes: List[int], // length: up to 8
     }
-    return sensor_data
+    AVA Data format:
+    {
+        type: string, // "telemetry"
+        time: int,
+        msg_id: List[int], // sensor values
+        raw_data: List[int] // raw sensor data
+    }
+    '''
+    return None
 
 @router.websocket("/ws/livetelemetry") # send to client
 async def websocket_endpoint(websocket: WebSocket):

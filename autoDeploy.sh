@@ -6,12 +6,8 @@ echo "Starting Build"
 
 npm run build || { echo "Build failed"; exit 1; }
 
-sudo rm -rf /var/www/build
+cd ../..
 
-mkdir -p /var/www/build
+tar -a -c -f ava-02-eb-deploy.zip Dockerfile Backend Frontend/ava-02/build .ebextensions || { echo "Packaging failed"; exit 1; }
 
-cp -r /home/FormulaE/AVA-02/Frontend/ava-02/build/* /var/www/build
-
-sudo systemctl restart nginx
-
-echo "Deploy successful"
+echo "Packaging successful"

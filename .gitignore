@@ -28,3 +28,4 @@ Backend/__pycache__/*
 !.elasticbeanstalk/*.global.yml
 
 eb_bundle
+*.zip
