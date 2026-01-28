@@ -46,7 +46,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-#TODO: data conversion from CAN to AVA format
 def convert_data(data: Dict) -> Dict:
     '''Convert incoming data from CAN to JSON for AVA'''
     sensor_data = {
@@ -54,6 +53,35 @@ def convert_data(data: Dict) -> Dict:
         "time": data.get("time", 0),
         "msg_id": data.get("msg_id", []),
         "raw_data": data.get("raw_data", []),
+        "timestamp": datetime.now().isoformat()
+    }
+    return sensor_data
+
+def decode_to_u16(b0: int, b1: int) -> int:
+    return (b0 << 8) | b1
+
+#TODO: data conversion from CAN to AVA format
+def convert_data_from_can(data: Dict) -> Dict:
+    '''Convert incoming data from CAN to JSON for AVA'''
+    msg_ids = data.get("msg_id", [])
+    raw_data_bytes = data.get("raw_data", [])
+    
+    if(len(msg_ids) != 4):
+        logger.error("Invalid msg_id length received from Pi")
+        return {}
+    if(len(raw_data_bytes) != 8):
+        logger.error("Invalid raw_data length received from Pi")
+        return {}
+    
+    raw_data = []
+    for i in range(4):
+        raw_data = decode_to_u16(raw_data_bytes[i*2], raw_data_bytes[(i*2)+1])
+
+    sensor_data = {
+        "type": "telemetry",
+        "time": data.get("time", 0),
+        "msg_id": data.get("msg_id", []),
+        "raw_data": raw_data,
         "timestamp": datetime.now().isoformat()
     }
     return sensor_data
