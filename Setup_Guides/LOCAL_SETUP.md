@@ -32,12 +32,14 @@ Visit http://localhost:8000
 ### Step 1: Install PostgreSQL
 
 #### macOS (using Homebrew)
+
 ```bash
 brew install postgresql@14
 brew services start postgresql@14
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 sudo apt update
 sudo apt install postgresql postgresql-contrib
@@ -46,6 +48,7 @@ sudo systemctl enable postgresql
 ```
 
 #### Windows
+
 Download and install from [PostgreSQL Downloads](https://www.postgresql.org/download/windows/)
 
 ### Step 2: Create Database and User
@@ -75,6 +78,7 @@ GRANT ALL PRIVILEGES ON DATABASE postgres TO evangelion;
 ```
 
 **Important**: The default local configuration in [Backend/configDB.py](Backend/configDB.py#L15-L18) expects:
+
 - Host: `localhost`
 - Port: `5432`
 - Database: `postgres`
@@ -82,6 +86,7 @@ GRANT ALL PRIVILEGES ON DATABASE postgres TO evangelion;
 - Password: `password`
 
 You can customize these by setting the `DATABASE_URL` environment variable:
+
 ```bash
 export DATABASE_URL="postgresql://your_user:your_password@localhost/your_database"
 ```
@@ -101,13 +106,14 @@ Enter password when prompted: `password`
 From the project root directory:
 
 ```bash
-cd /Users/rental/AVA-02-1
+cd AVA-02-1
 
 # Install Python dependencies
 pip install -r Backend/requirements.txt
 ```
 
 **Common packages installed:**
+
 - FastAPI - Web framework
 - Uvicorn - ASGI server
 - SQLAlchemy - Database ORM
@@ -132,6 +138,7 @@ cd ../..
 This creates `Frontend/ava-02/build/` with optimized React files.
 
 **Verify the build:**
+
 ```bash
 ls Frontend/ava-02/build
 ```
@@ -153,6 +160,7 @@ uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
 The backend uses relative imports (`.endpoints`, `.crud`, etc.) which require the parent package structure to be visible.
 
 You should see output like:
+
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [12345] using WatchFiles
@@ -193,12 +201,14 @@ This runs the React dev server on http://localhost:3000
 ### Making Changes
 
 **Backend Changes:**
+
 - The `--reload` flag automatically restarts the server when you save Python files
 - No rebuild needed
 
 **Frontend Changes:**
 
 If running production build (served by FastAPI):
+
 ```bash
 cd Frontend/ava-02
 npm run build
@@ -207,6 +217,7 @@ cd ../..
 ```
 
 If running dev server (`npm start`):
+
 - Changes reload automatically
 
 ## Project Structure
@@ -261,6 +272,7 @@ From [Backend/configDB.py](Backend/configDB.py):
 ### Issue 1: ImportError - "attempted relative import with no known parent package"
 
 **Error:**
+
 ```
 ImportError: attempted relative import with no known parent package
 ```
@@ -281,6 +293,7 @@ uvicorn Backend.main:app --reload
 ### Issue 2: Database Connection Failed
 
 **Error:**
+
 ```
 psycopg2.OperationalError: could not connect to server
 ```
@@ -288,6 +301,7 @@ psycopg2.OperationalError: could not connect to server
 **Solutions:**
 
 1. **PostgreSQL not running:**
+
    ```bash
    # macOS
    brew services start postgresql@14
@@ -322,6 +336,7 @@ cd ../..
 ```
 
 Verify:
+
 ```bash
 ls Frontend/ava-02/build
 ```
@@ -329,6 +344,7 @@ ls Frontend/ava-02/build
 ### Issue 4: Static Files Not Found
 
 **Error:**
+
 ```
 RuntimeError: Directory 'Frontend/ava-02/build' does not exist
 ```
@@ -345,6 +361,7 @@ This path is relative to where you run `uvicorn`. Always run from project root.
 ### Issue 5: Port Already in Use
 
 **Error:**
+
 ```
 OSError: [Errno 48] Address already in use
 ```
@@ -352,11 +369,13 @@ OSError: [Errno 48] Address already in use
 **Solution:**
 
 1. **Find process using port 8000:**
+
    ```bash
    lsof -i :8000
    ```
 
 2. **Kill the process:**
+
    ```bash
    kill -9 <PID>
    ```
@@ -369,6 +388,7 @@ OSError: [Errno 48] Address already in use
 ### Issue 6: Module Not Found Errors
 
 **Error:**
+
 ```
 ModuleNotFoundError: No module named 'fastapi'
 ```
@@ -381,6 +401,7 @@ pip install -r Backend/requirements.txt
 ```
 
 If you're using a virtual environment (recommended):
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -404,6 +425,7 @@ curl http://localhost:8000/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "healthy",
