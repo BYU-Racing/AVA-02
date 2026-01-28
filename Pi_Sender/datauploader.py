@@ -13,6 +13,7 @@ Requires: pip install websocket-client
 """
 
 import json
+import os
 import random
 import time
 from typing import List, Dict, Any, Tuple
@@ -22,7 +23,8 @@ import websocket  # websocket-client
 # =========================
 # CONFIG
 # =========================
-WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/send"
+# Use environment variable or default to production
+WS_URL = os.getenv("WS_URL", "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/send")
 SEND_INTERVAL_SEC = 0.1
 RECONNECT_DELAY_SEC = 2.0
 

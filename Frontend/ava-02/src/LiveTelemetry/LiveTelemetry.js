@@ -21,11 +21,12 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Filler
+  Filler,
 );
 
 // Configuration (prod-safe: auto picks ws/wss + current host)
-const WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+const WS_URL =
+  "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
 
 const RECONNECT_INTERVAL = 3000; // 3 seconds
 const MAX_DATA_POINTS = 50; // Rolling window for charts
@@ -309,7 +310,6 @@ function LiveTelemetry() {
       {/* Header */}
       <header className="telemetry-header">
         <div className="header-left">
-          <h1 className="telemetry-title">AVA-02 LIVE TELEMETRY</h1>
           <div className="session-info">
             <span className="session-label">LIVE SESSION</span>
             <div
@@ -459,7 +459,9 @@ function LiveTelemetry() {
               ))}
               {logEntries.length === 0 && (
                 <div className="log-entry">
-                  <span className="log-data">Waiting for telemetry data...</span>
+                  <span className="log-data">
+                    Waiting for telemetry data...
+                  </span>
                 </div>
               )}
             </div>
