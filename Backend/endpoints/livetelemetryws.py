@@ -3,7 +3,16 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Dict
 import logging
+import struct
 from datetime import datetime
+from typing import Dict
+
+PI_TO_SERVER_FMT = "<I B B 8s"
+# <  = little-endian
+# I  = uint32
+# B  = uint8
+# B  = uint8
+# 8s = 8 raw bytes
 
 router = APIRouter()
 
@@ -57,10 +66,29 @@ def convert_data(data: Dict) -> Dict:
     }
     return sensor_data
 
+def decode_pi_to_server(payload: bytes) -> Dict:
+    if len(payload) != 14:
+        raise ValueError(f"Invalid payload length: {len(payload)}")
+
+    timestamp, msg_id, length, raw_bytes = struct.unpack(
+        PI_TO_SERVER_FMT, payload
+    )
+
+    # Convert raw_bytes (bytes object) → list[int]
+    raw_data = list(raw_bytes[:length])
+    
+
+    return {
+        "timestamp": timestamp,
+        "id": msg_id,
+        "length": length,
+        "bytes": raw_data
+    }
+
 def decode_u16_le(bytes: List[int]) -> int:
     return (bytes[1] << 8) | bytes[0]
 
-def convert_can_data(data: Dict) -> Dict:
+def convert_can_data(data: bytes) -> Dict:
     '''Convert incoming CAN data to AVA usable format
     Incoming data:
     {
@@ -77,7 +105,15 @@ def convert_can_data(data: Dict) -> Dict:
         raw_data: List[int] // raw sensor data
     }
     '''
-    return None
+    decoded = decode_pi_to_server(data)
+    raw_data = int.from_bytes(bytes(decoded["bytes"]), byteorder='little', signed=False)
+    
+    return {
+        "type": "telemetry",
+        "time": decoded["timestamp"],
+        "msg_id": [decoded["id"]],
+        "raw_data": [raw_data]
+    }
 
 @router.websocket("/ws/livetelemetry") # send to client
 async def websocket_endpoint(websocket: WebSocket):
@@ -120,12 +156,12 @@ async def websocket_sendpoint(websocket: WebSocket):
     logger.info("Pi connected to send telemetry WebSocket")
     try:
         while True: # Receive and parse data from pi
-            data = await websocket.receive_json()
-            if not isinstance(data, dict):
-                logger.error("Invalid data format received from Pi")
-                continue
+            data = await websocket.receive_bytes()
+            # if not isinstance(data, dict):
+            #     logger.error("Invalid data format received from Pi")
+            #     continue
             
-            sensor_data = convert_data(data)
+            sensor_data = convert_can_data(data)
             await manager.broadcast(sensor_data)
     except WebSocketDisconnect:
         pass
