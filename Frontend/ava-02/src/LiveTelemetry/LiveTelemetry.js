@@ -21,23 +21,59 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Filler,
+  Filler
 );
 
-// Configuration (prod-safe: auto picks ws/wss + current host)
-const WS_URL =
-  "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+// Configuration
+const WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+const RECONNECT_INTERVAL = 3000;
+const MAX_DATA_POINTS = 50;
+const MAX_LOG_ENTRIES = 30;
 
-const RECONNECT_INTERVAL = 3000; // 3 seconds
-const MAX_DATA_POINTS = 50; // Rolling window for charts
-const MAX_LOG_ENTRIES = 30; // Max telemetry feed entries
+// Choose one ID to advance chart timestamps (prevents x-axis drift)
+// Good defaults: TireRPM (5) or Throttle1 (1)
+const CHART_TICK_ID = 5;
 
-// Decode helpers: assumes 2 bytes per sensor (u16 big-endian) in raw_data,
-// aligned with msg_id order: raw_data = [id0_MSB,id0_LSB,id1_MSB,id1_LSB,...]
-const BYTES_PER_SENSOR = 2;
-const decodeU16BE = (raw, offset) => {
-  if (!Array.isArray(raw) || offset + 1 >= raw.length) return 0;
-  return ((raw[offset] & 0xff) << 8) | (raw[offset + 1] & 0xff);
+// Fallback names if idMap doesn't include them
+const ID_NAME = {
+  0: "StartSwitch",
+  1: "Throttle1Position",
+  2: "Throttle2Position",
+  3: "BrakePressure",
+  4: "RVC",
+  5: "TireRPM",
+  6: "TireTemperature",
+  7: "BMSPercentage",
+  8: "BMSTemperature",
+  9: "GPS",
+  10: "Lap",
+};
+
+// ---------- Safe parsing helpers ----------
+const parseBigInt = (x) => {
+  if (typeof x === "bigint") return x;
+  if (typeof x === "number") return BigInt(Math.trunc(x));
+  if (typeof x === "string") {
+    try {
+      return BigInt(x);
+    } catch {
+      return 0n;
+    }
+  }
+  return 0n;
+};
+
+const asBigIntArray = (data) => {
+  if (Array.isArray(data)) return data.map(parseBigInt);
+  return [parseBigInt(data)];
+};
+
+const bigintToSafeNumber = (b) => {
+  const MAX = BigInt(Number.MAX_SAFE_INTEGER);
+  const MIN = BigInt(Number.MIN_SAFE_INTEGER);
+  if (b > MAX) return Number.MAX_SAFE_INTEGER;
+  if (b < MIN) return Number.MIN_SAFE_INTEGER;
+  return Number(b);
 };
 
 function LiveTelemetry() {
@@ -45,20 +81,21 @@ function LiveTelemetry() {
   const [connected, setConnected] = useState(false);
   const [lastMessageTime, setLastMessageTime] = useState(null);
 
-  // Telemetry data state
+  // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
   const [logEntries, setLogEntries] = useState([]);
 
-  // Chart data
-  const [speedData, setSpeedData] = useState([]);
+  // Chart series + labels
+  const [rpmData, setRpmData] = useState([]); // TireRPM
   const [throttleBrakeData, setThrottleBrakeData] = useState({
-    throttle: [],
+    throttle1: [],
+    throttle2: [],
     brake: [],
   });
-  const [batteryData, setBatteryData] = useState([]);
+  const [batteryData, setBatteryData] = useState([]); // BMSPercentage
   const [timestamps, setTimestamps] = useState([]);
 
-  // WebSocket reference
+  // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
@@ -71,83 +108,187 @@ function LiveTelemetry() {
     ]);
   };
 
-  // Update timestamps for chart x-axis
-  const updateTimestamps = () => {
+  // Advance chart x-axis
+  const tickCharts = () => {
     setTimestamps((prev) => {
-      const newTimestamps = [...prev, new Date().toLocaleTimeString()];
-      return newTimestamps.slice(-MAX_DATA_POINTS);
+      const next = [...prev, new Date().toLocaleTimeString()];
+      return next.slice(-MAX_DATA_POINTS);
     });
   };
 
-  // Handle a single decoded sensor reading (what your UI already expects)
-  const handleSingleTelemetry = ({ msg_id, value, timestamp }) => {
-    const sensorName = idMap[msg_id] || `Sensor ${msg_id}`;
-
-    // Update telemetry data
+  // Update latest-value store (for stat panels)
+  const updateLatest = (id, name, displayValue, ts) => {
     setTelemetryData((prev) => ({
       ...prev,
-      [msg_id]: {
-        name: sensorName,
-        value: value,
-        timestamp: timestamp,
-      },
+      [id]: { name, value: displayValue, timestamp: ts },
     }));
-
-    // Update charts for specific sensors
-    if (msg_id === 192) {
-      // Torque as placeholder for speed
-      setSpeedData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), value]);
-      updateTimestamps();
-    }
-
-    if (msg_id === 1) {
-      // Throttle
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        throttle: [...prev.throttle.slice(-MAX_DATA_POINTS + 1), value],
-      }));
-      updateTimestamps();
-    }
-
-    if (msg_id === 3) {
-      // Brake
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        brake: [...prev.brake.slice(-MAX_DATA_POINTS + 1), value],
-      }));
-      updateTimestamps();
-    }
-
-    // Battery placeholder stays unchanged
-    // setBatteryData(prev => [...prev.slice(-MAX_DATA_POINTS + 1), batteryPercent]);
-
-    addLogEntry(sensorName, `${value}`);
   };
 
-  // Handle incoming AVA bundle telemetry from backend:
-  // {
-  //   type: "telemetry",
-  //   time: int,
-  //   msg_id: [..],
-  //   raw_data: [..],
-  //   timestamp: iso
-  // }
-  const handleAvaBundle = (bundle) => {
-    const ids = Array.isArray(bundle.msg_id) ? bundle.msg_id : [];
-    const raw = Array.isArray(bundle.raw_data) ? bundle.raw_data : [];
-    const ts = bundle.timestamp || new Date().toISOString();
+  // ---------- ID-specific handlers ----------
+  // Each handler receives: { id, name, data, ts }
+  const handlers = {
+    0: ({ id, name, data, ts }) => {
+      // StartSwitch: 0/1
+      const [v] = asBigIntArray(data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+      addLogEntry(name, `${n}`);
+    },
 
-    ids.forEach((id, idx) => {
-      const value = decodeU16BE(raw, idx * BYTES_PER_SENSOR);
-      handleSingleTelemetry({ msg_id: id, value, timestamp: ts });
-    });
+    1: ({ id, name, data, ts }) => {
+      // Throttle1Position (raw or %)
+      const [v] = asBigIntArray(data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+
+      setThrottleBrakeData((prev) => ({
+        ...prev,
+        throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
+      }));
+
+      if (id === CHART_TICK_ID) tickCharts();
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    2: ({ id, name, data, ts }) => {
+      // Throttle2Position
+      const [v] = asBigIntArray(data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+
+      setThrottleBrakeData((prev) => ({
+        ...prev,
+        throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
+      }));
+
+      if (id === CHART_TICK_ID) tickCharts();
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    3: ({ id, name, data, ts }) => {
+      // BrakePressure
+      const [v] = asBigIntArray(data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+
+      setThrottleBrakeData((prev) => ({
+        ...prev,
+        brake: [...prev.brake.slice(-MAX_DATA_POINTS + 1), n],
+      }));
+
+      if (id === CHART_TICK_ID) tickCharts();
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    4: ({ id, name, data, ts }) => {
+      // RVC (whatever scalar you use)
+      const [v] = asBigIntArray(data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    5: ({ id, name, data, ts }) => {
+      // TireRPM
+      const [v] = asBigIntArray(data);
+      const rpm = bigintToSafeNumber(v);
+      updateLatest(id, name, rpm, ts);
+
+      setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
+
+      if (id === CHART_TICK_ID) tickCharts();
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    6: ({ id, name, data, ts }) => {
+      // TireTemperature (scalar or array if you later add multiple tires)
+      // If later you send [FL, FR, RL, RR], this will still work and show a summary.
+      const vals = asBigIntArray(data);
+      const nums = vals.map(bigintToSafeNumber);
+
+      const display =
+        nums.length <= 1
+          ? nums[0] ?? 0
+          : `FL=${nums[0] ?? 0} FR=${nums[1] ?? 0} RL=${nums[2] ?? 0} RR=${
+              nums[3] ?? 0
+            }`;
+
+      updateLatest(id, name, display, ts);
+      addLogEntry(name, Array.isArray(data) ? JSON.stringify(nums) : `${nums[0] ?? 0}`);
+    },
+
+    7: ({ id, name, data, ts }) => {
+      // BMSPercentage (0-100)
+      const [v] = asBigIntArray(data);
+      const pct = bigintToSafeNumber(v);
+      updateLatest(id, name, pct, ts);
+
+      setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
+
+      if (id === CHART_TICK_ID) tickCharts();
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    8: ({ id, name, data, ts }) => {
+      // BMSTemperature
+      const [v] = asBigIntArray(data);
+      const temp = bigintToSafeNumber(v);
+      updateLatest(id, name, temp, ts);
+      addLogEntry(name, `${v.toString()}`);
+    },
+
+    9: ({ id, name, data, ts }) => {
+      // GPS — assume [lat_e7, lon_e7, speed_cms] as ints in strings
+      // Adjust decoding to your actual format.
+      const vals = asBigIntArray(data);
+      const lat_e7 = vals[0] ?? 0n;
+      const lon_e7 = vals[1] ?? 0n;
+      const spd_cms = vals[2] ?? 0n;
+
+      const lat = Number(lat_e7) / 1e7;
+      const lon = Number(lon_e7) / 1e7;
+      const spd_ms = Number(spd_cms) / 100; // cm/s -> m/s
+
+      // If lat/lon might exceed safe integer conversion, keep them as strings; but e7 values are typically safe.
+      const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)} v=${spd_ms.toFixed(2)}m/s`;
+
+      updateLatest(id, name, display, ts);
+      addLogEntry(name, display);
+    },
+
+    10: ({ id, name, data, ts }) => {
+      // Lap
+      const [v] = asBigIntArray(data);
+      const lap = bigintToSafeNumber(v);
+      updateLatest(id, name, lap, ts);
+      addLogEntry(name, `${v.toString()}`);
+    },
   };
 
-  // Connect to WebSocket
+  // ---------- Router ----------
+  const handleTelemetryMessage = (msg) => {
+    const id = Number(msg.id);
+    if (!Number.isFinite(id)) return;
+
+    const ts = msg.timestamp || new Date().toISOString();
+    const name = idMap?.[id] || ID_NAME[id] || `Sensor ${id}`;
+    const fn = handlers[id];
+
+    if (fn) {
+      fn({ id, name, data: msg.data, ts });
+    } else {
+      // Default: single scalar
+      const [v] = asBigIntArray(msg.data);
+      const n = bigintToSafeNumber(v);
+      updateLatest(id, name, n, ts);
+      addLogEntry(name, `${v.toString()}`);
+    }
+  };
+
+  // ---------- WebSocket connect/disconnect ----------
   const connectWebSocket = () => {
     try {
       console.log("Connecting to WebSocket:", WS_URL);
-
       const ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
@@ -163,8 +304,8 @@ function LiveTelemetry() {
           if (data.type === "connection") {
             console.log("Connection confirmed:", data.message);
           } else if (data.type === "telemetry") {
-            // Backend is sending AVA-bundle telemetry
-            handleAvaBundle(data);
+            // Expected: {type:"telemetry", id:<int>, data:<string|array>, timestamp?:iso}
+            handleTelemetryMessage(data);
           }
 
           setLastMessageTime(new Date());
@@ -182,7 +323,6 @@ function LiveTelemetry() {
         setConnected(false);
         addLogEntry("SYSTEM", "Disconnected from telemetry stream");
 
-        // Attempt to reconnect
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log("Attempting to reconnect...");
           connectWebSocket();
@@ -195,7 +335,6 @@ function LiveTelemetry() {
     }
   };
 
-  // Disconnect from WebSocket
   const disconnectWebSocket = () => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -210,18 +349,14 @@ function LiveTelemetry() {
   // Auto-connect on mount
   useEffect(() => {
     connectWebSocket();
-    return () => {
-      disconnectWebSocket();
-    };
+    return () => disconnectWebSocket();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Helper functions
-  const getSensorValue = (msgId) => {
-    return telemetryData[msgId]?.value ?? 0;
-  };
+  // UI helper: get latest value for id
+  const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
 
-  // Chart configurations
+  // ---------- Chart options ----------
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -244,13 +379,13 @@ function LiveTelemetry() {
     interaction: { mode: "nearest", axis: "x", intersect: false },
   };
 
-  // Speed chart data
-  const speedChartData = {
+  // Tire RPM chart
+  const rpmChartData = {
     labels: timestamps,
     datasets: [
       {
-        label: "Torque",
-        data: speedData,
+        label: "Tire RPM",
+        data: rpmData,
         fill: true,
         backgroundColor: "rgba(0, 217, 255, 0.1)",
         borderColor: "#00d9ff",
@@ -261,16 +396,26 @@ function LiveTelemetry() {
     ],
   };
 
-  // Throttle & Brake chart data
+  // Throttle & Brake chart
   const throttleBrakeChartData = {
     labels: timestamps,
     datasets: [
       {
-        label: "Throttle",
-        data: throttleBrakeData.throttle,
+        label: "Throttle 1",
+        data: throttleBrakeData.throttle1,
         fill: true,
         backgroundColor: "rgba(16, 185, 129, 0.1)",
         borderColor: "#10b981",
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 0,
+      },
+      {
+        label: "Throttle 2",
+        data: throttleBrakeData.throttle2,
+        fill: true,
+        backgroundColor: "rgba(59, 130, 246, 0.08)",
+        borderColor: "#3b82f6",
         borderWidth: 2,
         tension: 0.4,
         pointRadius: 0,
@@ -288,12 +433,12 @@ function LiveTelemetry() {
     ],
   };
 
-  // Battery chart data
+  // Battery chart
   const batteryChartData = {
     labels: timestamps,
     datasets: [
       {
-        label: "Battery",
+        label: "BMS %",
         data: batteryData,
         fill: true,
         backgroundColor: "rgba(16, 185, 129, 0.1)",
@@ -312,30 +457,21 @@ function LiveTelemetry() {
         <div className="header-left">
           <div className="session-info">
             <span className="session-label">LIVE SESSION</span>
-            <div
-              className={`session-status ${
-                connected ? "connected" : "disconnected"
-              }`}
-            >
+            <div className={`session-status ${connected ? "connected" : "disconnected"}`}>
               <span className="status-indicator"></span>
               {connected ? "CONNECTED" : "DISCONNECTED"}
             </div>
           </div>
         </div>
+
         <div className="control-panel">
           {!connected ? (
-            <button
-              className="control-btn connect-btn"
-              onClick={connectWebSocket}
-            >
+            <button className="control-btn connect-btn" onClick={connectWebSocket}>
               <span>▶</span>
               <span>CONNECT</span>
             </button>
           ) : (
-            <button
-              className="control-btn disconnect-btn"
-              onClick={disconnectWebSocket}
-            >
+            <button className="control-btn disconnect-btn" onClick={disconnectWebSocket}>
               <span>⏸</span>
               <span>DISCONNECT</span>
             </button>
@@ -348,54 +484,52 @@ function LiveTelemetry() {
         {/* Left Panel - Primary Stats */}
         <div className="left-panel">
           <div className="stat-panel primary-stat">
-            <div className="stat-header">TORQUE</div>
-            <div className="stat-value-large speed-value">
-              {getSensorValue(192)}
-            </div>
-            <div className="stat-unit">Nm</div>
+            <div className="stat-header">TIRE RPM</div>
+            <div className="stat-value-large speed-value">{getSensorValue(5)}</div>
+            <div className="stat-unit">rpm</div>
           </div>
 
           <div className="stat-panel primary-stat">
-            <div className="stat-header">THROTTLE</div>
-            <div className="stat-value-large battery-value">
-              {getSensorValue(1)}
-            </div>
-            <div className="stat-unit">raw</div>
+            <div className="stat-header">BMS %</div>
+            <div className="stat-value-large battery-value">{getSensorValue(7)}</div>
+            <div className="stat-unit">%</div>
           </div>
 
           <div className="secondary-stats">
+            <div className="stat-panel secondary-stat">
+              <div className="stat-header">THROTTLE 1</div>
+              <div className="stat-value-medium">{getSensorValue(1)}</div>
+              <div className="stat-unit">raw</div>
+            </div>
+
             <div className="stat-panel secondary-stat">
               <div className="stat-header">THROTTLE 2</div>
               <div className="stat-value-medium">{getSensorValue(2)}</div>
               <div className="stat-unit">raw</div>
             </div>
+          </div>
 
+          <div className="secondary-stats">
             <div className="stat-panel secondary-stat">
               <div className="stat-header">BRAKE</div>
               <div className="stat-value-medium">{getSensorValue(3)}</div>
               <div className="stat-unit">raw</div>
             </div>
-          </div>
 
-          <div className="secondary-stats">
             <div className="stat-panel secondary-stat">
               <div className="stat-header">START SW</div>
               <div className="stat-value-medium">{getSensorValue(0)}</div>
-            </div>
-
-            <div className="stat-panel secondary-stat">
-              <div className="stat-header">ERRORS</div>
-              <div className="stat-value-medium">{getSensorValue(204)}</div>
+              <div className="stat-unit">0/1</div>
             </div>
           </div>
         </div>
 
-        {/* Center Panel - Telemetry Charts */}
+        {/* Center Panel - Charts */}
         <div className="center-panel">
           <div className="chart-section">
-            <div className="section-header">TORQUE</div>
+            <div className="section-header">TIRE RPM</div>
             <div className="chart-wrapper">
-              <Line data={speedChartData} options={chartOptions} />
+              <Line data={rpmChartData} options={chartOptions} />
             </div>
           </div>
 
@@ -407,41 +541,38 @@ function LiveTelemetry() {
           </div>
 
           <div className="chart-section">
-            <div className="section-header">BATTERY</div>
+            <div className="section-header">BMS %</div>
             <div className="chart-wrapper">
               <Line data={batteryChartData} options={chartOptions} />
             </div>
           </div>
         </div>
 
-        {/* Right Panel - Additional Stats */}
+        {/* Right Panel - Additional Stats + Feed */}
         <div className="right-panel">
           <div className="stat-panel info-stat">
-            <div className="stat-header">HEALTH CHECK</div>
-            <div className="stat-value-medium">{getSensorValue(200)}</div>
+            <div className="stat-header">TIRE TEMP</div>
+            <div className="stat-value-medium">{getSensorValue(6)}</div>
           </div>
 
           <div className="stat-panel info-stat">
-            <div className="stat-header">DRIVE STATE</div>
-            <div className="stat-value-medium">{getSensorValue(205)}</div>
+            <div className="stat-header">BMS TEMP</div>
+            <div className="stat-value-medium">{getSensorValue(8)}</div>
           </div>
 
           <div className="stat-panel info-stat">
-            <div className="stat-header">ACCEL X</div>
-            <div className="stat-value-medium">{getSensorValue(400)}</div>
-            <div className="stat-unit">m/s²</div>
+            <div className="stat-header">RVC</div>
+            <div className="stat-value-medium">{getSensorValue(4)}</div>
           </div>
 
           <div className="stat-panel info-stat">
-            <div className="stat-header">ACCEL Y</div>
-            <div className="stat-value-medium">{getSensorValue(401)}</div>
-            <div className="stat-unit">m/s²</div>
+            <div className="stat-header">GPS</div>
+            <div className="stat-value-medium">{getSensorValue(9)}</div>
           </div>
 
           <div className="stat-panel info-stat">
-            <div className="stat-header">ACCEL Z</div>
-            <div className="stat-value-medium">{getSensorValue(402)}</div>
-            <div className="stat-unit">m/s²</div>
+            <div className="stat-header">LAP</div>
+            <div className="stat-value-medium">{getSensorValue(10)}</div>
           </div>
 
           {/* Telemetry Feed */}
@@ -452,16 +583,13 @@ function LiveTelemetry() {
                 <div key={index} className="log-entry">
                   <span className="log-time">{entry.timestamp}</span>
                   <span className="log-data">
-                    <span className="log-sensor-name">{entry.sensor}</span>:{" "}
-                    {entry.data}
+                    <span className="log-sensor-name">{entry.sensor}</span>: {entry.data}
                   </span>
                 </div>
               ))}
               {logEntries.length === 0 && (
                 <div className="log-entry">
-                  <span className="log-data">
-                    Waiting for telemetry data...
-                  </span>
+                  <span className="log-data">Waiting for telemetry data...</span>
                 </div>
               )}
             </div>

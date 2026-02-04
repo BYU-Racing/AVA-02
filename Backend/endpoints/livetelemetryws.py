@@ -97,22 +97,22 @@ def convert_can_data(data: bytes) -> Dict:
         length: int, // up to 8
         bytes: List[int], // length: up to 8
     }
-    AVA Data format:
+    Output format expected by the new React component:
     {
-        type: string, // "telemetry"
-        time: int,
-        msg_id: List[int], // sensor values
-        raw_data: List[int] // raw sensor data
+      type: "telemetry",
+      timestamp: "<iso8601>",
+      id: <int 0-255>,
+      data: "<integer as string>" OR ["<...>", "<...>"]
     }
     '''
     decoded = decode_pi_to_server(data)
-    raw_data = int.from_bytes(bytes(decoded["bytes"]), byteorder='little', signed=False)
+    value_u64 = int.from_bytes(bytes(decoded["bytes"]), byteorder='little', signed=False)
     
     return {
         "type": "telemetry",
-        "time": decoded["timestamp"],
-        "msg_id": [decoded["id"]],
-        "raw_data": [raw_data]
+        "timestamp": decoded["timestamp"],
+        "id": decoded["id"],
+        "data": [value_u64]
     }
 
 @router.websocket("/ws/livetelemetry") # send to client
