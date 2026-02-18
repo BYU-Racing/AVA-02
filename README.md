@@ -10,6 +10,15 @@ Second Generation BYU-Racing Analytics Application
 
 ## Getting Started
 
+###
+
+To build the application, 
+- ```cd Frontend/ava-02```, then 
+- ```npm run build```
+
+Then in the base folder in Linux or WSL,
+- ```./autodeploy.sh [version_name]```
+
 ### Local Development
 
 To run the application locally on your machine:
