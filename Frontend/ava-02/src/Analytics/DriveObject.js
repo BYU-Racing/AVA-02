@@ -9,15 +9,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
-import {
-  transforCANMessagesToTimeSeriesHEALTH,
-  transformCANMessagesToTimeSeriesACCEL,
-  transformCANMessagesToTimeSeriesANALOG,
-  transformCANMessagesToTimeSeriesDIGITAL,
-  transformCANmessagesToTimeSeriesGPS,
-  transformCANMessagesToTimeSeriesHOTBOX,
-  transformCANMessagesToTimeSeriesTORQUE,
-} from "./CANtransformations";
+import { CANtoTimeseries } from "./CANtransformations";
 import CircularProgress from "@mui/material/CircularProgress";
 
 function DriveObject({
@@ -75,43 +67,18 @@ function DriveObject({
 
     const fetchPromise = (async () => {
       if (!(sensorId in cachedData[driveId])) {
-        console.log("HOVER FETCH: driveID: ", driveId, " sensorID: ", sensorId);
         const response = await fetch(
-          `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+          `/api/data/${driveId}/${sensorId}`
         );
         const canMessages = await response.json();
         let timeSeriesData;
         // Process data transformations...
         sensorId = String(sensorId);
         driveId = String(driveId);
-        if (sensorId === "0") {
-          timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
-        } else if (sensorId === "192") {
-          timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
-        } else if (
-          sensorId === "500" ||
-          sensorId === "501" ||
-          sensorId === "502"
-        ) {
-          timeSeriesData = transformCANMessagesToTimeSeriesHOTBOX(canMessages);
-        } else if (
-          sensorId === "400" ||
-          sensorId === "401" ||
-          sensorId === "402" ||
-          sensorId === "403" ||
-          sensorId === "404" ||
-          sensorId === "405"
-        ) {
-          timeSeriesData = transformCANMessagesToTimeSeriesACCEL(canMessages);
-        } else if (sensorId === "201" || sensorId === "202") {
-          timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
-        } else if (sensorId === "9") {
-          timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
-        } else {
-          timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
-        }
+
+        timeSeriesData = CANtoTimeseries(canMessages, sensorId);
+
         updateCachedData(driveId, sensorId, timeSeriesData);
-        console.log("CACHED");
         return timeSeriesData;
       }
       updateHoverFetch(driveId, sensorId, false);
@@ -165,8 +132,8 @@ function DriveObject({
               .map((sensor, index, array) => (
                 <div
                   key={sensor}
-                  onMouseEnter={() => handleMouseEnter(drive.drive_id, sensor)}
-                  onMouseLeave={handleMouseLeave}
+                  // onMouseEnter={() => handleMouseEnter(drive.drive_id, sensor)}
+                  // onMouseLeave={handleMouseLeave}
                 >
                   <ListItem
                     draggable

@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import distinct
+from sqlalchemy.orm import Session , aliased
+from sqlalchemy import distinct, func, cast, Numeric
 from . import models, schemas
 from datetime import datetime
 import logging
@@ -67,6 +67,55 @@ def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
         .filter(models.RawData.drive_id == drive_id)
         .filter(models.RawData.msg_id == sensor_id)
         .order_by(models.RawData.time.asc())  
+        .all()
+    )
+
+
+def get_downsample_data_from_drive(db: Session, drive_id: int, sensor_id: int, start: int, end: int):
+    # Base query with time filtering
+
+    if end == -1 and start == 0:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .order_by(models.RawData.time.asc())
+        )
+    elif end == -1:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .filter(models.RawData.time >= start)
+            .order_by(models.RawData.time.asc())
+        )
+    else:
+        base_query = (
+            db.query(models.RawData)
+            .filter(models.RawData.drive_id == drive_id)
+            .filter(models.RawData.msg_id == sensor_id)
+            .filter(models.RawData.time >= start)
+            .filter(models.RawData.time <= end)
+            .order_by(models.RawData.time.asc())
+        )
+
+    # Create subquery with grouping buckets
+    grouped_subq = (
+        base_query.add_columns(
+            func.ntile(500).over(order_by=models.RawData.time).label('bucket')
+        )
+        .subquery()
+    )
+
+    # Create alias for RawData model
+    grouped_alias = aliased(models.RawData, grouped_subq)
+
+    # Get first record from each bucket
+    return (
+        db.query(grouped_alias)
+        .distinct(grouped_subq.c.bucket)
+        .order_by(grouped_subq.c.bucket, grouped_subq.c.time)
+        .limit(500)
         .all()
     )
 

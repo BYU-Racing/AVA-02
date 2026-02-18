@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from .endpoints import drive, driver, data
+from .endpoints import drive, driver, data, livetelemetryws
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from .configDB import DATABASE_URL
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 
-models.Base.metadata.create_all(bind=engine)
+BASE_DIR = Path(__file__).resolve().parent  # Backend/
+
+# Only create tables if database is available (skip if RDS not configured yet)
+try:
+    models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Warning: Could not create database tables: {e}")
 
 #fastapi dev main.py
 
@@ -14,7 +23,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],  
@@ -27,13 +36,23 @@ def get_db():
     finally:
         db.close()
 
+# API health check endpoint
+@app.get("/api/health")
+def health_check():
+    return {"status": "healthy", "message": "Special thanks from: Coleman Hardy, Landon Wheeler, Connor Mabey, Bryce Whitworth, Braden Toone, Bradford Bawden, and the rest of the BYU Racing Electronics Team"}
+
 # Include routers from different endpoint files
-app.include_router(drive.router)
-app.include_router(driver.router)
-app.include_router(data.router)
+app.include_router(drive.router, prefix="/api")
+app.include_router(driver.router, prefix="/api")
+app.include_router(data.router, prefix="/api")
+app.include_router(livetelemetryws.router, prefix="/api")
 
+# Mount static files LAST (catch-all route)
+build_dir = (BASE_DIR / ".." / "Frontend" / "ava-02" / "build").resolve()
 
-# Root endpoint (optional)
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to FastAPI!"}
+app.mount(
+    "/",
+    StaticFiles(directory=str(build_dir), html=True),
+    name="static"
+)
+

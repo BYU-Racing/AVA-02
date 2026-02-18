@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import { ResizableBox } from "react-resizable";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
@@ -20,10 +18,10 @@ import Menu from "@mui/material/Menu";
 import TuneIcon from "@mui/icons-material/Tune";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import GPSMap from "./GPSMap";
-import { Icon } from "react-materialize";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { CANtoTimeseries } from "./CANtransformations";
+import Skeleton from "@mui/material/Skeleton";
 
 function SensorChart({
   chartId,
@@ -56,6 +54,10 @@ function SensorChart({
 
   const [globalZoom, setGlobalZoom] = useState(true);
 
+  const [newDataSets, setNewDataSets] = useState([]);
+
+  const [loadingData, setLoadingData] = useState(true);
+
   const handleGlobalZoomExcludeSwitch = (event) => {
     setGlobalZoom(event.target.checked);
     if (event.target.checked) {
@@ -83,6 +85,10 @@ function SensorChart({
     }
   }, [globalZoomHistory]);
 
+  useEffect(() => {
+    handleZoomQuery(left, right);
+  }, [left, right, sensorIds.length]);
+
   const zoomToPrevious = () => {
     let prevZoom;
 
@@ -93,12 +99,51 @@ function SensorChart({
       prevZoom = zoomHistory.at(zoomHistory.length - 2);
       setZoomHistory((prevZoomHistory) => prevZoomHistory.slice(0, -1));
     }
+
     // Handle zoom based on `globalZoom`
     if (globalZoom) {
       setGlobalZoomBounds(prevZoom);
     } else {
       setLeft(prevZoom.left);
       setRight(prevZoom.right);
+    }
+  };
+
+  useEffect(() => {
+    handleZoomQuery(globalZoomBounds.left, globalZoomBounds.right);
+  }, []);
+
+  const handleZoomQuery = async (nLeft, nRight) => {
+    //console.log("handling zoom query for ", sensorIds);
+    setLoadingData(true);
+    try {
+      if (nLeft === "dataMin") {
+        nLeft = 0;
+      }
+      if (nRight === "dataMax") {
+        nRight = -1;
+      }
+
+      const tempDataSets = await Promise.all(
+        sensorIds.map(async ({ driveId, sensorId }) => {
+          const response = await fetch(
+            `/api/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
+          );
+          const canMessages = await response.json();
+          let timeSeriesData;
+
+          timeSeriesData = CANtoTimeseries(canMessages, sensorId);
+
+          setLoadingData(false);
+
+          return { driveId, sensorId, data: timeSeriesData };
+        })
+      );
+
+      setNewDataSets(tempDataSets);
+      return tempDataSets;
+    } catch (error) {
+      console.error("Error in handleZoomQuery:", error);
     }
   };
 
@@ -143,9 +188,60 @@ function SensorChart({
       globalZoomBounds.right !== "dataMax");
 
   // Determine the type of visualization
-  const isTable = sensorIds.length === 1 && sensorIds[0] === "204";
-  const isGPS = sensorIds.length === 1 && sensorIds[0] === "9";
+  const isTable = sensorIds.length === 1 && sensorIds[0].sensorId === "204";
+  const isGPS = sensorIds.length === 1 && sensorIds[0].sensorId === "9";
 
+  //NOTES FOR GRABBING THE PENDING FETCHES EVENTUALLY
+  // if (sensorId in cachedData[driveId]) {
+  //   timeSeriesData = cachedData[driveId][sensorId] || [];
+  // } else if (sensorData[driveId][sensorId] === true) {
+  //   console.log("Waiting for Hover Fetch");
+  //   timeSeriesData = await pendingFetches.current[sensorId];
+  //   console.log("Wait success");
+  // } else {
+  //   const response = await fetch(
+  //     `http://127.0.0.1:8000/data/${driveId}/${sensorId}`
+  //   );
+
+  if (loadingData && newDataSets.length === 0) {
+    return (
+      <Card
+        style={{
+          borderRadius: "12px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          marginBottom: "16px",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <CardHeader
+          sx={{
+            padding: "10px 28px",
+            "& .MuiTypography-root": {
+              fontSize: "1rem",
+            },
+            "& .MuiIconButton-root": {
+              padding: "5px",
+            },
+          }}
+          title={
+            <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
+              {sensorIds.map((id, id2) => id_map[id.sensorId]).join(", ")}
+            </Typography>
+          }
+          action={
+            <>
+              <Skeleton variant="rounded" />
+            </>
+          }
+        />
+        <Divider />
+        <CardContent className="CardContent">
+          <Skeleton variant="rounded" height={250} />
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card
       style={{
@@ -168,7 +264,7 @@ function SensorChart({
         }}
         title={
           <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
-            {sensorIds.map((id) => id_map[id]).join(", ")}
+            {sensorIds.map((id, id2) => id_map[id.sensorId]).join(", ")}
           </Typography>
         }
         action={
@@ -242,13 +338,13 @@ function SensorChart({
       />
       <Divider />
       <CardContent
-        onDrop={onDrop}
-        onDragOver={(e) => e.preventDefault()}
+        onDrop={!isTable && !isGPS ? onDrop : undefined}
+        onDragOver={!isTable && !isGPS ? (e) => e.preventDefault() : undefined}
         className="CardContent"
       >
         {isTable ? (
           <ErrorCodesTableComponent
-            data={dataSets[0].data}
+            data={newDataSets[0].data}
             errorMap={errorMap}
             onRemove={onRemove}
             left={globalZoom ? globalZoomBounds.left : left}
@@ -257,7 +353,7 @@ function SensorChart({
         ) : isGPS ? (
           <GPSMap
             sensorIds={sensorIds}
-            dataSets={dataSets}
+            dataSets={newDataSets}
             left={left}
             right={right}
             setLeft={setLeft}
@@ -270,7 +366,7 @@ function SensorChart({
           />
         ) : (
           <LineChartComponent
-            dataSets={dataSets}
+            dataSets={newDataSets}
             sensorIds={sensorIds}
             colors={colors}
             id_map={id_map}

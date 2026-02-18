@@ -2,9 +2,13 @@
 .chart-container {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: flex-start;
+  gap: 16px;
   padding: 8px;
   box-sizing: border-box;
   position: relative;
+  max-width: 100%;
 }
 
 /* Individual resizable chart container */
@@ -16,7 +20,7 @@
   resize: both; /* Enable resizing from the bottom-right corner */
   min-width: 390px;
   min-height: 350px;
-  max-width: 97%; /* Prevent chart from growing beyond container width */
+  max-width: calc(100% - 50px);
   height: 350px;
   box-sizing: border-box;
   position: relative;

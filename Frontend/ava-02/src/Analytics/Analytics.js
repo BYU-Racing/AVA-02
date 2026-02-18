@@ -3,7 +3,6 @@ import ListView from "./ListView";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid"; // Use Grid instead of Grid2
 import { useState, useEffect, useRef } from "react";
-import { LoadScript } from "@react-google-maps/api";
 
 function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Ensure correct destructuring
@@ -14,7 +13,9 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   const handleExpand = async (driveId, isExpanded) => {
     if (isExpanded && !sensorData[driveId]) {
       setLoadingSensors(true);
-      const response = await fetch(`http://127.0.0.1:8000/sensors/${driveId}`);
+      const response = await fetch(
+        `/api/sensors/${driveId}`
+      );
       const sensors = await response.json();
 
       var sensorsV2 = {};
@@ -33,7 +34,7 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
-      const response = await fetch("http://127.0.0.1:8000/drive");
+      const response = await fetch("/api/drive");
       const data = await response.json();
       return data;
     }
@@ -57,8 +58,10 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
           sm={3}
           sx={{
             maxWidth: "15vw",
-            flexBasis: "auto",
+            minWidth: "15vw",
+            flexBasis: "15vw",
             flexGrow: 0,
+            flexShrink: 0,
           }}
         >
           <ListView
@@ -72,7 +75,18 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
             pendingFetches={pendingFetches}
           />
         </Grid>
-        <Grid item xs={12} sm={true} sx={{ height: "100%" }}>
+        <Grid
+          item
+          xs={12}
+          sm={true}
+          sx={{
+            height: "100%",
+            maxWidth: "85vw",
+            flexGrow: 1,
+            overflowX: "hidden",
+            overflowY: "hidden",
+          }}
+        >
           <DataView
             cachedData={cachedData}
             setCachedData={setCachedData}

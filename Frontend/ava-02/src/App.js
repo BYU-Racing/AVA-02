@@ -14,7 +14,7 @@ function App() {
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
-      const response = await fetch("http://127.0.0.1:8000/drive");
+      const response = await fetch("/api/drive");
       const data = await response.json();
       return data;
     }
@@ -35,28 +35,30 @@ function App() {
     }
   }, []);
   return (
-    <LoadScript googleMapsApiKey="">
+    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Router>
         <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/analytics"
-            element={
-              <Analytics
-                driveList={driveList}
-                setDriveList={setDriveList}
-                setCachedData={setCachedData}
-                cachedData={cachedData}
-              />
-            }
-          />
-          <Route path="/live-telemetry" element={<LiveTelemetry />} />
-          <Route
-            path="/*"
-            element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
-          />
-        </Routes>
+        <div style={{ paddingTop: '50px' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/analytics"
+              element={
+                <Analytics
+                  driveList={driveList}
+                  setDriveList={setDriveList}
+                  setCachedData={setCachedData}
+                  cachedData={cachedData}
+                />
+              }
+            />
+            <Route path="/live-telemetry" element={<LiveTelemetry />} />
+            <Route
+              path="/*"
+              element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
+            />
+          </Routes>
+        </div>
       </Router>
     </LoadScript>
   );

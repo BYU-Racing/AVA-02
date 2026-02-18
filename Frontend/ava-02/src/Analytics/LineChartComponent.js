@@ -10,6 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import { useState, useMemo, useEffect } from "react";
+import "./LineChartComponent.css";
 
 function LineChartComponent({
   dataSets,
@@ -44,37 +45,11 @@ function LineChartComponent({
   );
 
   useEffect(() => {
-    setLeft(globalZoomBounds.left);
-    setRight(globalZoomBounds.right);
+    if (globalZoom) {
+      setLeft(globalZoomBounds.left);
+      setRight(globalZoomBounds.right);
+    }
   }, [globalZoomBounds, globalZoom]);
-
-  // Filter and downsample data based on zoom level
-  const optimizedDataSets = useMemo(() => {
-    const maxPoints = 1000;
-    return dataSets.map((dataset) => {
-      let filteredData = dataset.data;
-
-      // Only filter if we have zoom bounds
-      if (left !== "dataMin" && right !== "dataMax") {
-        const buffer = (right - left) * 0.1;
-        filteredData = dataset.data.filter((point) => {
-          const timestamp = point.timestamp;
-          return timestamp >= left - buffer && timestamp <= right + buffer;
-        });
-      }
-
-      // Downsample if we have too many points
-      if (filteredData.length > maxPoints) {
-        const skip = Math.ceil(filteredData.length / maxPoints);
-        filteredData = filteredData.filter((_, index) => index % skip === 0);
-      }
-
-      return {
-        ...dataset,
-        data: filteredData,
-      };
-    });
-  }, [dataSets.length, left, right]);
 
   const zoom = () => {
     if (refAreaLeft === refAreaRight || !refAreaRight) {
@@ -105,9 +80,13 @@ function LineChartComponent({
   };
 
   return (
-    <ResponsiveContainer className="charts" width="100%" height="100%">
+    <ResponsiveContainer
+      className="charts disable-highlight"
+      width="100%"
+      height="100%"
+    >
       <LineChart
-        data={optimizedDataSets[0].data}
+        data={dataSets[0].data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
         onMouseMove={(e) => refAreaLeft && e && setRefAreaRight(e.activeLabel)}
@@ -123,7 +102,7 @@ function LineChartComponent({
         <YAxis domain={min0 ? [0, "dataMax+1"] : [minValue, "dataMax+1"]} />
         <Tooltip />
         <Legend />
-        {optimizedDataSets.map(({ sensorId, data }, index) => (
+        {dataSets.map(({ sensorId, data }, index) => (
           <Line
             key={sensorId}
             type="monotone"
