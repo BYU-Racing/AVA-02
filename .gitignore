@@ -29,3 +29,7 @@ Backend/__pycache__/*
 
 eb_bundle
 *.zip
+
+# EB files; not needed using EC2
+.elasticbeanstalk/*
+.ebextensions/*

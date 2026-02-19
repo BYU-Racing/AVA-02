@@ -25,7 +25,13 @@ ChartJS.register(
 );
 
 // Configuration
-const WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+// Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
+const WS_URL = (process.env.REACT_APP_WS_URL?.trim()) // Manual override via enc var
+  ? process.env.REACT_APP_WS_URL.trim()
+  : (() => { // Auto-detect ws/wss based on page protocol
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${window.location.host}/api/ws/livetelemetry`;
+})();
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 50;
 const MAX_LOG_ENTRIES = 30;
