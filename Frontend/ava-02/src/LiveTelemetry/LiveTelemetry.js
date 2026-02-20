@@ -211,13 +211,11 @@ function LiveTelemetry() {
       // If later you send [FL, FR, RL, RR], this will still work and show a summary.
       const vals = asBigIntArray(data);
       const nums = vals.map(bigintToSafeNumber);
+      let sum = -nums[0];
+      nums.forEach((n) => (sum += n));
 
-      const display =
-        nums.length <= 1
-          ? nums[0] ?? 0
-          : `FL=${nums[0] ?? 0} FR=${nums[1] ?? 0} RL=${nums[2] ?? 0} RR=${
-              nums[3] ?? 0
-            }`;
+      const labels = ["FL", "FR", "RL", "RR"];
+      const display = `${labels[0] ?? "RR"}=${sum ?? 0}°C`;
 
       updateLatest(id, name, display, ts);
       addLogEntry(name, Array.isArray(data) ? JSON.stringify(nums) : `${nums[0] ?? 0}`);
@@ -247,16 +245,15 @@ function LiveTelemetry() {
       // GPS — assume [lat_e7, lon_e7, speed_cms] as ints in strings
       // Adjust decoding to your actual format.
       const vals = asBigIntArray(data);
-      const lat_e7 = vals[0] ?? 0n;
-      const lon_e7 = vals[1] ?? 0n;
-      const spd_cms = vals[2] ?? 0n;
+      const lat_e7 = vals[0]+vals[1]+vals[2]+vals[3] ?? 0n;
+      const lon_e7 = vals[4]+vals[5]+vals[6]+vals[7] ?? 0n;
+
 
       const lat = Number(lat_e7) / 1e7;
       const lon = Number(lon_e7) / 1e7;
-      const spd_ms = Number(spd_cms) / 100; // cm/s -> m/s
 
       // If lat/lon might exceed safe integer conversion, keep them as strings; but e7 values are typically safe.
-      const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)} v=${spd_ms.toFixed(2)}m/s`;
+      const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)}`;
 
       updateLatest(id, name, display, ts);
       addLogEntry(name, display);
