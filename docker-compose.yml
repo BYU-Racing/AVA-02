@@ -12,7 +12,7 @@ services:
   web:
     build: .
     environment:
-      DATABASE_URL: postgresql://evangelion:FormulaE1@db:5432/appdb
+      DATABASE_URL: postgresql://evangelion:FormulaE1@db:5432/avadb
     depends_on:
       - db
     ports:
