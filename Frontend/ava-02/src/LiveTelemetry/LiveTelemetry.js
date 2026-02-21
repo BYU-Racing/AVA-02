@@ -38,7 +38,7 @@ const MAX_LOG_ENTRIES = 30;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
-const CHART_TICK_ID = 5;
+const CHART_TICK_ID = 3;
 
 // Fallback names if idMap doesn't include them
 const ID_NAME = {
@@ -207,18 +207,14 @@ function LiveTelemetry() {
     },
 
     6: ({ id, name, data, ts }) => {
-      // TireTemperature (scalar or array if you later add multiple tires)
-      // If later you send [FL, FR, RL, RR], this will still work and show a summary.
+      // TireTemperature
       const vals = asBigIntArray(data);
-      const nums = vals.map(bigintToSafeNumber);
-      let sum = -nums[0];
-      nums.forEach((n) => (sum += n));
-
-      const labels = ["FL", "FR", "RL", "RR"];
-      const display = `${labels[0] ?? "RR"}=${sum ?? 0}°C`;
-
+      const wheel = bigintToSafeNumber(vals[0] ?? 0n);
+      const temp  = bigintToSafeNumber(vals[1] ?? 0n);
+      const labels = ["FL","FR","RL","RR"];
+      const display = `${labels[wheel] ?? "?"}=${temp}°C`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, Array.isArray(data) ? JSON.stringify(nums) : `${nums[0] ?? 0}`);
+      addLogEntry(name, display);
     },
 
     7: ({ id, name, data, ts }) => {
@@ -242,19 +238,10 @@ function LiveTelemetry() {
     },
 
     9: ({ id, name, data, ts }) => {
-      // GPS — assume [lat_e7, lon_e7, speed_cms] as ints in strings
-      // Adjust decoding to your actual format.
       const vals = asBigIntArray(data);
-      const lat_e7 = vals[0]+vals[1]+vals[2]+vals[3] ?? 0n;
-      const lon_e7 = vals[4]+vals[5]+vals[6]+vals[7] ?? 0n;
-
-
-      const lat = Number(lat_e7) / 1e7;
-      const lon = Number(lon_e7) / 1e7;
-
-      // If lat/lon might exceed safe integer conversion, keep them as strings; but e7 values are typically safe.
+      const lat = Number(vals[0] ?? 0n) / 1e7;
+      const lon = Number(vals[1] ?? 0n) / 1e7;
       const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)}`;
-
       updateLatest(id, name, display, ts);
       addLogEntry(name, display);
     },
