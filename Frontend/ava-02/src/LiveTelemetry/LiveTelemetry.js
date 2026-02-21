@@ -187,11 +187,25 @@ function LiveTelemetry() {
     },
 
     4: ({ id, name, data, ts }) => {
-      // RVC (whatever scalar you use)
-      const [v] = asBigIntArray(data);
-      const n = bigintToSafeNumber(v);
+      // RVC (Acceleration and Rotation)
+      const vals = asBigIntArray(data);
+      const subId = bigintToSafeNumber(vals[0] ?? 0n);
+      const value = bigintToSafeNumber(vals[1] ?? 0n);
+
+      const subIDMap = {
+        0: "X-Accel",
+        1: "Y-Accel",
+        2: "Z-Accel",
+        3: "X-Roll",
+        4: "Y-Pitch",
+        5: "Z-Yaw",
+      };
+
+      const subLabel = subIDMap[subId] ?? `Sub${subId}`;
+      const display = `${subLabel}: ${value}`;
+      
       updateLatest(id, name, n, ts);
-      addLogEntry(name, `${v.toString()}`);
+      addLogEntry(name, `${n.toString()}`);
     },
 
     5: ({ id, name, data, ts }) => {
