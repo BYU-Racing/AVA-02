@@ -203,9 +203,9 @@ function LiveTelemetry() {
 
       const subLabel = subIDMap[subId] ?? `Sub${subId}`;
       const display = `${subLabel}: ${value}`;
-      
-      updateLatest(id, name, n, ts);
-      addLogEntry(name, `${n.toString()}`);
+
+      updateLatest(id, name, display, ts);
+      addLogEntry(name, `${display}`);
     },
 
     5: ({ id, name, data, ts }) => {
