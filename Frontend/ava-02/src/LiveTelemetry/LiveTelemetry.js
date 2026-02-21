@@ -196,23 +196,25 @@ function LiveTelemetry() {
 
     5: ({ id, name, data, ts }) => {
       // TireRPM
-      const [v] = asBigIntArray(data);
-      const rpm = bigintToSafeNumber(v);
-      updateLatest(id, name, rpm, ts);
+      const vals = asBigIntArray(data);
+      const rpm = bigintToSafeNumber(vals[1] ?? 0n);
+      updateLatest(id, name, rpm, ts);  
 
       setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      addLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
     },
 
     6: ({ id, name, data, ts }) => {
       // TireTemperature
       const vals = asBigIntArray(data);
       const wheel = bigintToSafeNumber(vals[0] ?? 0n);
-      const temp  = bigintToSafeNumber(vals[1] ?? 0n);
+      const tempIn  = bigintToSafeNumber(vals[1] ?? 0n);
+      const tempOut = bigintToSafeNumber(vals[2] ?? 0n);
+      const tempCore = bigintToSafeNumber(vals[3] ?? 0n);
       const labels = ["FL","FR","RL","RR"];
-      const display = `${labels[wheel] ?? "?"}=${temp}°C`;
+      const display = `${labels[wheel] ?? "?"}=${tempIn}°C/${tempCore}°C/${tempOut}°C`;
       updateLatest(id, name, display, ts);
       addLogEntry(name, display);
     },
