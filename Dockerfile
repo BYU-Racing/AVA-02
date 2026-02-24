@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir -r Backend/requirements.txt
 COPY Backend/ ./Backend/
 
 # Copy built frontend from the frontend stage
-COPY --from=frontend /app/frontend/dist ./FrontendDist
+COPY --from=frontend /app/Frontend/dist ./FrontendDist
 
 EXPOSE 8000
 CMD ["uvicorn", "Backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
