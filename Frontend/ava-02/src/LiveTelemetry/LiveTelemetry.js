@@ -25,14 +25,20 @@ ChartJS.register(
 );
 
 // Configuration
-const WS_URL = "ws://ava-02.us-east-2.elasticbeanstalk.com/api/ws/livetelemetry";
+// Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
+const WS_URL = (process.env.REACT_APP_WS_URL?.trim()) // Manual override via enc var
+  ? process.env.REACT_APP_WS_URL.trim()
+  : (() => { // Auto-detect ws/wss based on page protocol
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${window.location.host}/api/ws/livetelemetry`;
+})();
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 50;
 const MAX_LOG_ENTRIES = 30;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
-const CHART_TICK_ID = 5;
+const CHART_TICK_ID = 3;
 
 // Fallback names if idMap doesn't include them
 const ID_NAME = {
@@ -181,40 +187,50 @@ function LiveTelemetry() {
     },
 
     4: ({ id, name, data, ts }) => {
-      // RVC (whatever scalar you use)
-      const [v] = asBigIntArray(data);
-      const n = bigintToSafeNumber(v);
-      updateLatest(id, name, n, ts);
-      addLogEntry(name, `${v.toString()}`);
+      // RVC (Acceleration and Rotation)
+      const vals = asBigIntArray(data);
+      const subId = bigintToSafeNumber(vals[0] ?? 0n);
+      const value = bigintToSafeNumber(vals[1] ?? 0n);
+
+      const subIDMap = {
+        0: "X-Accel",
+        1: "Y-Accel",
+        2: "Z-Accel",
+        3: "X-Roll",
+        4: "Y-Pitch",
+        5: "Z-Yaw",
+      };
+
+      const subLabel = subIDMap[subId] ?? `Sub${subId}`;
+      const display = `${subLabel}: ${value}`;
+
+      updateLatest(id, name, display, ts);
+      addLogEntry(name, `${display}`);
     },
 
     5: ({ id, name, data, ts }) => {
       // TireRPM
-      const [v] = asBigIntArray(data);
-      const rpm = bigintToSafeNumber(v);
-      updateLatest(id, name, rpm, ts);
+      const vals = asBigIntArray(data);
+      const rpm = bigintToSafeNumber(vals[1] ?? 0n);
+      updateLatest(id, name, rpm, ts);  
 
       setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      addLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
     },
 
     6: ({ id, name, data, ts }) => {
-      // TireTemperature (scalar or array if you later add multiple tires)
-      // If later you send [FL, FR, RL, RR], this will still work and show a summary.
+      // TireTemperature
       const vals = asBigIntArray(data);
-      const nums = vals.map(bigintToSafeNumber);
-
-      const display =
-        nums.length <= 1
-          ? nums[0] ?? 0
-          : `FL=${nums[0] ?? 0} FR=${nums[1] ?? 0} RL=${nums[2] ?? 0} RR=${
-              nums[3] ?? 0
-            }`;
-
+      const wheel = bigintToSafeNumber(vals[0] ?? 0n);
+      const tempIn  = bigintToSafeNumber(vals[1] ?? 0n);
+      const tempOut = bigintToSafeNumber(vals[2] ?? 0n);
+      const tempCore = bigintToSafeNumber(vals[3] ?? 0n);
+      const labels = ["FL","FR","RL","RR"];
+      const display = `${labels[wheel] ?? "?"}=${tempIn}°C/${tempCore}°C/${tempOut}°C`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, Array.isArray(data) ? JSON.stringify(nums) : `${nums[0] ?? 0}`);
+      addLogEntry(name, display);
     },
 
     7: ({ id, name, data, ts }) => {
@@ -238,20 +254,10 @@ function LiveTelemetry() {
     },
 
     9: ({ id, name, data, ts }) => {
-      // GPS — assume [lat_e7, lon_e7, speed_cms] as ints in strings
-      // Adjust decoding to your actual format.
       const vals = asBigIntArray(data);
-      const lat_e7 = vals[0] ?? 0n;
-      const lon_e7 = vals[1] ?? 0n;
-      const spd_cms = vals[2] ?? 0n;
-
-      const lat = Number(lat_e7) / 1e7;
-      const lon = Number(lon_e7) / 1e7;
-      const spd_ms = Number(spd_cms) / 100; // cm/s -> m/s
-
-      // If lat/lon might exceed safe integer conversion, keep them as strings; but e7 values are typically safe.
-      const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)} v=${spd_ms.toFixed(2)}m/s`;
-
+      const lat = Number(vals[0] ?? 0n) / 1e7;
+      const lon = Number(vals[1] ?? 0n) / 1e7;
+      const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)}`;
       updateLatest(id, name, display, ts);
       addLogEntry(name, display);
     },

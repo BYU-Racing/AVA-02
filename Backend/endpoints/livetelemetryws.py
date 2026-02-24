@@ -77,8 +77,16 @@ def decode_pi_to_server(payload: bytes) -> Dict:
     }
 
 # uint16 little-endian decoder (for 2-byte sensor values)
-def decode_u16_le(bytes: List[int]) -> int:
-    return (bytes[1] << 8) | bytes[0]
+def decode_u16_le(b: List[int], off: int = 0) -> int:
+    if off + 1 >= len(b):
+        return 0
+    return b[off] | (b[off + 1] << 8)
+
+def decode_i32_le(b: List[int], off: int) -> int:
+    return int.from_bytes(bytes(b[off:off+4]), byteorder='little', signed=True)
+
+def decode_u32_le(b: List[int], off: int) -> int:
+    return int.from_bytes(bytes(b[off:off+4]), byteorder='little', signed=False)
 
 # Converts the decoded CAN data into expected JSON format for Frontend
 def convert_can_data(data: bytes) -> Dict:
@@ -99,13 +107,38 @@ def convert_can_data(data: bytes) -> Dict:
     }
     '''
     decoded = decode_pi_to_server(data)
-    value_u64 = int.from_bytes(bytes(decoded["bytes"]), byteorder='little', signed=False)
+    msg_id = decoded["id"]
+    b = decoded["bytes"] 
     
+    match(msg_id):
+        case 0: # StartSwitch
+            data = [b[0] if b else 0]
+        case 1 | 2 | 3: # Throttle1, Throttle2, Brake
+            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
+        case 4: # Acceleration and Rotation
+            data = [b[0] if b else 0, decode_i32_le(b, 1) if len(b) >= 5 else 0]
+        case 5: # Tire RPM (uint8 tire, uint32 rpm)
+            data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
+        case 6: # Tire heat sensor (uint8 tire, uint16 inner_temp, uint16 outer_temp, uint16 core_temp)
+            inner = decode_u16_le(b, 1) if len(b) >= 3 else 0
+            outer = decode_u16_le(b, 3) if len(b) >= 5 else 0
+            core = decode_u16_le(b, 5) if len(b) >= 7 else 0
+            data = [b[0] if b else 0, inner, outer, core]
+        case 7: # BMS percentage (0-100)
+            data = [b[0] if b else 0]
+        case 8: # BMS temperature (uint16 temp)
+            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
+        case 9: # GPS (uint16 lat, uint16 long)
+            data = [decode_i32_le(b, 0) if len(b) >= 4 else 0, decode_i32_le(b, 4) if len(b) >= 8 else 0]
+        case 10: # Lap Number  ( soon to be time as well uint32 ms)
+            # data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
+            data = [b[0] if b else 0]
+
     return {
         "type": "telemetry",
         "timestamp": decoded["timestamp"],
-        "id": decoded["id"],
-        "data": [value_u64]
+        "id": msg_id,
+        "data": data
     }
 
 
