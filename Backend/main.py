@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from fastapi.concurrency import asynccontextmanager
 from .endpoints import drive, driver, data, livetelemetryws
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from .configDB import DATABASE_URL
 
 from . import crud, models, schemas
@@ -48,11 +48,19 @@ app.include_router(data.router, prefix="/api")
 app.include_router(livetelemetryws.router, prefix="/api")
 
 # Mount static files LAST (catch-all route)
-build_dir = (BASE_DIR / ".." / "Frontend" / "ava-02" / "build").resolve()
+build_dir = Path("/app/FrontendDist")
 
-app.mount(
-    "/",
-    StaticFiles(directory=str(build_dir), html=True),
-    name="static"
-)
+if build_dir.exists():
+    app.mount(
+        "/",
+        StaticFiles(directory=str(build_dir), html=True),
+        name="static"
+    )
 
+    # SPA fallback for react-router (optional but recommended)
+    @app.get("/{path:path}")
+    def spa_fallback(path: str):
+        return FileResponse(str(build_dir / "index.html"))
+
+else:
+    print(f"⚠️Error⚠️\nFrontend build directory not found at {build_dir}")

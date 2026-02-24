@@ -34,7 +34,5 @@ Frontend/ava-02/public/
 *.swo
 .DS_Store
 
-# EB files
-.elasticbeanstalk/
-.ebextensions/
+# Misc
 *.zip

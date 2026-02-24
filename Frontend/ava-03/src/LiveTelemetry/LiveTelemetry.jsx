@@ -26,8 +26,8 @@ ChartJS.register(
 
 // Configuration
 // Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
-const WS_URL = (process.env.REACT_APP_WS_URL?.trim()) // Manual override via enc var
-  ? process.env.REACT_APP_WS_URL.trim()
+const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc var
+  ? import.meta.env.VITE_WS_URL.trim()
   : (() => { // Auto-detect ws/wss based on page protocol
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${window.location.host}/api/ws/livetelemetry`;
