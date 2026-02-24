@@ -1,35 +1,15 @@
-Frontend/ava-02/node_modules
-Frontend/ava-02/.pnp
+# Frontend/ava-02/node_modules
+# Frontend/ava-02/.pnp
 *.pnp.js
 
-# testing
-Frontend/ava-02/coverage
-
-# production
-Frontend/ava-02/build
-
-# misc
-Frontend/ava-02/.DS_Store
-Frontend/ava-02/.env.local
-Frontend/ava-02/.env.development.local
-Frontend/ava-02/.env.test.local
-Frontend/ava-02.env.production.local
-
-Frontend/ava-02/npm-debug.log*
-Frontend/ava-02/yarn-debug.log*
-Frontend/ava-02/yarn-error.log*
+# Vite
+Frontend/ava-vite/node_modules/
+Frontend/ava-vite/dist/
+Frontend/ava-vite/.env
+Frontend/ava-vite/.env.*
 
 Backend/secrets.py
 # Backend/configDB.py
 Backend/__pycache__/*
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
 
-eb_bundle
 *.zip
-
-# EB files; not needed using EC2
-.elasticbeanstalk/*
-.ebextensions/*
