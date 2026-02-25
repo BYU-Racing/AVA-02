@@ -133,6 +133,10 @@ def convert_can_data(data: bytes) -> Dict:
         case 10: # Lap Number  ( soon to be time as well uint32 ms)
             # data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
             data = [b[0] if b else 0]
+        case _: # Unknown / ghost IDs
+            # Keep it visible in the feed but don't affect known sensors
+            # Send raw bytes as hex strings (easy to read) OR as ints
+            data = [f"0x{x:02X}" for x in b]  # readable
 
     return {
         "type": "telemetry",
