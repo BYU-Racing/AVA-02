@@ -404,6 +404,7 @@ function LiveTelemetry() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
       legend: { display: false },
       tooltip: { mode: "index", intersect: false },
