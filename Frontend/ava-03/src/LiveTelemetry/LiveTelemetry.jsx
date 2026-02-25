@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -40,20 +40,22 @@ const MAX_LOG_ENTRIES = 30;
 // Good defaults: TireRPM (5) or Throttle1 (1)
 const CHART_TICK_ID = 3;
 
+let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
+
 // Fallback names if idMap doesn't include them
-const ID_NAME = {
-  0: "StartSwitch",
-  1: "Throttle1Position",
-  2: "Throttle2Position",
-  3: "BrakePressure",
-  4: "RVC",
-  5: "TireRPM",
-  6: "TireTemperature",
-  7: "BMSPercentage",
-  8: "BMSTemperature",
-  9: "GPS",
-  10: "Lap",
-};
+// const ID_NAME = {
+//   0: "StartSwitch",
+//   1: "Throttle1Position",
+//   2: "Throttle2Position",
+//   3: "BrakePressure",
+//   4: "RVC",
+//   5: "TireRPM",
+//   6: "TireTemperature",
+//   7: "BMSPercentage",
+//   8: "BMSTemperature",
+//   9: "GPS",
+//   10: "Lap",
+// };
 
 // ---------- Safe parsing helpers ----------
 const parseBigInt = (x) => {
@@ -116,14 +118,15 @@ function LiveTelemetry() {
 
   // Advance chart x-axis
   const tickCharts = () => {
-    setTimestamps((prev) => {
-      const next = [...prev, new Date().toLocaleTimeString()];
-      return next.slice(-MAX_DATA_POINTS);
-    });
+    timestampsRef.current = [...timestampsRef.current.slice(-MAX_DATA_POINTS + 1), 
+                            new Date().toLocaleTimeString()];
   };
 
   // Update latest-value store (for stat panels)
   const updateLatest = (id, name, displayValue, ts) => {
+    latestRef.current[id] = {
+       name, value: displayValue, timestamp: ts,
+    };
     setTelemetryData((prev) => ({
       ...prev,
       [id]: { name, value: displayValue, timestamp: ts },
@@ -147,10 +150,13 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
 
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
-      }));
+      throttleBrakeRef.current = {...throttleBrakeRef.current,
+        throttle1: [...throttleBrakeRef.current.throttle1.slice(-MAX_DATA_POINTS + 1), n],
+      };
+      // setThrottleBrakeData((prev) => ({
+      //   ...prev,
+      //   throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
+      // }));
 
       if (id === CHART_TICK_ID) tickCharts();
       addLogEntry(name, `${v.toString()}`);
@@ -162,10 +168,13 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
 
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
-      }));
+      throttleBrakeRef.current = {...throttleBrakeRef.current,
+        throttle2: [...throttleBrakeRef.current.throttle2.slice(-MAX_DATA_POINTS + 1), n],
+      };
+      // setThrottleBrakeData((prev) => ({
+      //   ...prev,
+      //   throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
+      // }));
 
       if (id === CHART_TICK_ID) tickCharts();
       addLogEntry(name, `${v.toString()}`);
@@ -177,10 +186,9 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
 
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        brake: [...prev.brake.slice(-MAX_DATA_POINTS + 1), n],
-      }));
+      throttleBrakeRef.current = {...throttleBrakeRef.current,
+        brake: [...throttleBrakeRef.current.brake.slice(-MAX_DATA_POINTS + 1), n],
+      };
 
       if (id === CHART_TICK_ID) tickCharts();
       addLogEntry(name, `${v.toString()}`);
@@ -214,7 +222,8 @@ function LiveTelemetry() {
       const rpm = bigintToSafeNumber(vals[1] ?? 0n);
       updateLatest(id, name, rpm, ts);  
 
-      setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
+      rpmRef.current = [...rpmRef.current.slice(-MAX_DATA_POINTS + 1), rpm];
+      // setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
 
       if (id === CHART_TICK_ID) tickCharts();
       addLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
@@ -239,7 +248,8 @@ function LiveTelemetry() {
       const pct = bigintToSafeNumber(v);
       updateLatest(id, name, pct, ts);
 
-      setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
+      batteryRef.current = [...batteryRef.current.slice(-MAX_DATA_POINTS + 1), pct];
+      // setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
 
       if (id === CHART_TICK_ID) tickCharts();
       addLogEntry(name, `${v.toString()}`);
@@ -328,14 +338,16 @@ function LiveTelemetry() {
         console.log("WebSocket disconnected");
         setConnected(false);
         addLogEntry("SYSTEM", "Disconnected from telemetry stream");
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("Attempting to reconnect...");
-          connectWebSocket();
-        }, RECONNECT_INTERVAL);
+        if(autoReconnect){
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log("Attempting to reconnect...");
+            connectWebSocket();
+          }, RECONNECT_INTERVAL);
+        }
       };
 
       wsRef.current = ws;
+      autoReconnect = true; // with manual connect, enable auto-reconnect for accidental disconnects
     } catch (err) {
       console.error("Error creating WebSocket:", err);
     }
@@ -350,6 +362,7 @@ function LiveTelemetry() {
       clearTimeout(reconnectTimeoutRef.current);
     }
     setConnected(false);
+    autoReconnect = false; // when intentionally disconnected via button, disable auto-reconnect
   };
 
   // Auto-connect on mount
@@ -357,6 +370,31 @@ function LiveTelemetry() {
     connectWebSocket();
     return () => disconnectWebSocket();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Buffered arrays for charts to prevent re-rendering on every message
+  const latestRef = useRef({});
+  const rpmRef = useRef([]);
+  const throttleBrakeRef = useRef({ 
+    throttle1: [], throttle2: [], brake: [] });
+  const batteryRef = useRef([]);
+  const timestampsRef = useRef([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Update refs with latest state once per frame
+      setTelemetryData({...latestRef.current});
+      setRpmData([...rpmRef.current]);
+      setThrottleBrakeData({
+        throttle1: [...throttleBrakeRef.current.throttle1],
+        throttle2: [...throttleBrakeRef.current.throttle2],
+        brake: [...throttleBrakeRef.current.brake],
+      });
+      setBatteryData([...batteryRef.current]);
+      setTimestamps([...timestampsRef.current]);
+    }, 100); // Update every 100ms
+
+    return () => clearInterval(interval);
   }, []);
 
   // UI helper: get latest value for id
