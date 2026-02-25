@@ -35,6 +35,7 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 50;
 const MAX_LOG_ENTRIES = 30;
+const TICK_TIME_MS = 100;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
@@ -116,8 +117,14 @@ function LiveTelemetry() {
     ]);
   };
 
+  const lastTickRef = useRef(0);
+
   // Advance chart x-axis
   const tickCharts = () => {
+    const now = performance.now();
+    if(now - lastTickRef.current < TICK_TIME_MS) return; // throttle to 10 ticks/sec
+    lastTickRef.current = now;
+
     timestampsRef.current = [...timestampsRef.current.slice(-MAX_DATA_POINTS + 1), 
                             new Date().toLocaleTimeString()];
   };
@@ -404,7 +411,13 @@ function LiveTelemetry() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: false,
+    animation: {
+      duration: TICK_TIME_MS/2, // ms
+      easing: "linear",
+    },
+    transitions: {
+      active: { animation: { duration: 0 } },
+    },
     plugins: {
       legend: { display: false },
       tooltip: { mode: "index", intersect: false },
