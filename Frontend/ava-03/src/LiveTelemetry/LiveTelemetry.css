@@ -319,6 +319,29 @@
   overflow: hidden;
 }
 
+.feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.feed-header .section-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.logging-toggle-btn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .feed-content {
   flex: 1;
   overflow-y: auto;
@@ -436,6 +459,10 @@
   .control-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .logging-toggle-btn {
+    width: auto;
   }
 
   .telemetry-grid {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, memo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,6 +23,7 @@ ChartJS.register(
   Tooltip,
   Filler
 );
+const MemoLine = memo(Line);
 
 // Configuration
 // Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
@@ -36,7 +37,8 @@ const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 40;
 const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 100;
-const ANIMATION_TIME = 0;//TICK_TIME_MS / 8;
+const LOG_FLUSH_TIME_MS = 250;
+const ANIMATION_TIME = TICK_TIME_MS/2;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
@@ -79,6 +81,7 @@ function LiveTelemetry() {
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
   const [logEntries, setLogEntries] = useState([]);
+  const [loggingEnabled, setLoggingEnabled] = useState(true);
 
   // Chart series + labels
   const [rpmData, setRpmData] = useState([]); // TireRPM
@@ -94,11 +97,29 @@ function LiveTelemetry() {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const logQueueRef = useRef([]);
+  const loggingEnabledRef = useRef(true);
+  const latestDirtyRef = useRef(false);
+  const rpmDirtyRef = useRef(false);
+  const throttleBrakeDirtyRef = useRef(false);
+  const batteryDirtyRef = useRef(false);
+  const timestampsDirtyRef = useRef(false);
 
   // Queue telemetry feed entries and flush on interval
   const enqueueLogEntry = (sensor, data) => {
+    if (!loggingEnabledRef.current) return;
     const timestamp = new Date().toLocaleTimeString();
     logQueueRef.current.push({ timestamp, sensor, data });
+  };
+
+  const toggleLogging = () => {
+    setLoggingEnabled((prev) => {
+      const next = !prev;
+      if (!next) {
+        logQueueRef.current = [];
+      }
+      loggingEnabledRef.current = next;
+      return next;
+    });
   };
 
   const lastTickRef = useRef(0);
@@ -111,6 +132,7 @@ function LiveTelemetry() {
 
     timestampsRef.current = [...timestampsRef.current.slice(-MAX_DATA_POINTS + 1), 
                             new Date().toLocaleTimeString()];
+    timestampsDirtyRef.current = true;
   };
 
   // Update latest-value store (for stat panels)
@@ -118,6 +140,7 @@ function LiveTelemetry() {
     latestRef.current[id] = {
        name, value: displayValue, timestamp: ts,
     };
+    latestDirtyRef.current = true;
   };
 
   // ---------- ID-specific handlers ----------
@@ -140,6 +163,7 @@ function LiveTelemetry() {
       throttleBrakeRef.current = {...throttleBrakeRef.current,
         throttle1: [...throttleBrakeRef.current.throttle1.slice(-MAX_DATA_POINTS + 1), n],
       };
+      throttleBrakeDirtyRef.current = true;
       // setThrottleBrakeData((prev) => ({
       //   ...prev,
       //   throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
@@ -158,6 +182,7 @@ function LiveTelemetry() {
       throttleBrakeRef.current = {...throttleBrakeRef.current,
         throttle2: [...throttleBrakeRef.current.throttle2.slice(-MAX_DATA_POINTS + 1), n],
       };
+      throttleBrakeDirtyRef.current = true;
       // setThrottleBrakeData((prev) => ({
       //   ...prev,
       //   throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
@@ -176,6 +201,7 @@ function LiveTelemetry() {
       throttleBrakeRef.current = {...throttleBrakeRef.current,
         brake: [...throttleBrakeRef.current.brake.slice(-MAX_DATA_POINTS + 1), n],
       };
+      throttleBrakeDirtyRef.current = true;
 
       if (id === CHART_TICK_ID) tickCharts();
       enqueueLogEntry(name, `${v.toString()}`);
@@ -210,6 +236,7 @@ function LiveTelemetry() {
       updateLatest(id, name, rpm, ts);  
 
       rpmRef.current = [...rpmRef.current.slice(-MAX_DATA_POINTS + 1), rpm];
+      rpmDirtyRef.current = true;
       // setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
 
       if (id === CHART_TICK_ID) tickCharts();
@@ -236,6 +263,7 @@ function LiveTelemetry() {
       updateLatest(id, name, pct, ts);
 
       batteryRef.current = [...batteryRef.current.slice(-MAX_DATA_POINTS + 1), pct];
+      batteryDirtyRef.current = true;
       // setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
 
       if (id === CHART_TICK_ID) tickCharts();
@@ -360,6 +388,10 @@ function LiveTelemetry() {
   }, []);
 
   useEffect(() => {
+    loggingEnabledRef.current = loggingEnabled;
+  }, [loggingEnabled]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       if (logQueueRef.current.length === 0) return;
 
@@ -372,7 +404,7 @@ function LiveTelemetry() {
       setLogEntries((prev) =>
         [...newestFirstBatch, ...prev].slice(0, MAX_LOG_ENTRIES)
       );
-    }, TICK_TIME_MS);
+    }, LOG_FLUSH_TIME_MS);
 
     return () => {
       clearInterval(interval);
@@ -390,17 +422,32 @@ function LiveTelemetry() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // Update refs with latest state once per frame
-      setTelemetryData({...latestRef.current});
-      setRpmData([...rpmRef.current]);
-      setThrottleBrakeData({
-        throttle1: [...throttleBrakeRef.current.throttle1],
-        throttle2: [...throttleBrakeRef.current.throttle2],
-        brake: [...throttleBrakeRef.current.brake],
-      });
-      setBatteryData([...batteryRef.current]);
-      setTimestamps([...timestampsRef.current]);
-    }, 100); // Update every 100ms
+      // Only push state updates when underlying refs changed.
+      if (latestDirtyRef.current) {
+        setTelemetryData({ ...latestRef.current });
+        latestDirtyRef.current = false;
+      }
+      if (rpmDirtyRef.current) {
+        setRpmData([...rpmRef.current]);
+        rpmDirtyRef.current = false;
+      }
+      if (throttleBrakeDirtyRef.current) {
+        setThrottleBrakeData({
+          throttle1: [...throttleBrakeRef.current.throttle1],
+          throttle2: [...throttleBrakeRef.current.throttle2],
+          brake: [...throttleBrakeRef.current.brake],
+        });
+        throttleBrakeDirtyRef.current = false;
+      }
+      if (batteryDirtyRef.current) {
+        setBatteryData([...batteryRef.current]);
+        batteryDirtyRef.current = false;
+      }
+      if (timestampsDirtyRef.current) {
+        setTimestamps([...timestampsRef.current]);
+        timestampsDirtyRef.current = false;
+      }
+    }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
   }, []);
@@ -409,7 +456,7 @@ function LiveTelemetry() {
   const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
 
   // ---------- Chart options ----------
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: {
@@ -436,10 +483,10 @@ function LiveTelemetry() {
       },
     },
     interaction: { mode: "nearest", axis: "x", intersect: false },
-  };
+  }), []);
 
   // Tire RPM chart
-  const rpmChartData = {
+  const rpmChartData = useMemo(() => ({
     labels: timestamps,
     datasets: [
       {
@@ -453,10 +500,10 @@ function LiveTelemetry() {
         pointRadius: 0,
       },
     ],
-  };
+  }), [timestamps, rpmData]);
 
   // Throttle & Brake chart
-  const throttleBrakeChartData = {
+  const throttleBrakeChartData = useMemo(() => ({
     labels: timestamps,
     datasets: [
       {
@@ -490,10 +537,10 @@ function LiveTelemetry() {
         pointRadius: 0,
       },
     ],
-  };
+  }), [timestamps, throttleBrakeData]);
 
   // Battery chart
-  const batteryChartData = {
+  const batteryChartData = useMemo(() => ({
     labels: timestamps,
     datasets: [
       {
@@ -507,7 +554,7 @@ function LiveTelemetry() {
         pointRadius: 0,
       },
     ],
-  };
+  }), [timestamps, batteryData]);
 
   return (
     <div className="telemetry-dashboard">
@@ -588,21 +635,21 @@ function LiveTelemetry() {
           <div className="chart-section">
             <div className="section-header">TIRE RPM</div>
             <div className="chart-wrapper">
-              <Line data={rpmChartData} options={chartOptions} />
+              <MemoLine data={rpmChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">THROTTLE & BRAKE</div>
             <div className="chart-wrapper">
-              <Line data={throttleBrakeChartData} options={chartOptions} />
+              <MemoLine data={throttleBrakeChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">BMS %</div>
             <div className="chart-wrapper">
-              <Line data={batteryChartData} options={chartOptions} />
+              <MemoLine data={batteryChartData} options={chartOptions} />
             </div>
           </div>
         </div>
@@ -636,7 +683,16 @@ function LiveTelemetry() {
 
           {/* Telemetry Feed */}
           <div className="telemetry-feed">
-            <div className="section-header">TELEMETRY FEED</div>
+            <div className="feed-header">
+              <div className="section-header">TELEMETRY FEED</div>
+              <button
+                type="button"
+                className={`control-btn logging-toggle-btn ${loggingEnabled ? "connect-btn" : "disconnect-btn"}`}
+                onClick={toggleLogging}
+              >
+                {loggingEnabled ? "LOGGING ON" : "LOGGING OFF"}
+              </button>
+            </div>
             <div className="feed-content">
               {logEntries.map((entry, index) => (
                 <div key={index} className="log-entry">
@@ -648,7 +704,9 @@ function LiveTelemetry() {
               ))}
               {logEntries.length === 0 && (
                 <div className="log-entry">
-                  <span className="log-data">Waiting for telemetry data...</span>
+                  <span className="log-data">
+                    {loggingEnabled ? "Waiting for telemetry data..." : "Logging paused"}
+                  </span>
                 </div>
               )}
             </div>
