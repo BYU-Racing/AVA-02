@@ -35,8 +35,8 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 40;
 const MAX_LOG_ENTRIES = 20;
-const TICK_TIME_MS = 200;
-const ANIMATION_TIME = TICK_TIME_MS / 8;
+const TICK_TIME_MS = 100;
+const ANIMATION_TIME = 0;//TICK_TIME_MS / 8;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
