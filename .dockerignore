@@ -24,8 +24,6 @@ Backend/2025_dump.sql
 
 # Node modules (we only need the build folder)
 Frontend/ava-03/node_modules/
-Frontend/ava-03/src/
-Frontend/ava-03/public/
 
 # IDE
 .vscode/
