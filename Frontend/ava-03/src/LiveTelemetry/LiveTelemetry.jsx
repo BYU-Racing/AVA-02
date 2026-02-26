@@ -36,8 +36,15 @@ const MAX_DATA_POINTS = 40;
 const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 100;
 const LOG_FLUSH_TIME_MS = 250;
-const ANIMATION_TIME = TICK_TIME_MS/2;
-2
+const ANIMATION_TIME = TICK_TIME_MS / 2;
+const PERF_LOG_INTERVAL_MS = 5000;
+const PERF_DEBUG = (() => {
+  const raw = import.meta.env.VITE_LIVE_TELEMETRY_DEBUG_PERF;
+  if (raw == null) return false;
+  const normalized = String(raw).trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
+})();
+
 let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
 
 // ---------- Safe parsing helpers ----------
@@ -93,6 +100,8 @@ function LiveTelemetry() {
     brake: null,
     battery: null,
   });
+  const sampleSeqRef = useRef(0);
+  const lastDrawnSeqRef = useRef(0);
 
   // Canonical chart series (mutated in place)
   const labelsRef = useRef([]);
@@ -106,6 +115,20 @@ function LiveTelemetry() {
   const rpmChartRef = useRef(null);
   const throttleBrakeChartRef = useRef(null);
   const batteryChartRef = useRef(null);
+  const perfCountersRef = useRef({
+    messagesProcessed: 0,
+    chartTicks: 0,
+    chartUpdates: 0,
+    telemetryStateCommits: 0,
+    ticksWithNewSamples: 0,
+  });
+  const perfSnapshotRef = useRef({
+    messagesProcessed: 0,
+    chartTicks: 0,
+    chartUpdates: 0,
+    telemetryStateCommits: 0,
+    ticksWithNewSamples: 0,
+  });
 
   // Queue telemetry feed entries and flush on interval
   const enqueueLogEntry = (sensor, data) => {
@@ -142,22 +165,24 @@ function LiveTelemetry() {
     }
   };
 
-  const syncChartWindow = (chartRef, labels, seriesList) => {
+  const syncChartWindow = (chartRef) => {
     const chart = chartRef.current;
-    if (!chart) return;
-    chart.data.labels = labels;
-    for (let i = 0; i < seriesList.length; i += 1) {
-      chart.data.datasets[i].data = seriesList[i];
-    }
+    if (!chart) return false;
     chart.update();
+    return true;
   };
 
   // Update latest-value store (for stat panels)
   const updateLatest = (id, name, displayValue, ts) => {
+    const prev = latestRef.current[id];
     latestRef.current[id] = {
-       name, value: displayValue, timestamp: ts,
+      name,
+      value: displayValue,
+      timestamp: ts,
     };
-    latestDirtyRef.current = true;
+    if (!prev || prev.value !== displayValue) {
+      latestDirtyRef.current = true;
+    }
   };
 
   // ---------- ID-specific handlers ----------
@@ -177,6 +202,7 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
       latestSamplesRef.current.throttle1 = n;
+      sampleSeqRef.current += 1;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -186,6 +212,7 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
       latestSamplesRef.current.throttle2 = n;
+      sampleSeqRef.current += 1;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -195,6 +222,7 @@ function LiveTelemetry() {
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
       latestSamplesRef.current.brake = n;
+      sampleSeqRef.current += 1;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -224,20 +252,21 @@ function LiveTelemetry() {
       // TireRPM
       const vals = asBigIntArray(data);
       const rpm = bigintToSafeNumber(vals[1] ?? 0n);
-      updateLatest(id, name, rpm, ts);  
+      updateLatest(id, name, rpm, ts);
       latestSamplesRef.current.rpm = rpm;
-      enqueueLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, JSON.stringify(vals.map((v) => bigintToSafeNumber(v))));
     },
 
     6: ({ id, name, data, ts }) => {
       // TireTemperature
       const vals = asBigIntArray(data);
       const wheel = bigintToSafeNumber(vals[0] ?? 0n);
-      const tempIn  = bigintToSafeNumber(vals[1] ?? 0n);
+      const tempIn = bigintToSafeNumber(vals[1] ?? 0n);
       const tempOut = bigintToSafeNumber(vals[2] ?? 0n);
       const tempCore = bigintToSafeNumber(vals[3] ?? 0n);
-      const labels = ["FL","FR","RL","RR"];
-      const display = `${labels[wheel] ?? "?"}=${tempIn}°C/${tempCore}°C/${tempOut}°C`;
+      const labels = ["FL", "FR", "RL", "RR"];
+      const display = `${labels[wheel] ?? "?"}=${tempIn}\u00B0C/${tempCore}\u00B0C/${tempOut}\u00B0C`;
       updateLatest(id, name, display, ts);
       enqueueLogEntry(name, display);
     },
@@ -248,6 +277,7 @@ function LiveTelemetry() {
       const pct = bigintToSafeNumber(v);
       updateLatest(id, name, pct, ts);
       latestSamplesRef.current.battery = pct;
+      sampleSeqRef.current += 1;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -281,6 +311,7 @@ function LiveTelemetry() {
   const handleTelemetryMessage = (msg) => {
     const id = Number(msg.id);
     if (!Number.isFinite(id)) return;
+    perfCountersRef.current.messagesProcessed += 1;
 
     const ts = msg.timestamp || new Date().toISOString();
     const name = idMap?.[id] || `Sensor ${id}`;
@@ -396,6 +427,7 @@ function LiveTelemetry() {
     const interval = setInterval(() => {
       if (latestDirtyRef.current) {
         setTelemetryData({ ...latestRef.current });
+        perfCountersRef.current.telemetryStateCommits += 1;
         latestDirtyRef.current = false;
       }
     }, TICK_TIME_MS);
@@ -407,6 +439,14 @@ function LiveTelemetry() {
     if (!connected) return undefined;
 
     const interval = setInterval(() => {
+      const counters = perfCountersRef.current;
+      counters.chartTicks += 1;
+      const hasNewSample = sampleSeqRef.current !== lastDrawnSeqRef.current;
+      if (hasNewSample) {
+        counters.ticksWithNewSamples += 1;
+      }
+      lastDrawnSeqRef.current = sampleSeqRef.current;
+
       appendLabel();
 
       const latest = latestSamplesRef.current;
@@ -416,18 +456,37 @@ function LiveTelemetry() {
       appendSeriesPoint(brakeSeriesRef, latest.brake);
       appendSeriesPoint(batterySeriesRef, latest.battery);
 
-      const labels = labelsRef.current;
-      syncChartWindow(rpmChartRef, labels, [rpmSeriesRef.current]);
-      syncChartWindow(throttleBrakeChartRef, labels, [
-        throttle1SeriesRef.current,
-        throttle2SeriesRef.current,
-        brakeSeriesRef.current,
-      ]);
-      syncChartWindow(batteryChartRef, labels, [batterySeriesRef.current]);
+      let updates = 0;
+      if (syncChartWindow(rpmChartRef)) updates += 1;
+      if (syncChartWindow(throttleBrakeChartRef)) updates += 1;
+      if (syncChartWindow(batteryChartRef)) updates += 1;
+      counters.chartUpdates += updates;
     }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
   }, [connected]);
+
+  useEffect(() => {
+    if (!PERF_DEBUG) return undefined;
+
+    const interval = setInterval(() => {
+      const totals = perfCountersRef.current;
+      const snapshot = perfSnapshotRef.current;
+      const delta = {
+        messagesProcessed: totals.messagesProcessed - snapshot.messagesProcessed,
+        chartTicks: totals.chartTicks - snapshot.chartTicks,
+        chartUpdates: totals.chartUpdates - snapshot.chartUpdates,
+        telemetryStateCommits:
+          totals.telemetryStateCommits - snapshot.telemetryStateCommits,
+        ticksWithNewSamples: totals.ticksWithNewSamples - snapshot.ticksWithNewSamples,
+      };
+
+      console.debug("[LiveTelemetry perf/5s]", delta);
+      perfSnapshotRef.current = { ...totals };
+    }, PERF_LOG_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // UI helper: get latest value for id
   const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
@@ -547,12 +606,12 @@ function LiveTelemetry() {
         <div className="control-panel">
           {!connected ? (
             <button className="control-btn connect-btn" onClick={connectWebSocket}>
-              <span>▶</span>
+              <span>{"\u25B6"}</span>
               <span>CONNECT</span>
             </button>
           ) : (
             <button className="control-btn disconnect-btn" onClick={disconnectWebSocket}>
-              <span>⏸</span>
+              <span>{"\u23F8"}</span>
               <span>DISCONNECT</span>
             </button>
           )}
