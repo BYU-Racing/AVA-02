@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,8 +23,6 @@ ChartJS.register(
   Tooltip,
   Filler
 );
-const MemoLine = memo(Line);
-
 // Configuration
 // Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
 const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc var
@@ -39,10 +37,6 @@ const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 100;
 const LOG_FLUSH_TIME_MS = 250;
 const ANIMATION_TIME = TICK_TIME_MS/2;
-
-// Choose one ID to advance chart timestamps (prevents x-axis drift)
-// Good defaults: TireRPM (5) or Throttle1 (1)
-const CHART_TICK_ID = 3;
 
 let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
 
@@ -76,33 +70,42 @@ const bigintToSafeNumber = (b) => {
 function LiveTelemetry() {
   // Connection state
   const [connected, setConnected] = useState(false);
-  const [lastMessageTime, setLastMessageTime] = useState(null);
-
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
   const [logEntries, setLogEntries] = useState([]);
   const [loggingEnabled, setLoggingEnabled] = useState(true);
-
-  // Chart series + labels
-  const [rpmData, setRpmData] = useState([]); // TireRPM
-  const [throttleBrakeData, setThrottleBrakeData] = useState({
-    throttle1: [],
-    throttle2: [],
-    brake: [],
-  });
-  const [batteryData, setBatteryData] = useState([]); // BMSPercentage
-  const [timestamps, setTimestamps] = useState([]);
 
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const logQueueRef = useRef([]);
   const loggingEnabledRef = useRef(true);
+
+  // Latest telemetry panel values (buffered)
+  const latestRef = useRef({});
   const latestDirtyRef = useRef(false);
-  const rpmDirtyRef = useRef(false);
-  const throttleBrakeDirtyRef = useRef(false);
-  const batteryDirtyRef = useRef(false);
-  const timestampsDirtyRef = useRef(false);
+
+  // Latest sample values used by frame-tick charting
+  const latestSamplesRef = useRef({
+    rpm: null,
+    throttle1: null,
+    throttle2: null,
+    brake: null,
+    battery: null,
+  });
+
+  // Canonical chart series (mutated in place)
+  const labelsRef = useRef([]);
+  const rpmSeriesRef = useRef([]);
+  const throttle1SeriesRef = useRef([]);
+  const throttle2SeriesRef = useRef([]);
+  const brakeSeriesRef = useRef([]);
+  const batterySeriesRef = useRef([]);
+
+  // Chart.js instance refs for imperative incremental updates
+  const rpmChartRef = useRef(null);
+  const throttleBrakeChartRef = useRef(null);
+  const batteryChartRef = useRef(null);
 
   // Queue telemetry feed entries and flush on interval
   const enqueueLogEntry = (sensor, data) => {
@@ -122,17 +125,21 @@ function LiveTelemetry() {
     });
   };
 
-  const lastTickRef = useRef(0);
+  const appendSeriesPoint = (seriesRef, value) => {
+    const lastValue = seriesRef.current.length
+      ? seriesRef.current[seriesRef.current.length - 1]
+      : 0;
+    seriesRef.current.push(value ?? lastValue);
+    if (seriesRef.current.length > MAX_DATA_POINTS) {
+      seriesRef.current.shift();
+    }
+  };
 
-  // Advance chart x-axis
-  const tickCharts = () => {
-    const now = performance.now();
-    if(now - lastTickRef.current < TICK_TIME_MS) return; // throttle to 10 ticks/sec
-    lastTickRef.current = now;
-
-    timestampsRef.current = [...timestampsRef.current.slice(-MAX_DATA_POINTS + 1), 
-                            new Date().toLocaleTimeString()];
-    timestampsDirtyRef.current = true;
+  const appendLabel = () => {
+    labelsRef.current.push(new Date().toLocaleTimeString());
+    if (labelsRef.current.length > MAX_DATA_POINTS) {
+      labelsRef.current.shift();
+    }
   };
 
   // Update latest-value store (for stat panels)
@@ -159,17 +166,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      throttleBrakeRef.current = {...throttleBrakeRef.current,
-        throttle1: [...throttleBrakeRef.current.throttle1.slice(-MAX_DATA_POINTS + 1), n],
-      };
-      throttleBrakeDirtyRef.current = true;
-      // setThrottleBrakeData((prev) => ({
-      //   ...prev,
-      //   throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
-      // }));
-
-      if (id === CHART_TICK_ID) tickCharts();
+      latestSamplesRef.current.throttle1 = n;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -178,17 +175,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      throttleBrakeRef.current = {...throttleBrakeRef.current,
-        throttle2: [...throttleBrakeRef.current.throttle2.slice(-MAX_DATA_POINTS + 1), n],
-      };
-      throttleBrakeDirtyRef.current = true;
-      // setThrottleBrakeData((prev) => ({
-      //   ...prev,
-      //   throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
-      // }));
-
-      if (id === CHART_TICK_ID) tickCharts();
+      latestSamplesRef.current.throttle2 = n;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -197,13 +184,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      throttleBrakeRef.current = {...throttleBrakeRef.current,
-        brake: [...throttleBrakeRef.current.brake.slice(-MAX_DATA_POINTS + 1), n],
-      };
-      throttleBrakeDirtyRef.current = true;
-
-      if (id === CHART_TICK_ID) tickCharts();
+      latestSamplesRef.current.brake = n;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -234,12 +215,7 @@ function LiveTelemetry() {
       const vals = asBigIntArray(data);
       const rpm = bigintToSafeNumber(vals[1] ?? 0n);
       updateLatest(id, name, rpm, ts);  
-
-      rpmRef.current = [...rpmRef.current.slice(-MAX_DATA_POINTS + 1), rpm];
-      rpmDirtyRef.current = true;
-      // setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
-
-      if (id === CHART_TICK_ID) tickCharts();
+      latestSamplesRef.current.rpm = rpm;
       enqueueLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
     },
 
@@ -261,12 +237,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const pct = bigintToSafeNumber(v);
       updateLatest(id, name, pct, ts);
-
-      batteryRef.current = [...batteryRef.current.slice(-MAX_DATA_POINTS + 1), pct];
-      batteryDirtyRef.current = true;
-      // setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
-
-      if (id === CHART_TICK_ID) tickCharts();
+      latestSamplesRef.current.battery = pct;
       enqueueLogEntry(name, `${v.toString()}`);
     },
 
@@ -339,7 +310,6 @@ function LiveTelemetry() {
             handleTelemetryMessage(data);
           }
 
-          setLastMessageTime(new Date());
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
         }
@@ -412,45 +382,37 @@ function LiveTelemetry() {
     };
   }, []);
 
-  // Buffered arrays for charts to prevent re-rendering on every message
-  const latestRef = useRef({});
-  const rpmRef = useRef([]);
-  const throttleBrakeRef = useRef({ 
-    throttle1: [], throttle2: [], brake: [] });
-  const batteryRef = useRef([]);
-  const timestampsRef = useRef([]);
-
   useEffect(() => {
     const interval = setInterval(() => {
-      // Only push state updates when underlying refs changed.
       if (latestDirtyRef.current) {
         setTelemetryData({ ...latestRef.current });
         latestDirtyRef.current = false;
-      }
-      if (rpmDirtyRef.current) {
-        setRpmData([...rpmRef.current]);
-        rpmDirtyRef.current = false;
-      }
-      if (throttleBrakeDirtyRef.current) {
-        setThrottleBrakeData({
-          throttle1: [...throttleBrakeRef.current.throttle1],
-          throttle2: [...throttleBrakeRef.current.throttle2],
-          brake: [...throttleBrakeRef.current.brake],
-        });
-        throttleBrakeDirtyRef.current = false;
-      }
-      if (batteryDirtyRef.current) {
-        setBatteryData([...batteryRef.current]);
-        batteryDirtyRef.current = false;
-      }
-      if (timestampsDirtyRef.current) {
-        setTimestamps([...timestampsRef.current]);
-        timestampsDirtyRef.current = false;
       }
     }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!connected) return undefined;
+
+    const interval = setInterval(() => {
+      appendLabel();
+
+      const latest = latestSamplesRef.current;
+      appendSeriesPoint(rpmSeriesRef, latest.rpm);
+      appendSeriesPoint(throttle1SeriesRef, latest.throttle1);
+      appendSeriesPoint(throttle2SeriesRef, latest.throttle2);
+      appendSeriesPoint(brakeSeriesRef, latest.brake);
+      appendSeriesPoint(batterySeriesRef, latest.battery);
+
+      rpmChartRef.current?.update("active");
+      throttleBrakeChartRef.current?.update("active");
+      batteryChartRef.current?.update("active");
+    }, TICK_TIME_MS);
+
+    return () => clearInterval(interval);
+  }, [connected]);
 
   // UI helper: get latest value for id
   const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
@@ -459,6 +421,8 @@ function LiveTelemetry() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    parsing: false,
+    normalized: true,
     animation: {
       duration: ANIMATION_TIME, // ms
       easing: "linear",
@@ -487,74 +451,74 @@ function LiveTelemetry() {
 
   // Tire RPM chart
   const rpmChartData = useMemo(() => ({
-    labels: timestamps,
+    labels: labelsRef.current,
     datasets: [
       {
         label: "Tire RPM",
-        data: rpmData,
+        data: rpmSeriesRef.current,
         fill: true,
         backgroundColor: "rgba(0, 217, 255, 0.1)",
         borderColor: "#00d9ff",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  }), [timestamps, rpmData]);
+  }), []);
 
   // Throttle & Brake chart
   const throttleBrakeChartData = useMemo(() => ({
-    labels: timestamps,
+    labels: labelsRef.current,
     datasets: [
       {
         label: "Throttle 1",
-        data: throttleBrakeData.throttle1,
+        data: throttle1SeriesRef.current,
         fill: true,
         backgroundColor: "rgba(16, 185, 129, 0.1)",
         borderColor: "#10b981",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
       {
         label: "Throttle 2",
-        data: throttleBrakeData.throttle2,
+        data: throttle2SeriesRef.current,
         fill: true,
         backgroundColor: "rgba(59, 130, 246, 0.08)",
         borderColor: "#3b82f6",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
       {
         label: "Brake",
-        data: throttleBrakeData.brake,
+        data: brakeSeriesRef.current,
         fill: true,
         backgroundColor: "rgba(239, 68, 68, 0.1)",
         borderColor: "#ef4444",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  }), [timestamps, throttleBrakeData]);
+  }), []);
 
   // Battery chart
   const batteryChartData = useMemo(() => ({
-    labels: timestamps,
+    labels: labelsRef.current,
     datasets: [
       {
         label: "BMS %",
-        data: batteryData,
+        data: batterySeriesRef.current,
         fill: true,
         backgroundColor: "rgba(16, 185, 129, 0.1)",
         borderColor: "#10b981",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  }), [timestamps, batteryData]);
+  }), []);
 
   return (
     <div className="telemetry-dashboard">
@@ -635,21 +599,21 @@ function LiveTelemetry() {
           <div className="chart-section">
             <div className="section-header">TIRE RPM</div>
             <div className="chart-wrapper">
-              <MemoLine data={rpmChartData} options={chartOptions} />
+              <Line ref={rpmChartRef} data={rpmChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">THROTTLE & BRAKE</div>
             <div className="chart-wrapper">
-              <MemoLine data={throttleBrakeChartData} options={chartOptions} />
+              <Line ref={throttleBrakeChartRef} data={throttleBrakeChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">BMS %</div>
             <div className="chart-wrapper">
-              <MemoLine data={batteryChartData} options={chartOptions} />
+              <Line ref={batteryChartRef} data={batteryChartData} options={chartOptions} />
             </div>
           </div>
         </div>
