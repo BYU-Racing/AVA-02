@@ -9,7 +9,7 @@ RUN npm ci
 # Copy source and build
 COPY Frontend/ava-03/ ./
 # outputs /app/frontend/dist
-RUN npm run build   
+RUN NODE_OPTIONS=--max_old_space_size=2048 npm run build
 
 # ---------- Backend stage ----------
 FROM python:3.11-slim
