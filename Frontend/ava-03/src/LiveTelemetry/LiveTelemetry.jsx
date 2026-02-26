@@ -33,8 +33,8 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
   return `${proto}//${window.location.host}/api/ws/livetelemetry`;
 })();
 const RECONNECT_INTERVAL = 3000;
-const MAX_DATA_POINTS = 50;
-const MAX_LOG_ENTRIES = 30;
+const MAX_DATA_POINTS = 40;
+const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 200;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
@@ -42,21 +42,6 @@ const TICK_TIME_MS = 200;
 const CHART_TICK_ID = 3;
 
 let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
-
-// Fallback names if idMap doesn't include them
-// const ID_NAME = {
-//   0: "StartSwitch",
-//   1: "Throttle1Position",
-//   2: "Throttle2Position",
-//   3: "BrakePressure",
-//   4: "RVC",
-//   5: "TireRPM",
-//   6: "TireTemperature",
-//   7: "BMSPercentage",
-//   8: "BMSTemperature",
-//   9: "GPS",
-//   10: "Lap",
-// };
 
 // ---------- Safe parsing helpers ----------
 const parseBigInt = (x) => {
@@ -107,14 +92,12 @@ function LiveTelemetry() {
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const logQueueRef = useRef([]);
 
-  // Add entry to telemetry feed
-  const addLogEntry = (sensor, data) => {
+  // Queue telemetry feed entries and flush on interval
+  const enqueueLogEntry = (sensor, data) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogEntries((prev) => [
-      { timestamp, sensor, data },
-      ...prev.slice(0, MAX_LOG_ENTRIES - 1),
-    ]);
+    logQueueRef.current.push({ timestamp, sensor, data });
   };
 
   const lastTickRef = useRef(0);
@@ -148,7 +131,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-      addLogEntry(name, `${n}`);
+      enqueueLogEntry(name, `${n}`);
     },
 
     1: ({ id, name, data, ts }) => {
@@ -166,7 +149,7 @@ function LiveTelemetry() {
       // }));
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     2: ({ id, name, data, ts }) => {
@@ -184,7 +167,7 @@ function LiveTelemetry() {
       // }));
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     3: ({ id, name, data, ts }) => {
@@ -198,7 +181,7 @@ function LiveTelemetry() {
       };
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     4: ({ id, name, data, ts }) => {
@@ -220,7 +203,7 @@ function LiveTelemetry() {
       const display = `${subLabel}: ${value}`;
 
       updateLatest(id, name, display, ts);
-      addLogEntry(name, `${display}`);
+      enqueueLogEntry(name, `${display}`);
     },
 
     5: ({ id, name, data, ts }) => {
@@ -233,7 +216,7 @@ function LiveTelemetry() {
       // setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
+      enqueueLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
     },
 
     6: ({ id, name, data, ts }) => {
@@ -246,7 +229,7 @@ function LiveTelemetry() {
       const labels = ["FL","FR","RL","RR"];
       const display = `${labels[wheel] ?? "?"}=${tempIn}°C/${tempCore}°C/${tempOut}°C`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, display);
+      enqueueLogEntry(name, display);
     },
 
     7: ({ id, name, data, ts }) => {
@@ -259,7 +242,7 @@ function LiveTelemetry() {
       // setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
 
       if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     8: ({ id, name, data, ts }) => {
@@ -267,7 +250,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const temp = bigintToSafeNumber(v);
       updateLatest(id, name, temp, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     9: ({ id, name, data, ts }) => {
@@ -276,7 +259,7 @@ function LiveTelemetry() {
       const lon = Number(vals[1] ?? 0n) / 1e7;
       const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)}`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, display);
+      enqueueLogEntry(name, display);
     },
 
     10: ({ id, name, data, ts }) => {
@@ -284,7 +267,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const lap = bigintToSafeNumber(v);
       updateLatest(id, name, lap, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
   };
 
@@ -294,7 +277,7 @@ function LiveTelemetry() {
     if (!Number.isFinite(id)) return;
 
     const ts = msg.timestamp || new Date().toISOString();
-    const name = idMap?.[id] || ID_NAME[id] || `Sensor ${id}`;
+    const name = idMap?.[id] || `Sensor ${id}`;
     const fn = handlers[id];
 
     if (fn) {
@@ -304,7 +287,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(msg.data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     }
   };
 
@@ -317,7 +300,7 @@ function LiveTelemetry() {
       ws.onopen = () => {
         console.log("WebSocket Connected!");
         setConnected(true);
-        addLogEntry("SYSTEM", "Connected to telemetry stream");
+        enqueueLogEntry("SYSTEM", "Connected to telemetry stream");
       };
 
       ws.onmessage = (event) => {
@@ -344,7 +327,7 @@ function LiveTelemetry() {
       ws.onclose = () => {
         console.log("WebSocket disconnected");
         setConnected(false);
-        addLogEntry("SYSTEM", "Disconnected from telemetry stream");
+        enqueueLogEntry("SYSTEM", "Disconnected from telemetry stream");
         if(autoReconnect){
           reconnectTimeoutRef.current = setTimeout(() => {
             console.log("Attempting to reconnect...");
@@ -377,6 +360,25 @@ function LiveTelemetry() {
     connectWebSocket();
     return () => disconnectWebSocket();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (logQueueRef.current.length === 0) return;
+
+      const queuedEntries = logQueueRef.current;
+      logQueueRef.current = [];
+      const newestFirstBatch = [...queuedEntries].reverse();
+
+      setLogEntries((prev) =>
+        [...newestFirstBatch, ...prev].slice(0, MAX_LOG_ENTRIES)
+      );
+    }, TICK_TIME_MS);
+
+    return () => {
+      clearInterval(interval);
+      logQueueRef.current = [];
+    };
   }, []);
 
   // Buffered arrays for charts to prevent re-rendering on every message
@@ -412,7 +414,7 @@ function LiveTelemetry() {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: TICK_TIME_MS/4, // ms
+      duration: TICK_TIME_MS/8, // ms
       easing: "linear",
     },
     transitions: {
