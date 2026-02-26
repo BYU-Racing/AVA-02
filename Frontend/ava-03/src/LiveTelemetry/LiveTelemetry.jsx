@@ -35,7 +35,7 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 50;
 const MAX_LOG_ENTRIES = 30;
-const TICK_TIME_MS = 100;
+const TICK_TIME_MS = 200;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
@@ -412,7 +412,7 @@ function LiveTelemetry() {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: TICK_TIME_MS/2, // ms
+      duration: TICK_TIME_MS/4, // ms
       easing: "linear",
     },
     transitions: {
