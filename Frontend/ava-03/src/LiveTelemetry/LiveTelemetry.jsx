@@ -37,7 +37,7 @@ const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 100;
 const LOG_FLUSH_TIME_MS = 250;
 const ANIMATION_TIME = TICK_TIME_MS/2;
-
+2
 let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
 
 // ---------- Safe parsing helpers ----------
@@ -140,6 +140,16 @@ function LiveTelemetry() {
     if (labelsRef.current.length > MAX_DATA_POINTS) {
       labelsRef.current.shift();
     }
+  };
+
+  const syncChartWindow = (chartRef, labels, seriesList) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.data.labels = labels;
+    for (let i = 0; i < seriesList.length; i += 1) {
+      chart.data.datasets[i].data = seriesList[i];
+    }
+    chart.update();
   };
 
   // Update latest-value store (for stat panels)
@@ -406,9 +416,14 @@ function LiveTelemetry() {
       appendSeriesPoint(brakeSeriesRef, latest.brake);
       appendSeriesPoint(batterySeriesRef, latest.battery);
 
-      rpmChartRef.current?.update("active");
-      throttleBrakeChartRef.current?.update("active");
-      batteryChartRef.current?.update("active");
+      const labels = labelsRef.current;
+      syncChartWindow(rpmChartRef, labels, [rpmSeriesRef.current]);
+      syncChartWindow(throttleBrakeChartRef, labels, [
+        throttle1SeriesRef.current,
+        throttle2SeriesRef.current,
+        brakeSeriesRef.current,
+      ]);
+      syncChartWindow(batteryChartRef, labels, [batterySeriesRef.current]);
     }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
@@ -421,14 +436,9 @@ function LiveTelemetry() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    parsing: false,
-    normalized: true,
     animation: {
       duration: ANIMATION_TIME, // ms
       easing: "linear",
-    },
-    transitions: {
-      active: { animation: { duration: 0 } },
     },
     plugins: {
       legend: { display: false },
