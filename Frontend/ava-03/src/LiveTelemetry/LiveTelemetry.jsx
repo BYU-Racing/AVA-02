@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, use } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -118,10 +118,6 @@ function LiveTelemetry() {
     latestRef.current[id] = {
        name, value: displayValue, timestamp: ts,
     };
-    setTelemetryData((prev) => ({
-      ...prev,
-      [id]: { name, value: displayValue, timestamp: ts },
-    }));
   };
 
   // ---------- ID-specific handlers ----------
@@ -369,7 +365,9 @@ function LiveTelemetry() {
 
       const queuedEntries = logQueueRef.current;
       logQueueRef.current = [];
-      const newestFirstBatch = [...queuedEntries].reverse();
+      const newestFirstBatch = queuedEntries
+        .slice(-MAX_LOG_ENTRIES)
+        .reverse();
 
       setLogEntries((prev) =>
         [...newestFirstBatch, ...prev].slice(0, MAX_LOG_ENTRIES)
