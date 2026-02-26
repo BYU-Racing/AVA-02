@@ -36,6 +36,7 @@ const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 40;
 const MAX_LOG_ENTRIES = 20;
 const TICK_TIME_MS = 200;
+const ANIMATION_TIME = TICK_TIME_MS / 10;
 
 // Choose one ID to advance chart timestamps (prevents x-axis drift)
 // Good defaults: TireRPM (5) or Throttle1 (1)
@@ -414,7 +415,7 @@ function LiveTelemetry() {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: TICK_TIME_MS/8, // ms
+      duration: ANIMATION_TIME, // ms
       easing: "linear",
     },
     transitions: {
