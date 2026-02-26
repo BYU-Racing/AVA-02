@@ -34,9 +34,9 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
 const RECONNECT_INTERVAL = 3000;
 const MAX_DATA_POINTS = 40;
 const MAX_LOG_ENTRIES = 20;
-const TICK_TIME_MS = 200; // ms, how often data changes
+const TICK_TIME_MS = 100; // ms, how often data changes
 const LOG_FLUSH_TIME_MS = 250;
-const ANIMATION_TIME = TICK_TIME_MS / 2;
+const ANIMATION_TIME = TICK_TIME_MS; // ms, Chart.js animation duration
 const PERF_LOG_INTERVAL_MS = 5000;
 const PERF_DEBUG = (() => {
   const raw = import.meta.env.VITE_LIVE_TELEMETRY_DEBUG_PERF;
