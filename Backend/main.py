@@ -66,9 +66,9 @@ if build_dir.exists():
     )
 
     # SPA fallback for react-router (optional but recommended)
-    @app.get("/{path:path}")
-    def spa_fallback(path: str):
-        return FileResponse(str(build_dir / "index.html"))
+    # @app.get("/{path:path}")
+    # def spa_fallback(path: str):
+    #     return FileResponse(str(build_dir / "index.html"))
 
 else:
     print(f"⚠️Error⚠️\nFrontend build directory not found at {build_dir}")
