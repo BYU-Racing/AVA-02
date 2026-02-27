@@ -34,7 +34,7 @@ const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc 
 
 const RECONNECT_INTERVAL = 3000;
 const TICK_TIME_MS = 100; // ms, how often data changes
-const ANIMATION_TIME = TICK_TIME_MS; // ms, Chart.js animation duration
+const ANIMATION_TIME = 0;//TICK_TIME_MS; // ms, Chart.js animation duration
 const DATA_SAVED_DURATION_S = 20; // seconds of data to keep in charts
 const MAX_DATA_POINTS = DATA_SAVED_DURATION_S * (1000 / TICK_TIME_MS); // max points to keep based on tick interval
 const MAX_LOG_ENTRIES = 30; // Max # of entries to keep in telemetry feed
