@@ -326,6 +326,7 @@ function LiveTelemetry() {
       updateLatest(id, name, n, ts);
       enqueueLogEntry(name, `${v.toString()}`);
     }
+    
   };
 
   // ---------- WebSocket connect/disconnect ----------
@@ -442,9 +443,8 @@ function LiveTelemetry() {
       const counters = perfCountersRef.current;
       counters.chartTicks += 1;
       const hasNewSample = sampleSeqRef.current !== lastDrawnSeqRef.current;
-      if (hasNewSample) {
-        counters.ticksWithNewSamples += 1;
-      }
+      if (!hasNewSample) return;
+      counters.ticksWithNewSamples += 1;
       lastDrawnSeqRef.current = sampleSeqRef.current;
 
       appendLabel();
