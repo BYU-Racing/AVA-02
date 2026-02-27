@@ -314,6 +314,7 @@ function LiveTelemetry() {
     const id = Number(msg.id);
     if (!Number.isFinite(id)) return;
     perfCountersRef.current.messagesProcessed += 1;
+    sampleSeqRef.current += 1;
 
     const ts = msg.timestamp || new Date().toISOString();
     const name = idMap?.[id] || `Sensor ${id}`;
