@@ -29,7 +29,15 @@ class ConnectionManager:
         await websocket.accept()
         if client:
             self.active_connections.append(websocket)
-        logger.info(f"New connection established. Total clients: {len(self.active_connections)}")
+            logger.info(f"New client connection established. Total clients: {len(self.active_connections)}")
+        if not client:
+            self.broadcast({
+            "type": "connection",
+            "status": "connected",
+            "timestamp": datetime.now().isoformat(),
+            "message": "Connected to sender WebSocket!"
+        })
+        
         
     async def disconnect(self, websocket: WebSocket, client = True):
         if client:
