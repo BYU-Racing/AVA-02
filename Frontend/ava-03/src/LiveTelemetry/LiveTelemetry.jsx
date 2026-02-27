@@ -163,9 +163,9 @@ function LiveTelemetry() {
       return;
     }
 
-    // In-place slide avoids per-tick array reallocation once the window is full.
-    series.copyWithin(0, 1);
-    series[MAX_DATA_POINTS - 1] = nextValue;
+    // Use shift/push so Chart.js array listeners track sliding-window updates correctly.
+    series.shift();
+    series.push(nextValue);
   };
 
   const appendLabel = () => {
@@ -177,9 +177,8 @@ function LiveTelemetry() {
       return;
     }
 
-    // Match series sliding behavior without shift().
-    labels.copyWithin(0, 1);
-    labels[MAX_DATA_POINTS - 1] = nextLabel;
+    labels.shift();
+    labels.push(nextLabel);
   };
 
   const syncChartWindow = (chartRef) => {
@@ -516,6 +515,10 @@ function LiveTelemetry() {
     animation: {
       duration: ANIMATION_TIME, // ms
       easing: "linear",
+    },
+    animations: {
+      x: { duration: 0 },
+      y: { duration: ANIMATION_TIME, easing: "linear" },
     },
     plugins: {
       legend: { display: false },
