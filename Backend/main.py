@@ -47,6 +47,14 @@ app.include_router(driver.router, prefix="/api")
 app.include_router(data.router, prefix="/api")
 app.include_router(livetelemetryws.router, prefix="/api")
 
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 404:
+            # If file not found, serve index.html for SPA routing
+            return await super().get_response("index.html", scope)
+        return response
+
 # Mount static files LAST (catch-all route)
 build_dir = Path("/app/FrontendDist")
 
