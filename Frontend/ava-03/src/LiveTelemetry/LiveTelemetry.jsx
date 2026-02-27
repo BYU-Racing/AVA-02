@@ -152,20 +152,34 @@ function LiveTelemetry() {
   };
 
   const appendSeriesPoint = (seriesRef, value) => {
-    const lastValue = seriesRef.current.length
-      ? seriesRef.current[seriesRef.current.length - 1]
+    const series = seriesRef.current;
+    const lastValue = series.length
+      ? series[series.length - 1]
       : 0;
-    seriesRef.current.push(value ?? lastValue);
-    if (seriesRef.current.length > MAX_DATA_POINTS) {
-      seriesRef.current.shift();
+    const nextValue = value ?? lastValue;
+
+    if (series.length < MAX_DATA_POINTS) {
+      series.push(nextValue);
+      return;
     }
+
+    // In-place slide avoids per-tick array reallocation once the window is full.
+    series.copyWithin(0, 1);
+    series[MAX_DATA_POINTS - 1] = nextValue;
   };
 
   const appendLabel = () => {
-    labelsRef.current.push(new Date().toLocaleTimeString());
-    if (labelsRef.current.length > MAX_DATA_POINTS) {
-      labelsRef.current.shift();
+    const labels = labelsRef.current;
+    const nextLabel = new Date().toLocaleTimeString();
+
+    if (labels.length < MAX_DATA_POINTS) {
+      labels.push(nextLabel);
+      return;
     }
+
+    // Match series sliding behavior without shift().
+    labels.copyWithin(0, 1);
+    labels[MAX_DATA_POINTS - 1] = nextLabel;
   };
 
   const syncChartWindow = (chartRef) => {
