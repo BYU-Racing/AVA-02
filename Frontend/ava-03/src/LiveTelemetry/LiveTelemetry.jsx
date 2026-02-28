@@ -80,6 +80,7 @@ const bigintToSafeNumber = (b) => {
 function LiveTelemetry() {
   // Connection state
   const [connected, setConnected] = useState(false);
+  const [senderConnected, setSenderConnected] = useState(false);
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
   const [logEntries, setLogEntries] = useState([]);
@@ -363,9 +364,16 @@ function LiveTelemetry() {
           const data = JSON.parse(event.data);
 
           if (data.type === "connection") {
+            const source = String(data.source || "").toLowerCase();
+            const message = String(data.message || "").toLowerCase();
+            const isSenderEvent = source === "sender" || message.includes("sender");
+            if (isSenderEvent) {
+              setSenderConnected(data.status === "connected");
+            }
             console.log("Connection confirmed:", data.message);
           } else if (data.type === "telemetry") {
             // Expected: {type:"telemetry", id:<int>, data:<string|array>, timestamp?:iso}
+            setSenderConnected(true);
             handleTelemetryMessage(data);
           }
 
@@ -381,6 +389,7 @@ function LiveTelemetry() {
       ws.onclose = () => {
         console.log("WebSocket disconnected");
         setConnected(false);
+        setSenderConnected(false);
         enqueueLogEntry("SYSTEM", "Disconnected from telemetry stream");
         if(autoReconnect){
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -406,6 +415,7 @@ function LiveTelemetry() {
       clearTimeout(reconnectTimeoutRef.current);
     }
     setConnected(false);
+    setSenderConnected(false);
     autoReconnect = false; // when intentionally disconnected via button, disable auto-reconnect
   };
 
@@ -620,6 +630,12 @@ function LiveTelemetry() {
             <div className={`session-status ${connected ? "connected" : "disconnected"}`}>
               <span className="status-indicator"></span>
               {connected ? "CONNECTED" : "DISCONNECTED"}
+            </div>
+            <div className="sender-status">
+              <span
+                className={`sender-status-square ${senderConnected ? "connected" : "disconnected"}`}
+              ></span>
+              <span className="sender-status-label">SENDER</span>
             </div>
           </div>
         </div>
