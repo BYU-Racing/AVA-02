@@ -83,14 +83,10 @@ function LiveTelemetry() {
   const [senderConnected, setSenderConnected] = useState(false);
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
-  const [logEntries, setLogEntries] = useState([]);
-  const [loggingEnabled, setLoggingEnabled] = useState(true);
 
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
-  const logQueueRef = useRef([]);
-  const loggingEnabledRef = useRef(true);
 
   // Latest telemetry panel values (buffered)
   const latestRef = useRef({});
@@ -134,23 +130,8 @@ function LiveTelemetry() {
     ticksWithNewSamples: 0,
   });
 
-  // Queue telemetry feed entries and flush on interval
-  const enqueueLogEntry = (sensor, data) => {
-    if (!loggingEnabledRef.current) return;
-    const timestamp = new Date().toLocaleTimeString();
-    logQueueRef.current.push({ timestamp, sensor, data });
-  };
-
-  const toggleLogging = () => {
-    setLoggingEnabled((prev) => {
-      const next = !prev;
-      if (!next) {
-        logQueueRef.current = [];
-      }
-      loggingEnabledRef.current = next;
-      return next;
-    });
-  };
+  // Keep call sites untouched; feed now renders from latest telemetry map.
+  const enqueueLogEntry = () => {};
 
   const appendSeriesPoint = (seriesRef, value) => {
     const series = seriesRef.current;
@@ -427,31 +408,6 @@ function LiveTelemetry() {
   }, []);
 
   useEffect(() => {
-    loggingEnabledRef.current = loggingEnabled;
-  }, [loggingEnabled]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (logQueueRef.current.length === 0) return;
-
-      const queuedEntries = logQueueRef.current;
-      logQueueRef.current = [];
-      const newestFirstBatch = queuedEntries
-        .slice(-MAX_LOG_ENTRIES)
-        .reverse();
-
-      setLogEntries((prev) =>
-        [...newestFirstBatch, ...prev].slice(0, MAX_LOG_ENTRIES)
-      );
-    }, LOG_FLUSH_TIME_MS);
-
-    return () => {
-      clearInterval(interval);
-      logQueueRef.current = [];
-    };
-  }, []);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       if (latestDirtyRef.current) {
         setTelemetryData({ ...latestRef.current });
@@ -517,6 +473,22 @@ function LiveTelemetry() {
 
   // UI helper: get latest value for id
   const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
+  const latestTelemetryById = useMemo(() => (
+    Object.entries(telemetryData)
+      .map(([id, entry]) => ({
+        id: Number(id),
+        name: entry.name,
+        value: entry.value,
+        timestamp: entry.timestamp,
+      }))
+      .sort((a, b) => a.id - b.id)
+  ), [telemetryData]);
+
+  const formatLatestValue = (value) => {
+    if (Array.isArray(value)) return value.join(", ");
+    if (value === null || value === undefined) return "-";
+    return String(value);
+  };
 
   // ---------- Chart options ----------
   const chartOptions = useMemo(() => ({
@@ -754,28 +726,21 @@ function LiveTelemetry() {
           {/* Telemetry Feed */}
           <div className="telemetry-feed">
             <div className="feed-header">
-              <div className="section-header">TELEMETRY FEED</div>
-              <button
-                type="button"
-                className={`control-btn logging-toggle-btn ${loggingEnabled ? "connect-btn" : "disconnect-btn"}`}
-                onClick={toggleLogging}
-              >
-                {loggingEnabled ? "LOGGING ON" : "LOGGING OFF"}
-              </button>
+              <div className="section-header">LATEST IDS</div>
             </div>
             <div className="feed-content">
-              {logEntries.map((entry, index) => (
-                <div key={index} className="log-entry">
-                  <span className="log-time">{entry.timestamp}</span>
+              {latestTelemetryById.map((entry) => (
+                <div key={entry.id} className="log-entry">
+                  <span className="log-time">ID {entry.id}</span>
                   <span className="log-data">
-                    <span className="log-sensor-name">{entry.sensor}</span>: {entry.data}
+                    <span className="log-sensor-name">{entry.name}</span>: {formatLatestValue(entry.value)}
                   </span>
                 </div>
               ))}
-              {logEntries.length === 0 && (
+              {latestTelemetryById.length === 0 && (
                 <div className="log-entry">
                   <span className="log-data">
-                    {loggingEnabled ? "Waiting for telemetry data..." : "Logging paused"}
+                    Waiting for telemetry data...
                   </span>
                 </div>
               )}
