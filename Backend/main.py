@@ -61,7 +61,7 @@ build_dir = Path("/app/FrontendDist")
 if build_dir.exists():
     app.mount(
         "/",
-        StaticFiles(directory=str(build_dir), html=True),
+        SPAStaticFiles(directory=str(build_dir), html=True),
         name="static"
     )
 
