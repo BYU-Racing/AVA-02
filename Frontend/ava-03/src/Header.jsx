@@ -65,7 +65,7 @@ const Header = () => {
           fontFamily="avaFont"
           sx={{ flexGrow: 1 }}
         >
-          {value === "/live-telemetry" ? "AVA-02 LIVE" : "AVA-02"}
+          {value === "/livetelemetry" ? "AVA-02 LIVE" : "AVA-02"}
         </Typography>
         <Tabs
           value={value}
@@ -89,8 +89,8 @@ const Header = () => {
           <Tab
             label="Live Telemetry"
             component={Link}
-            to="/live-telemetry"
-            value="/live-telemetry"
+            to="/livetelemetry"
+            value="/livetelemetry"
           />
         </Tabs>
       </Toolbar>

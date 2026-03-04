@@ -52,7 +52,7 @@ function App() {
                 />
               }
             />
-            <Route path="/live-telemetry" element={<LiveTelemetry />} />
+            <Route path="/livetelemetry" element={<LiveTelemetry />} />
             <Route
               path="/*"
               element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
