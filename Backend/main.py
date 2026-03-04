@@ -52,6 +52,9 @@ class SPAStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
         try:
             response = await super().get_response(path, scope)
+            if response is None or response.status_code == 404:
+                return FileResponse(str(build_dir / "index.html"))
+            return response
         except (StarletteHTTPException, Exception) as e:
             # If file not found, serve index.html for SPA routing
             if getattr(e, "status_code", None) == 404:
