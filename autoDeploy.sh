@@ -1,38 +1,21 @@
 #!/usr/bin/env bash
+# Usage: ./autoDeploy.sh [--restart-db]
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR"
-FRONTEND_DIR="$PROJECT_ROOT/Frontend/ava-02"
+RESTART_DB=false
+[[ "${1:-}" == "--restart-db" ]] && RESTART_DB=true
 
-VERSION="${1:-}"
-if [[ -z "$VERSION" ]]; then
-  echo "Usage: $0 <version-name>"
-  exit 1
+echo "Pulling latest code from git repository..."
+git pull
+
+echo "Building and deploying web service"
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+docker compose up -d --no-deps --build web
+
+if $RESTART_DB; then
+  echo "Restarting db service..."
+  docker compose restart db
 fi
 
-ZIP_NAME="ava-02-eb-deploy_${VERSION}.zip"
-
-# Ensure zip exists
-command -v zip >/dev/null 2>&1 || {
-  echo "zip not found. Install it with: sudo apt update && sudo apt install -y zip"
-  exit 1
-}
-
-cd "$FRONTEND_DIR"
-echo "Building frontend (version: $VERSION)"
-GENERATE_SOURCEMAP=false NODE_OPTIONS=--max_old_space_size=4096 npm run build
-
-cd "$PROJECT_ROOT"
-
-# Remove old zip if it exists
-rm -f "$ZIP_NAME"
-
-echo "Packaging into $ZIP_NAME"
-zip -r "$ZIP_NAME" \
-  Dockerfile \
-  Backend \
-  Frontend/ava-02/build \
-  .ebextensions
-
-echo "Packaging successful: $ZIP_NAME"
+echo "Deployment complete!"

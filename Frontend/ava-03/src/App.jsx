@@ -35,7 +35,7 @@ function App() {
     }
   }, []);
   return (
-    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
       <Router>
         <Header />
         <div style={{ paddingTop: '50px' }}>
