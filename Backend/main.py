@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from .configDB import DATABASE_URL
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -39,7 +40,7 @@ def get_db():
 # API health check endpoint
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "message": "Special thanks from: Coleman Hardy, Landon Wheeler, Connor Mabey, Bryce Whitworth, Braden Toone, Bradford Bawden, and the rest of the BYU Racing Electronics Team"}
+    return {"status": "healthy", "message": "Special thanks from: Coleman Hardy, Landon Wheeler, Connor Mabey, Bryce Whitworth, Toben Whitworth, Braden Toone, Bradford Bawden, Blake Hill and the rest of the BYU Racing Electronics Team"}
 
 # Include routers from different endpoint files
 app.include_router(drive.router, prefix="/api")
@@ -49,11 +50,13 @@ app.include_router(livetelemetryws.router, prefix="/api")
 
 class SPAStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
-        response = await super().get_response(path, scope)
-        if response.status_code == 404:
+        try:
+            response = await super().get_response(path, scope)
+        except (StarletteHTTPException, Exception) as e:
             # If file not found, serve index.html for SPA routing
-            return await super().get_response("index.html", scope)
-        return response
+            if getattr(e, "status_code", None) == 404:
+                return await super().get_response("index.html", scope)
+            raise e
 
 # Mount static files LAST (catch-all route)
 build_dir = Path("/app/FrontendDist")
@@ -64,11 +67,6 @@ if build_dir.exists():
         SPAStaticFiles(directory=str(build_dir), html=True),
         name="static"
     )
-
-    # SPA fallback for react-router (optional but recommended)
-    # @app.get("/{path:path}")
-    # def spa_fallback(path: str):
-    #     return FileResponse(str(build_dir / "index.html"))
 
 else:
     print(f"⚠️Error⚠️\nFrontend build directory not found at {build_dir}")

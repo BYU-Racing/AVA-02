@@ -1,0 +1,6 @@
+// jsconfig.json, so VS Code doesn't complain about stuff
+{
+  "compilerOptions": {
+    "types": ["node"]
+  }
+}

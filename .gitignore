@@ -13,3 +13,4 @@ Backend/secrets.py
 Backend/__pycache__/*
 
 *.zip
+node_modules

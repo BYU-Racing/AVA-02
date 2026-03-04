@@ -1,12 +1,3 @@
-// export default defineConfig({
-//   plugins: [react()],
-//   server: {
-//     proxy: {
-//       "/api": "http://localhost:8000",
-//     },
-//   },
-// });
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -14,6 +5,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 const ANALYZE = process.env.ANALYZE === "true";
 
 export default defineConfig({
+  base: "/",
   plugins: [
     react(),
     ...(ANALYZE 
