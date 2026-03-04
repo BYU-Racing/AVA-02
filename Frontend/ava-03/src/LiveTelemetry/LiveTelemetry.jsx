@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,34 +26,29 @@ ChartJS.register(
 
 // Configuration
 // Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
-const WS_URL = (process.env.REACT_APP_WS_URL?.trim()) // Manual override via enc var
-  ? process.env.REACT_APP_WS_URL.trim()
+const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc var
+  ? import.meta.env.VITE_WS_URL.trim()
   : (() => { // Auto-detect ws/wss based on page protocol
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${window.location.host}/api/ws/livetelemetry`;
 })();
+
 const RECONNECT_INTERVAL = 3000;
-const MAX_DATA_POINTS = 50;
-const MAX_LOG_ENTRIES = 30;
+const TICK_TIME_MS = 100; // ms, how often data changes
+const ANIMATION_TIME = TICK_TIME_MS; // ms, Chart.js animation duration
+const DATA_SAVED_DURATION_S = 20; // seconds of data to keep in charts
+const MAX_DATA_POINTS = DATA_SAVED_DURATION_S * (1000 / TICK_TIME_MS); // max points to keep based on tick interval
+const MAX_LOG_ENTRIES = 30; // Max # of entries to keep in telemetry feed
+const LOG_FLUSH_TIME_MS = 250; // How often telemetry feed log is flushed (ms)
+const PERF_LOG_INTERVAL_MS = 5000;
+const PERF_DEBUG = (() => {
+  const raw = import.meta.env.VITE_LIVE_TELEMETRY_DEBUG_PERF;
+  if (raw == null) return false;
+  const normalized = String(raw).trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
+})();
 
-// Choose one ID to advance chart timestamps (prevents x-axis drift)
-// Good defaults: TireRPM (5) or Throttle1 (1)
-const CHART_TICK_ID = 3;
-
-// Fallback names if idMap doesn't include them
-const ID_NAME = {
-  0: "StartSwitch",
-  1: "Throttle1Position",
-  2: "Throttle2Position",
-  3: "BrakePressure",
-  4: "RVC",
-  5: "TireRPM",
-  6: "TireTemperature",
-  7: "BMSPercentage",
-  8: "BMSTemperature",
-  9: "GPS",
-  10: "Lap",
-};
+let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
 
 // ---------- Safe parsing helpers ----------
 const parseBigInt = (x) => {
@@ -85,49 +80,107 @@ const bigintToSafeNumber = (b) => {
 function LiveTelemetry() {
   // Connection state
   const [connected, setConnected] = useState(false);
-  const [lastMessageTime, setLastMessageTime] = useState(null);
-
+  const [senderConnected, setSenderConnected] = useState(false);
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
-  const [logEntries, setLogEntries] = useState([]);
-
-  // Chart series + labels
-  const [rpmData, setRpmData] = useState([]); // TireRPM
-  const [throttleBrakeData, setThrottleBrakeData] = useState({
-    throttle1: [],
-    throttle2: [],
-    brake: [],
-  });
-  const [batteryData, setBatteryData] = useState([]); // BMSPercentage
-  const [timestamps, setTimestamps] = useState([]);
 
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
-  // Add entry to telemetry feed
-  const addLogEntry = (sensor, data) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogEntries((prev) => [
-      { timestamp, sensor, data },
-      ...prev.slice(0, MAX_LOG_ENTRIES - 1),
-    ]);
+  // Latest telemetry panel values (buffered)
+  const latestRef = useRef({});
+  const latestDirtyRef = useRef(false);
+
+  // Latest sample values used by frame-tick charting
+  const latestSamplesRef = useRef({
+    rpm: null,
+    throttle1: null,
+    throttle2: null,
+    brake: null,
+    battery: null,
+  });
+  const sampleSeqRef = useRef(0);
+  const lastDrawnSeqRef = useRef(0);
+
+  // Canonical chart series (mutated in place)
+  const labelsRef = useRef([]);
+  const rpmSeriesRef = useRef([]);
+  const throttle1SeriesRef = useRef([]);
+  const throttle2SeriesRef = useRef([]);
+  const brakeSeriesRef = useRef([]);
+  const batterySeriesRef = useRef([]);
+
+  // Chart.js instance refs for imperative incremental updates
+  const rpmChartRef = useRef(null);
+  const throttleBrakeChartRef = useRef(null);
+  const batteryChartRef = useRef(null);
+  const perfCountersRef = useRef({
+    messagesProcessed: 0,
+    chartTicks: 0,
+    chartUpdates: 0,
+    telemetryStateCommits: 0,
+    ticksWithNewSamples: 0,
+  });
+  const perfSnapshotRef = useRef({
+    messagesProcessed: 0,
+    chartTicks: 0,
+    chartUpdates: 0,
+    telemetryStateCommits: 0,
+    ticksWithNewSamples: 0,
+  });
+
+  // Keep call sites untouched; feed now renders from latest telemetry map.
+  const enqueueLogEntry = () => {};
+
+  const appendSeriesPoint = (seriesRef, value) => {
+    const series = seriesRef.current;
+    const lastValue = series.length
+      ? series[series.length - 1]
+      : 0;
+    const nextValue = value ?? lastValue;
+
+    if (series.length < MAX_DATA_POINTS) {
+      series.push(nextValue);
+      return;
+    }
+
+    // Use shift/push so Chart.js array listeners track sliding-window updates correctly.
+    series.shift();
+    series.push(nextValue);
   };
 
-  // Advance chart x-axis
-  const tickCharts = () => {
-    setTimestamps((prev) => {
-      const next = [...prev, new Date().toLocaleTimeString()];
-      return next.slice(-MAX_DATA_POINTS);
-    });
+  const appendLabel = () => {
+    const labels = labelsRef.current;
+    const nextLabel = new Date().toLocaleTimeString();
+
+    if (labels.length < MAX_DATA_POINTS) {
+      labels.push(nextLabel);
+      return;
+    }
+
+    labels.shift();
+    labels.push(nextLabel);
+  };
+
+  const syncChartWindow = (chartRef) => {
+    const chart = chartRef.current;
+    if (!chart) return false;
+    chart.update();
+    return true;
   };
 
   // Update latest-value store (for stat panels)
   const updateLatest = (id, name, displayValue, ts) => {
-    setTelemetryData((prev) => ({
-      ...prev,
-      [id]: { name, value: displayValue, timestamp: ts },
-    }));
+    const prev = latestRef.current[id];
+    latestRef.current[id] = {
+      name,
+      value: displayValue,
+      timestamp: ts,
+    };
+    if (!prev || prev.value !== displayValue) {
+      latestDirtyRef.current = true;
+    }
   };
 
   // ---------- ID-specific handlers ----------
@@ -138,7 +191,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-      addLogEntry(name, `${n}`);
+      enqueueLogEntry(name, `${n}`);
     },
 
     1: ({ id, name, data, ts }) => {
@@ -146,14 +199,9 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        throttle1: [...prev.throttle1.slice(-MAX_DATA_POINTS + 1), n],
-      }));
-
-      if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      latestSamplesRef.current.throttle1 = n;
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     2: ({ id, name, data, ts }) => {
@@ -161,14 +209,9 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        throttle2: [...prev.throttle2.slice(-MAX_DATA_POINTS + 1), n],
-      }));
-
-      if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      latestSamplesRef.current.throttle2 = n;
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     3: ({ id, name, data, ts }) => {
@@ -176,14 +219,9 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-
-      setThrottleBrakeData((prev) => ({
-        ...prev,
-        brake: [...prev.brake.slice(-MAX_DATA_POINTS + 1), n],
-      }));
-
-      if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      latestSamplesRef.current.brake = n;
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     4: ({ id, name, data, ts }) => {
@@ -205,32 +243,30 @@ function LiveTelemetry() {
       const display = `${subLabel}: ${value}`;
 
       updateLatest(id, name, display, ts);
-      addLogEntry(name, `${display}`);
+      enqueueLogEntry(name, `${display}`);
     },
 
     5: ({ id, name, data, ts }) => {
       // TireRPM
       const vals = asBigIntArray(data);
       const rpm = bigintToSafeNumber(vals[1] ?? 0n);
-      updateLatest(id, name, rpm, ts);  
-
-      setRpmData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), rpm]);
-
-      if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, JSON.stringify(vals.map(v=>bigintToSafeNumber(v))));
+      updateLatest(id, name, rpm, ts);
+      latestSamplesRef.current.rpm = rpm;
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, JSON.stringify(vals.map((v) => bigintToSafeNumber(v))));
     },
 
     6: ({ id, name, data, ts }) => {
       // TireTemperature
       const vals = asBigIntArray(data);
       const wheel = bigintToSafeNumber(vals[0] ?? 0n);
-      const tempIn  = bigintToSafeNumber(vals[1] ?? 0n);
+      const tempIn = bigintToSafeNumber(vals[1] ?? 0n);
       const tempOut = bigintToSafeNumber(vals[2] ?? 0n);
       const tempCore = bigintToSafeNumber(vals[3] ?? 0n);
-      const labels = ["FL","FR","RL","RR"];
-      const display = `${labels[wheel] ?? "?"}=${tempIn}°C/${tempCore}°C/${tempOut}°C`;
+      const labels = ["FL", "FR", "RL", "RR"];
+      const display = `${labels[wheel] ?? "?"}=${tempIn}\u00B0C/${tempCore}\u00B0C/${tempOut}\u00B0C`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, display);
+      enqueueLogEntry(name, display);
     },
 
     7: ({ id, name, data, ts }) => {
@@ -238,11 +274,9 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const pct = bigintToSafeNumber(v);
       updateLatest(id, name, pct, ts);
-
-      setBatteryData((prev) => [...prev.slice(-MAX_DATA_POINTS + 1), pct]);
-
-      if (id === CHART_TICK_ID) tickCharts();
-      addLogEntry(name, `${v.toString()}`);
+      latestSamplesRef.current.battery = pct;
+      sampleSeqRef.current += 1;
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     8: ({ id, name, data, ts }) => {
@@ -250,7 +284,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const temp = bigintToSafeNumber(v);
       updateLatest(id, name, temp, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
 
     9: ({ id, name, data, ts }) => {
@@ -259,7 +293,7 @@ function LiveTelemetry() {
       const lon = Number(vals[1] ?? 0n) / 1e7;
       const display = `lat=${lat.toFixed(6)} lon=${lon.toFixed(6)}`;
       updateLatest(id, name, display, ts);
-      addLogEntry(name, display);
+      enqueueLogEntry(name, display);
     },
 
     10: ({ id, name, data, ts }) => {
@@ -267,7 +301,7 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(data);
       const lap = bigintToSafeNumber(v);
       updateLatest(id, name, lap, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     },
   };
 
@@ -275,9 +309,11 @@ function LiveTelemetry() {
   const handleTelemetryMessage = (msg) => {
     const id = Number(msg.id);
     if (!Number.isFinite(id)) return;
+    perfCountersRef.current.messagesProcessed += 1;
+    sampleSeqRef.current += 1;
 
     const ts = msg.timestamp || new Date().toISOString();
-    const name = idMap?.[id] || ID_NAME[id] || `Sensor ${id}`;
+    const name = idMap?.[id] || `Sensor ${id}`;
     const fn = handlers[id];
 
     if (fn) {
@@ -287,8 +323,9 @@ function LiveTelemetry() {
       const [v] = asBigIntArray(msg.data);
       const n = bigintToSafeNumber(v);
       updateLatest(id, name, n, ts);
-      addLogEntry(name, `${v.toString()}`);
+      enqueueLogEntry(name, `${v.toString()}`);
     }
+    
   };
 
   // ---------- WebSocket connect/disconnect ----------
@@ -300,7 +337,7 @@ function LiveTelemetry() {
       ws.onopen = () => {
         console.log("WebSocket Connected!");
         setConnected(true);
-        addLogEntry("SYSTEM", "Connected to telemetry stream");
+        enqueueLogEntry("SYSTEM", "Connected to telemetry stream");
       };
 
       ws.onmessage = (event) => {
@@ -308,13 +345,19 @@ function LiveTelemetry() {
           const data = JSON.parse(event.data);
 
           if (data.type === "connection") {
+            const source = String(data.source || "").toLowerCase();
+            const message = String(data.message || "").toLowerCase();
+            const isSenderEvent = source === "sender" || message.includes("sender");
+            if (isSenderEvent) {
+              setSenderConnected(data.status === "connected");
+            }
             console.log("Connection confirmed:", data.message);
           } else if (data.type === "telemetry") {
             // Expected: {type:"telemetry", id:<int>, data:<string|array>, timestamp?:iso}
+            setSenderConnected(true);
             handleTelemetryMessage(data);
           }
 
-          setLastMessageTime(new Date());
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
         }
@@ -327,15 +370,18 @@ function LiveTelemetry() {
       ws.onclose = () => {
         console.log("WebSocket disconnected");
         setConnected(false);
-        addLogEntry("SYSTEM", "Disconnected from telemetry stream");
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("Attempting to reconnect...");
-          connectWebSocket();
-        }, RECONNECT_INTERVAL);
+        setSenderConnected(false);
+        enqueueLogEntry("SYSTEM", "Disconnected from telemetry stream");
+        if(autoReconnect){
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log("Attempting to reconnect...");
+            connectWebSocket();
+          }, RECONNECT_INTERVAL);
+        }
       };
 
       wsRef.current = ws;
+      autoReconnect = true; // with manual connect, enable auto-reconnect for accidental disconnects
     } catch (err) {
       console.error("Error creating WebSocket:", err);
     }
@@ -350,6 +396,8 @@ function LiveTelemetry() {
       clearTimeout(reconnectTimeoutRef.current);
     }
     setConnected(false);
+    setSenderConnected(false);
+    autoReconnect = false; // when intentionally disconnected via button, disable auto-reconnect
   };
 
   // Auto-connect on mount
@@ -359,13 +407,101 @@ function LiveTelemetry() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (latestDirtyRef.current) {
+        setTelemetryData({ ...latestRef.current });
+        perfCountersRef.current.telemetryStateCommits += 1;
+        latestDirtyRef.current = false;
+      }
+    }, TICK_TIME_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!connected) return undefined;
+
+    const interval = setInterval(() => {
+      const counters = perfCountersRef.current;
+      counters.chartTicks += 1;
+      const hasNewSample = sampleSeqRef.current !== lastDrawnSeqRef.current;
+      if (!hasNewSample) return;
+      counters.ticksWithNewSamples += 1;
+      lastDrawnSeqRef.current = sampleSeqRef.current;
+
+      appendLabel();
+
+      const latest = latestSamplesRef.current;
+      appendSeriesPoint(rpmSeriesRef, latest.rpm);
+      appendSeriesPoint(throttle1SeriesRef, latest.throttle1);
+      appendSeriesPoint(throttle2SeriesRef, latest.throttle2);
+      appendSeriesPoint(brakeSeriesRef, latest.brake);
+      appendSeriesPoint(batterySeriesRef, latest.battery);
+
+      let updates = 0;
+      if (syncChartWindow(rpmChartRef)) updates += 1;
+      if (syncChartWindow(throttleBrakeChartRef)) updates += 1;
+      if (syncChartWindow(batteryChartRef)) updates += 1;
+      counters.chartUpdates += updates;
+    }, TICK_TIME_MS);
+
+    return () => clearInterval(interval);
+  }, [connected]);
+
+  useEffect(() => {
+    if (!PERF_DEBUG) return undefined;
+
+    const interval = setInterval(() => {
+      const totals = perfCountersRef.current;
+      const snapshot = perfSnapshotRef.current;
+      const delta = {
+        messagesProcessed: totals.messagesProcessed - snapshot.messagesProcessed,
+        chartTicks: totals.chartTicks - snapshot.chartTicks,
+        chartUpdates: totals.chartUpdates - snapshot.chartUpdates,
+        telemetryStateCommits:
+          totals.telemetryStateCommits - snapshot.telemetryStateCommits,
+        ticksWithNewSamples: totals.ticksWithNewSamples - snapshot.ticksWithNewSamples,
+      };
+
+      console.debug("[LiveTelemetry perf/5s]", delta);
+      perfSnapshotRef.current = { ...totals };
+    }, PERF_LOG_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // UI helper: get latest value for id
   const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
+  const latestTelemetryById = useMemo(() => (
+    Object.entries(telemetryData)
+      .map(([id, entry]) => ({
+        id: Number(id),
+        name: entry.name,
+        value: entry.value,
+        timestamp: entry.timestamp,
+      }))
+      .sort((a, b) => a.id - b.id)
+  ), [telemetryData]);
+
+  const formatLatestValue = (value) => {
+    if (Array.isArray(value)) return value.join(", ");
+    if (value === null || value === undefined) return "-";
+    return String(value);
+  };
 
   // ---------- Chart options ----------
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: ANIMATION_TIME, // ms
+      easing: "linear",
+    },
+    animations: {
+      x: { duration: 0 },
+      y: { duration: ANIMATION_TIME, easing: "linear" },
+    },
     plugins: {
       legend: { display: false },
       tooltip: { mode: "index", intersect: false },
@@ -383,78 +519,78 @@ function LiveTelemetry() {
       },
     },
     interaction: { mode: "nearest", axis: "x", intersect: false },
-  };
+  }), []);
 
   // Tire RPM chart
-  const rpmChartData = {
-    labels: timestamps,
+  const rpmChartData = useMemo(() => ({
+    labels: labelsRef.current,
     datasets: [
       {
         label: "Tire RPM",
-        data: rpmData,
-        fill: true,
-        backgroundColor: "rgba(0, 217, 255, 0.1)",
+        data: rpmSeriesRef.current,
+        // fill: true,
+        // backgroundColor: "rgba(0, 217, 255, 0.1)",
         borderColor: "#00d9ff",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  };
+  }), []);
 
   // Throttle & Brake chart
-  const throttleBrakeChartData = {
-    labels: timestamps,
+  const throttleBrakeChartData = useMemo(() => ({
+    labels: labelsRef.current,
     datasets: [
       {
         label: "Throttle 1",
-        data: throttleBrakeData.throttle1,
-        fill: true,
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        data: throttle1SeriesRef.current,
+        // fill: true,
+        // backgroundColor: "rgba(16, 185, 129, 0.1)",
         borderColor: "#10b981",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
       {
         label: "Throttle 2",
-        data: throttleBrakeData.throttle2,
-        fill: true,
-        backgroundColor: "rgba(59, 130, 246, 0.08)",
+        data: throttle2SeriesRef.current,
+        // fill: true,
+        // backgroundColor: "rgba(59, 130, 246, 0.08)",
         borderColor: "#3b82f6",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
       {
         label: "Brake",
-        data: throttleBrakeData.brake,
-        fill: true,
-        backgroundColor: "rgba(239, 68, 68, 0.1)",
+        data: brakeSeriesRef.current,
+        // fill: true,
+        // backgroundColor: "rgba(239, 68, 68, 0.1)",
         borderColor: "#ef4444",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  };
+  }), []);
 
   // Battery chart
-  const batteryChartData = {
-    labels: timestamps,
+  const batteryChartData = useMemo(() => ({
+    labels: labelsRef.current,
     datasets: [
       {
         label: "BMS %",
-        data: batteryData,
-        fill: true,
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        data: batterySeriesRef.current,
+        // fill: true,
+        // backgroundColor: "rgba(16, 185, 129, 0.1)",
         borderColor: "#10b981",
         borderWidth: 2,
-        tension: 0.4,
+        tension: 0,
         pointRadius: 0,
       },
     ],
-  };
+  }), []);
 
   return (
     <div className="telemetry-dashboard">
@@ -467,18 +603,24 @@ function LiveTelemetry() {
               <span className="status-indicator"></span>
               {connected ? "CONNECTED" : "DISCONNECTED"}
             </div>
+            <div className="sender-status">
+              <span
+                className={`sender-status-square ${senderConnected ? "connected" : "disconnected"}`}
+              ></span>
+              <span className="sender-status-label">SENDER</span>
+            </div>
           </div>
         </div>
 
         <div className="control-panel">
           {!connected ? (
             <button className="control-btn connect-btn" onClick={connectWebSocket}>
-              <span>▶</span>
+              <span>{"\u25B6"}</span>
               <span>CONNECT</span>
             </button>
           ) : (
             <button className="control-btn disconnect-btn" onClick={disconnectWebSocket}>
-              <span>⏸</span>
+              <span>{"\u23F8"}</span>
               <span>DISCONNECT</span>
             </button>
           )}
@@ -535,21 +677,21 @@ function LiveTelemetry() {
           <div className="chart-section">
             <div className="section-header">TIRE RPM</div>
             <div className="chart-wrapper">
-              <Line data={rpmChartData} options={chartOptions} />
+              <Line ref={rpmChartRef} data={rpmChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">THROTTLE & BRAKE</div>
             <div className="chart-wrapper">
-              <Line data={throttleBrakeChartData} options={chartOptions} />
+              <Line ref={throttleBrakeChartRef} data={throttleBrakeChartData} options={chartOptions} />
             </div>
           </div>
 
           <div className="chart-section">
             <div className="section-header">BMS %</div>
             <div className="chart-wrapper">
-              <Line data={batteryChartData} options={chartOptions} />
+              <Line ref={batteryChartRef} data={batteryChartData} options={chartOptions} />
             </div>
           </div>
         </div>
@@ -583,19 +725,23 @@ function LiveTelemetry() {
 
           {/* Telemetry Feed */}
           <div className="telemetry-feed">
-            <div className="section-header">TELEMETRY FEED</div>
+            <div className="feed-header">
+              <div className="section-header">LATEST IDS</div>
+            </div>
             <div className="feed-content">
-              {logEntries.map((entry, index) => (
-                <div key={index} className="log-entry">
-                  <span className="log-time">{entry.timestamp}</span>
+              {latestTelemetryById.map((entry) => (
+                <div key={entry.id} className="log-entry">
+                  <span className="log-time">ID {entry.id}</span>
                   <span className="log-data">
-                    <span className="log-sensor-name">{entry.sensor}</span>: {entry.data}
+                    <span className="log-sensor-name">{entry.name}</span>: {formatLatestValue(entry.value)}
                   </span>
                 </div>
               ))}
-              {logEntries.length === 0 && (
+              {latestTelemetryById.length === 0 && (
                 <div className="log-entry">
-                  <span className="log-data">Waiting for telemetry data...</span>
+                  <span className="log-data">
+                    Waiting for telemetry data...
+                  </span>
                 </div>
               )}
             </div>
