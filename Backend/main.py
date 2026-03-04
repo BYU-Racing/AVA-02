@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from .endpoints import drive, driver, data, livetelemetryws
+from .endpoints import drive, driver, data, livetelemetry
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from .configDB import DATABASE_URL
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -46,10 +46,10 @@ def health_check():
 app.include_router(drive.router, prefix="/api")
 app.include_router(driver.router, prefix="/api")
 app.include_router(data.router, prefix="/api")
-app.include_router(livetelemetryws.router, prefix="/api")
+app.include_router(livetelemetry.router, prefix="/api")
 
 class SPAStaticFiles(StaticFiles):
-    async def get_response(self, path: str, scope):
+    async def get_response(self, path: str, scope) -> (FileResponse | Response):
         try:
             response = await super().get_response(path, scope)
             if response is None or response.status_code == 404:

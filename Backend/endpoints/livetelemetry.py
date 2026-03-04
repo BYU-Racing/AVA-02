@@ -1,22 +1,27 @@
-# Our live telemetry WebSocket endpoint, based off of telemetry.py (the one from Claude)
+# livetelemetry.py
+# Author: Blake Hill
+# Desc: Our live telemetry WebSocket endpoint, based off of telemetry.py (the one from Claude)
+# Receives data from the Pi over /ws/send, decodes it, then sends to Frontend over /ws/livetelemetry and database
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Dict
 import logging
 import os
-import struct
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from .. import crud, models, schemas
+from ..services.livetelemetry_decoder import decode_pi_to_server, convert_decoded_can_data
 from ..database import SessionLocal
 
-# Expected format of incoming data from Pi (14 bytes total):
-PI_TO_SERVER_FMT = "<I B B 8s"
-# <  = little-endian
-# I  = uint32
-# B  = uint8
-# B  = uint8
-# 8s = 8 raw bytes
+
+# ========== Constants and Globals ===========
+
+# Default values
+DEFAULT_LIVE_DRIVER_ID : int = int(os.getenv("DEFAULT_LIVE_DRIVER_ID", "1"))
+DEFAULT_LIVE_DRIVER_NAME : str = os.getenv("DEFAULT_LIVE_DRIVER_NAME", "Live Driver")
+AUTO_DRIVE_NOTE : str = "Auto-created from live sender connection (/api/ws/send)"
+UTC_PLUS_8 = timezone(timedelta(hours=8)) # UTC + 8 timezone
 
 router = APIRouter()
 
@@ -24,11 +29,9 @@ router = APIRouter()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DEFAULT_LIVE_DRIVER_ID = int(os.getenv("DEFAULT_LIVE_DRIVER_ID", "1"))
-DEFAULT_LIVE_DRIVER_NAME = os.getenv("DEFAULT_LIVE_DRIVER_NAME", "Live Driver")
-AUTO_DRIVE_NOTE = "Auto-created from live sender connection (/api/ws/send)"
 
-# Connection manager class for websockets
+# ========== Connection manager class for websockets ===========
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -45,7 +48,6 @@ class ConnectionManager:
                 "timestamp": datetime.now().isoformat(),
                 "message": "Connected to sender WebSocket!"
             })
-        
         
     async def disconnect(self, websocket: WebSocket, client = True):
         if client:
@@ -75,9 +77,9 @@ class ConnectionManager:
         for conn in disconnected:
             await self.disconnect(conn)
 
-manager = ConnectionManager()
 
-# Functions for adding data to database
+# ========== Functions for adding data to database ===========
+
 def normalize_raw_data(raw_data: List[int]) -> List[int]:
     # Analysis pipeline expects 8-byte payload-style arrays.
     return (raw_data + [0] * 8)[:8]
@@ -124,7 +126,7 @@ def get_or_create_default_driver_id(db: Session) -> int:
 
 def create_live_drive(db: Session) -> models.Drive:
     driver_id = get_or_create_default_driver_id(db)
-    now = datetime.utcnow()
+    now = datetime.now(UTC_PLUS_8)
 
     drive = schemas.DriveCreate(
         driver_id=driver_id,
@@ -144,100 +146,12 @@ def persist_live_packet(db: Session, drive_id: int, decoded_packet: Dict):
     db.add(db_row)
     db.commit()
 
-# Decodes incoming raw bytes from Pi to a structured dict for JSON
-def decode_pi_to_server(payload: bytes) -> Dict:
-    if len(payload) != 14:
-        raise ValueError(f"Invalid payload length: {len(payload)}")
 
-    
-    timestamp, msg_id, length, raw_bytes = struct.unpack(
-        PI_TO_SERVER_FMT, payload
-    )
+# ========== Websocket Handlers ===========
 
-    # Convert raw_bytes (bytes object) → list[int]
-    raw_data = list(raw_bytes[:length])
-    
+manager = ConnectionManager()
 
-    return {
-        "timestamp": timestamp,
-        "id": msg_id,
-        "length": length,
-        "bytes": raw_data
-    }
-
-# uint16 little-endian decoder (for 2-byte sensor values)
-def decode_u16_le(b: List[int], off: int = 0) -> int:
-    if off + 1 >= len(b):
-        return 0
-    return b[off] | (b[off + 1] << 8)
-
-def decode_i32_le(b: List[int], off: int) -> int:
-    return int.from_bytes(bytes(b[off:off+4]), byteorder='little', signed=True)
-
-def decode_u32_le(b: List[int], off: int) -> int:
-    return int.from_bytes(bytes(b[off:off+4]), byteorder='little', signed=False)
-
-# Converts the decoded CAN data into expected JSON format for Frontend
-def convert_can_data(data: bytes) -> Dict:
-    return convert_decoded_can_data(decode_pi_to_server(data))
-
-def convert_decoded_can_data(decoded: Dict) -> Dict:
-    '''Convert incoming CAN data to AVA usable format
-    Incoming data:
-    {
-        timestamp: int,
-        id: int,
-        length: int, // up to 8
-        bytes: List[int], // length: up to 8
-    }
-    Output format expected by the new React component:
-    {
-      type: "telemetry",
-      timestamp: "<iso8601>",
-      id: <int 0-255>,
-      data: "<integer as string>" OR ["<...>", "<...>"]
-    }
-    '''
-    msg_id = decoded["id"]
-    b = decoded["bytes"] 
-    
-    match(msg_id):
-        case 0: # StartSwitch
-            data = [b[0] if b else 0]
-        case 1 | 2 | 3: # Throttle1, Throttle2, Brake
-            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
-        case 4: # Acceleration and Rotation
-            data = [b[0] if b else 0, decode_i32_le(b, 1) if len(b) >= 5 else 0]
-        case 5: # Tire RPM (uint8 tire, uint32 rpm)
-            data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
-        case 6: # Tire heat sensor (uint8 tire, uint16 inner_temp, uint16 outer_temp, uint16 core_temp)
-            inner = decode_u16_le(b, 1) if len(b) >= 3 else 0
-            outer = decode_u16_le(b, 3) if len(b) >= 5 else 0
-            core = decode_u16_le(b, 5) if len(b) >= 7 else 0
-            data = [b[0] if b else 0, inner, outer, core]
-        case 7: # BMS percentage (0-100)
-            data = [b[0] if b else 0]
-        case 8: # BMS temperature (uint16 temp)
-            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
-        case 9: # GPS (uint16 lat, uint16 long)
-            data = [decode_i32_le(b, 0) if len(b) >= 4 else 0, decode_i32_le(b, 4) if len(b) >= 8 else 0]
-        case 10: # Lap Number  ( soon to be time as well uint32 ms)
-            # data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
-            data = [b[0] if b else 0]
-        case _: # Unknown / ghost IDs
-            # Keep it visible in the feed but don't affect known sensors
-            # Send raw bytes as hex strings (easy to read) OR as ints
-            data = [f"0x{x:02X}" for x in b]  # readable
-
-    return {
-        "type": "telemetry",
-        "timestamp": decoded["timestamp"],
-        "id": msg_id,
-        "data": data
-    }
-
-
-@router.websocket("/ws/livetelemetry") # send to client
+@router.websocket("/ws/livetelemetry") # handler for connecting to client for sending data to Frontend
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     logger.info("Client connected to live telemetry WebSocket")
@@ -263,7 +177,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await manager.disconnect(websocket)
     
 
-@router.websocket("/ws/send") # receive from pi
+@router.websocket("/ws/send") # handler for data from pi
 async def websocket_sendpoint(websocket: WebSocket):
     '''WS handler for data sent from pi'''
     await manager.connect(websocket, client=False)
