@@ -252,18 +252,18 @@ async def websocket_sendpoint(websocket: WebSocket):
         
         _pi_reconnect_task = asyncio.create_task(wait_for_reconnect())
         
-    @router.post("/livetelemetry/db")
-    async def enable_db(enabled: bool):
-        global _database_enabled
-        _database_enabled = enabled
-        logger.info("Database persistence state: %s", enabled)
-        await manager.broadcast({
-            "type": "database",
-            "timestamp": datetime.now().isoformat(),
-            "database_enabled": _database_enabled
-        })
-        return {"database_enabled": _database_enabled}
-    
-    @router.get("/livetelemetry/db")
-    async def get_db_state():
-        return {"database_enabled": _database_enabled}
+@router.post("/livetelemetry/db")
+async def enable_db(enabled: bool):
+    global _database_enabled
+    _database_enabled = enabled
+    logger.info("Database persistence state: %s", enabled)
+    await manager.broadcast({
+        "type": "database",
+        "timestamp": datetime.now().isoformat(),
+        "database_enabled": _database_enabled
+    })
+    return {"database_enabled": _database_enabled}
+
+@router.get("/livetelemetry/db")
+async def get_db_state():
+    return {"database_enabled": _database_enabled}
