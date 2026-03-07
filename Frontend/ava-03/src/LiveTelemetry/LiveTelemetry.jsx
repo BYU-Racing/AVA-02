@@ -415,6 +415,13 @@ function LiveTelemetry() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // fect initial state of database persistence
+  useEffect(() => {
+    fetch("/api/livetelemetry/db")
+      .then(res => res.json())
+      .then(({ persist }) => setDatabaseEnabled(persist));
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (latestDirtyRef.current) {
