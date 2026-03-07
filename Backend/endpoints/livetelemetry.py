@@ -257,6 +257,11 @@ async def websocket_sendpoint(websocket: WebSocket):
         global _database_enabled
         _database_enabled = enabled
         logger.info("Database persistence state: %s", enabled)
+        await manager.broadcast({
+            "type": "database",
+            "timestamp": datetime.now().isoformat(),
+            "database_enabled": _database_enabled
+        })
         return {"database_enabled": _database_enabled}
     
     @router.get("/livetelemetry/db")

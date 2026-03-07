@@ -364,6 +364,8 @@ function LiveTelemetry() {
             // Expected: {type:"telemetry", id:<int>, data:<string|array>, timestamp?:iso}
             setSenderConnected(true);
             handleTelemetryMessage(data);
+          } else if (data.type === "database") {
+            setDatabaseEnabled(data.database_enabled);
           }
 
         } catch (err) {
@@ -419,7 +421,7 @@ function LiveTelemetry() {
   useEffect(() => {
     fetch("/api/livetelemetry/db")
       .then(res => res.json())
-      .then(({ persist }) => setDatabaseEnabled(persist));
+      .then(data => setDatabaseEnabled(data.persist));
   }, []);
 
   useEffect(() => {
