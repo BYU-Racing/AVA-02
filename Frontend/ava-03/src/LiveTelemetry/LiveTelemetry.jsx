@@ -419,7 +419,7 @@ function LiveTelemetry() {
 
   // fect initial state of database persistence
   useEffect(() => {
-    fetch("/api/livetelemetry/db")
+    fetch("/api/livetelemetry/db", { method: "GET" })
       .then(res => res.json())
       .then(data => setDatabaseEnabled(data.database_enabled));
   }, []);
