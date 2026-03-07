@@ -84,6 +84,14 @@ function LiveTelemetry() {
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
 
+  // Database persistence state
+  const [database_enabled, setDatabaseEnabled] = useState(true);
+  const togglePersist = async () => {
+    const next = !database_enabled;
+    await fetch(`/api/livetelemetry/db?enabled=${next}`, { method: "POST" });
+    setDatabaseEnabled(next);
+  };
+
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -624,6 +632,10 @@ function LiveTelemetry() {
               <span>DISCONNECT</span>
             </button>
           )}
+          <button className="control-btn" onClick={togglePersist} style={{background: database_enabled ? "#10b981" : "#64748b"}}>
+            <span>{database_enabled ? "💾" : "⏸"}</span>
+            <span>DB {database_enabled ? "ON" : "OFF"}</span>
+          </button>
         </div>
       </header>
 

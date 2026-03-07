@@ -12,9 +12,9 @@ let id_map = {
   9: "GPS",
   10: "Lap",
   // Motor IDs
-  160: "Temperatures1",
-  161: "Temperatures2",
-  162: "Temperatures3",
+  160: "InverterTemps",
+  161: "ControlBoardTemp",
+  162: "MotorTemps",
   163: "AnalogInputVoltages",
   164: "DigitalInputStatus",
   165: "MotorPositionInfo",

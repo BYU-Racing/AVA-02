@@ -159,6 +159,8 @@ _pi_packets_written: int = 0
 _pi_reconnect_task: Optional[asyncio.Task] = None
 RECONNECT_TIMEOUT_SEC = 5
 
+_database_enabled: bool = True
+
 @router.websocket("/ws/livetelemetry") # handler for connecting to client for sending data to Frontend
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -227,7 +229,8 @@ async def websocket_sendpoint(websocket: WebSocket):
         while True: # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
-            persist_live_packet(db, live_drive.drive_id, decoded_packet)
+            if(_database_enabled):
+                persist_live_packet(db, live_drive.drive_id, decoded_packet)
             _pi_packets_written += 1
             sensor_data = convert_decoded_can_data(decoded_packet)
             await manager.broadcast(sensor_data)
@@ -248,3 +251,14 @@ async def websocket_sendpoint(websocket: WebSocket):
             _pi_db.close()
         
         _pi_reconnect_task = asyncio.create_task(wait_for_reconnect())
+        
+    @router.post("/livetelemetry/db")
+    async def enable_db(enabled: bool):
+        global _database_enabled
+        _database_enabled = enabled
+        logger.info("Database persistence state: %s", enabled)
+        return {"database_enabled": _database_enabled}
+    
+    @router.get("/livetelemetry/db")
+    async def get_db_state():
+        return {"database_enabled": _database_enabled}
