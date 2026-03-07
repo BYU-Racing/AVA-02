@@ -229,8 +229,7 @@ async def websocket_sendpoint(websocket: WebSocket):
         while True: # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
-            if(_database_enabled):
-                persist_live_packet(db, live_drive.drive_id, decoded_packet)
+            persist_live_packet(db, live_drive.drive_id, decoded_packet)
             _pi_packets_written += 1
             sensor_data = convert_decoded_can_data(decoded_packet)
             await manager.broadcast(sensor_data)
