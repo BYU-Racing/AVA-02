@@ -421,7 +421,7 @@ function LiveTelemetry() {
   useEffect(() => {
     fetch("/api/livetelemetry/db")
       .then(res => res.json())
-      .then(data => setDatabaseEnabled(data.persist));
+      .then(data => setDatabaseEnabled(data.database_enabled));
   }, []);
 
   useEffect(() => {
