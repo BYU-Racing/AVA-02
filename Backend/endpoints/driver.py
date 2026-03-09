@@ -1,3 +1,6 @@
+# file: driver.py
+# Desc: Endpoint for adding and getting driver data
+
 from fastapi import APIRouter, Depends, HTTPException
 from .. import crud, models, schemas
 from ..database import SessionLocal, engine

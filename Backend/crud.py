@@ -1,3 +1,6 @@
+# file: crud.py
+# Desc: CRUD (Create, Read, Update, Delete) functions for interacting with database
+
 from sqlalchemy.orm import Session , aliased
 from sqlalchemy import distinct, func, cast, Numeric
 from . import models, schemas

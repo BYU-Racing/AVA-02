@@ -1,3 +1,6 @@
+// file: idMap.js
+// Desc: Maps sensor and motor IDs to human-readable names for display in the frontend
+
 let id_map = {
   // Sensor IDs
   0: "Start Switch",

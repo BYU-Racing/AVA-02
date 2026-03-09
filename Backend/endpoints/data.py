@@ -1,3 +1,6 @@
+# file: data.py
+# Desc: Endpoint for adding and getting sensor data to and from db
+
 from fastapi import APIRouter, Depends, HTTPException
 from .. import crud, models, schemas
 from ..database import SessionLocal, engine

@@ -1,3 +1,5 @@
+// desc: decodes ws data into usable formats, especially BigInt handling
+
 // ---------- Safe parsing helpers ----------
 const parseBigInt = (x) => {
   if (typeof x === "bigint") return x;

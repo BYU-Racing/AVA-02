@@ -1,3 +1,5 @@
+# NOT USED CURRENTLY
+
 from sqlalchemy.orm import Session
 from .. import crud, models, schemas
 import uuid

@@ -1,4 +1,4 @@
-# livetelemetry.py
+# File: livetelemetry.py
 # Author: Blake Hill
 # Desc: Our live telemetry WebSocket endpoint, based off of telemetry.py (the one from Claude)
 # Receives data from the Pi over /ws/send, decodes it, then sends to Frontend over /ws/livetelemetry and database
@@ -64,6 +64,7 @@ class ConnectionManager:
                 "message": "Sender disconnected from WebSocket"
             })
     
+    # Sends message to all connected clients. If a client is disconnected, removes it from the list.
     async def broadcast(self, message: Dict):
         disconnected: List[WebSocket] = []
 
@@ -229,7 +230,7 @@ async def websocket_sendpoint(websocket: WebSocket):
         while True: # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
-            persist_live_packet(db, live_drive.drive_id, decoded_packet)
+            persist_live_packet(db, live_drive.drive_id, decoded_packet) # <-- puts data into database
             _pi_packets_written += 1
             sensor_data = convert_decoded_can_data(decoded_packet)
             await manager.broadcast(sensor_data)

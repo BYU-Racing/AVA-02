@@ -1,3 +1,6 @@
+# file: Dockerfile
+# Desc: Dockerfile for Backend. Sets up Python environment, installs dependencies, and runs FastAPI app
+
 FROM python:3.11-slim
 
 # Set working directory

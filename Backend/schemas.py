@@ -1,3 +1,6 @@
+# file: schemas.py
+# Desc: Pydantic schemas for database models
+
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -23,8 +26,6 @@ class RawData(RawDataBase):
 
 # Schema for Drive
 
-
-
 class DriveBase(BaseModel):
     date: datetime
     notes: Optional[str] = None
@@ -44,6 +45,7 @@ class Drive(DriveBase):
 
 
 # Schema for Driver
+
 class DriverBase(BaseModel):
     name: str
 

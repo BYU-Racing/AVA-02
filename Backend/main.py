@@ -1,3 +1,6 @@
+# file: main.py
+# Desc: Main FastAPI app, runs on startup. Sets up endpoints, db, and connects to frontend
+
 from fastapi import FastAPI
 from .endpoints import drive, driver, data, livetelemetry
 from fastapi.middleware.cors import CORSMiddleware
