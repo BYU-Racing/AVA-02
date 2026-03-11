@@ -28,6 +28,15 @@ def get_drive_by_id(drive_id: int, db: Session = Depends(get_db)):
     drive = crud.get_drive(db, drive_id)
     return drive
 
+@router.delete("/drive/{drive_id}", response_model=dict)
+def delete_drive(drive_id: int, db: Session = Depends(get_db)):
+    drive = crud.get_drive(db, drive_id)
+    if not drive:
+        raise HTTPException(status_code=404, detail="Drive not found")
+    db.delete(drive)
+    db.commit()
+    return {"message": "Drive deleted successfully"}
+
 @router.get("/sensors/{drive_id}", response_model=list[int])
 def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):
     sensors = crud.get_unique_sensors_from_drive(db, drive_id)

@@ -11,6 +11,14 @@ import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
 import { CANtoTimeseries } from "./CANtransformations";
 import CircularProgress from "@mui/material/CircularProgress";
+// Deleting drives
+import DeleteIcon from "@mui/icons-material/Delete";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
 
 function DriveObject({
   drive,
@@ -93,6 +101,17 @@ function DriveObject({
     }
   };
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const handleDeleteClick = (e) => {
+    e.stopPropagation(); // prevent accordion from toggling
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setConfirmOpen(false);
+    await onDelete(drive.drive_id);
+  };
+
   const handleMouseEnter = (driveId, sensorId) => {
     setIsHovered(true);
     hoverTimeoutRef.current = setTimeout(() => {
@@ -120,6 +139,27 @@ function DriveObject({
         <Typography>
           {formattedDate} - {drive.driver.name}
         </Typography>
+        <IconButton
+          size="small"
+          onClick={handleDeleteClick}
+          sx={{ ml: 1, color: "error.main" }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+          <DialogTitle>Delete Drive?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Delete the drive from {formattedDate} by {drive.driver.name}? This cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} color="error" variant="contained">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </AccordionSummary>
       <AccordionDetails>
         {loadingSensors === true ? (
