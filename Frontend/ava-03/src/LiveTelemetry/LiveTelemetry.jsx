@@ -18,6 +18,7 @@ import { TelemetryLayout } from "./components/TelemetryLayout";
 import { WidgetConfigurator } from "./components/WidgetConfigurator";
 import { DEFAULT_LAYOUT } from "./config/defaultLayout";
 
+// Comment
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -26,11 +27,10 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Filler
+  Filler,
 );
 
 // Configuration moved to hooks
-
 
 function LiveTelemetry() {
   // Use custom hooks for modular functionality (order matters for dependencies)
@@ -42,16 +42,28 @@ function LiveTelemetry() {
   const { telemetryData, handleTelemetryMessage, getSensorValue } =
     useTelemetryHandlers(chartSeries.updateSample);
 
-  const { connected, senderConnected, database_enabled, connect, disconnect, togglePersist } =
-    useWebSocketTelemetry(handleTelemetryMessage);
+  const {
+    connected,
+    senderConnected,
+    database_enabled,
+    connect,
+    disconnect,
+    togglePersist,
+  } = useWebSocketTelemetry(handleTelemetryMessage);
 
   // Sync WebSocket connection state with chart series
   React.useEffect(() => {
     setWsConnected(connected);
   }, [connected]);
 
-  const { layout, addWidget, removeWidget, resetToDefault, applyProfile, isCustomized } =
-    useWidgetPreferences(DEFAULT_LAYOUT);
+  const {
+    layout,
+    addWidget,
+    removeWidget,
+    resetToDefault,
+    applyProfile,
+    isCustomized,
+  } = useWidgetPreferences(DEFAULT_LAYOUT);
 
   return (
     <div className="telemetry-dashboard">
@@ -60,7 +72,9 @@ function LiveTelemetry() {
         <div className="header-left">
           <div className="session-info">
             <span className="session-label">LIVE SESSION</span>
-            <div className={`session-status ${connected ? "connected" : "disconnected"}`}>
+            <div
+              className={`session-status ${connected ? "connected" : "disconnected"}`}
+            >
               <span className="status-indicator"></span>
               {connected ? "CONNECTED" : "DISCONNECTED"}
             </div>
