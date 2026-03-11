@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from .configDB import DATABASE_URL
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from typing import Union
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
