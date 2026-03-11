@@ -176,9 +176,24 @@ async def websocket_endpoint(websocket: WebSocket):
         
         while True:
             # For testing
-            msg = await websocket.receive_text()
-            if msg == "ping":
-                await websocket.send_text("pong")
+            msg = await websocket.receive_json()
+            if msg.get("type") == "ping":
+                await websocket.send_json({"type": "pong"})
+            
+            # "type": "db",
+            # "enabled": bool",
+            # "timestamp": datetime.now().isoformat()
+            # Turns on and off database persistence based on button
+            elif msg.get("type") == "db":
+                global _database_enabled
+                _database_enabled = msg.get("enabled")
+                logger.info("Database persistence state changed to: %s", _database_enabled)
+                
+                await websocket.send_json({
+                    "type": "db",
+                    "enabled": _database_enabled,
+                    "timestamp": datetime.now().isoformat()
+                })
                 
     except WebSocketDisconnect:
         pass
