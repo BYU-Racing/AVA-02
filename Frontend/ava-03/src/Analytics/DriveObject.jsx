@@ -4,6 +4,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import IconButton from "@mui/material/IconButton";
 import id_map from "../idMap";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -29,8 +30,10 @@ function DriveObject({
   setCachedData,
   setSensorData,
   pendingFetches,
+  handleDelete,
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
   // Format the date to MM:DD:YY HH:MM
@@ -101,15 +104,14 @@ function DriveObject({
     }
   };
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const handleDeleteClick = (e) => {
-    e.stopPropagation(); // prevent accordion from toggling
+    e.stopPropagation();
     setConfirmOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     setConfirmOpen(false);
-    await onDelete(drive.drive_id);
+    await handleDelete(drive.drive_id);
   };
 
   const handleMouseEnter = (driveId, sensorId) => {
@@ -127,78 +129,77 @@ function DriveObject({
   };
 
   return (
-    <Accordion
-      onChange={(event, isExpanded) => handleExpand(drive.drive_id, isExpanded)}
-      sx={{ marginBottom: 0 }}
-    >
-      <AccordionSummary
-        expandIcon={<ArrowDropDownIcon />}
-        aria-controls="panel2-content"
-        id="panel2-header"
+    <>
+      <Accordion
+        onChange={(event, isExpanded) => handleExpand(drive.drive_id, isExpanded)}
+        sx={{ marginBottom: 0 }}
       >
-        <Typography>
-          {formattedDate} - {drive.driver.name}
-        </Typography>
-        <IconButton
-          size="small"
-          onClick={handleDeleteClick}
-          sx={{ ml: 1, color: "error.main" }}
+        <AccordionSummary
+          expandIcon={<ArrowDropDownIcon />}
+          aria-controls="panel2-content"
+          id="panel2-header"
         >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-          <DialogTitle>Delete Drive?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Delete the drive from {formattedDate} by {drive.driver.name}? This cannot be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} color="error" variant="contained">
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </AccordionSummary>
-      <AccordionDetails>
-        {loadingSensors === true ? (
-          <Typography>Loading</Typography>
-        ) : sensorData[drive.drive_id] &&
-          Object.keys(sensorData[drive.drive_id]).length > 0 ? (
-          <List>
-            {Object.keys(sensorData[drive.drive_id] || {}) // Fallback to an empty object if undefined
-              .sort((a, b) => parseInt(a) - parseInt(b)) // Sort by integer values in ascending order
-              .map((sensor, index, array) => (
-                <div
-                  key={sensor}
-                  // onMouseEnter={() => handleMouseEnter(drive.drive_id, sensor)}
-                  // onMouseLeave={handleMouseLeave}
-                >
-                  <ListItem
-                    draggable
-                    onDragStart={(event) => handleDragStart(event, sensor)}
-                    sx={{
-                      padding: 1,
-                      borderRadius: 1,
-                      backgroundColor: "background.paper",
-                      transition: "background-color 0.3s",
-                      "&:hover": {
-                        backgroundColor: "rgba(211, 211, 211, 0.5)",
-                      },
-                    }}
-                  >
-                    <ListItemText primary={id_map[sensor]} />
-                  </ListItem>
-                  {index < array.length - 1 && <Divider />}
-                </div>
-              ))}
-          </List>
-        ) : (
-          <CircularProgress color="inherit" size="20px" />
-        )}
-      </AccordionDetails>
-    </Accordion>
+          <Typography sx={{ flexGrow: 1 }}>
+            {formattedDate} - {drive.driver.name}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={handleDeleteClick}
+            sx={{ color: "error.main" }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </AccordionSummary>
+        <AccordionDetails>
+          {loadingSensors === true ? (
+            <Typography>Loading</Typography>
+          ) : sensorData[drive.drive_id] &&
+            Object.keys(sensorData[drive.drive_id]).length > 0 ? (
+            <List>
+              {Object.keys(sensorData[drive.drive_id] || {})
+                .sort((a, b) => parseInt(a) - parseInt(b))
+                .map((sensor, index, array) => (
+                  <div key={sensor}>
+                    <ListItem
+                      draggable
+                      onDragStart={(event) => handleDragStart(event, sensor)}
+                      sx={{
+                        padding: 1,
+                        borderRadius: 1,
+                        backgroundColor: "background.paper",
+                        transition: "background-color 0.3s",
+                        "&:hover": {
+                          backgroundColor: "rgba(211, 211, 211, 0.5)",
+                        },
+                      }}
+                    >
+                      <ListItemText primary={id_map[sensor]} />
+                    </ListItem>
+                    {index < array.length - 1 && <Divider />}
+                  </div>
+                ))}
+            </List>
+          ) : (
+            <CircularProgress color="inherit" size="20px" />
+          )}
+        </AccordionDetails>
+      </Accordion>
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Delete Drive?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Delete the drive from {formattedDate} by {drive.driver.name}? This cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
