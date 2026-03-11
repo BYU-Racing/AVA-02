@@ -189,7 +189,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if "database_enabled" in msg and isinstance(msg["database_enabled"], bool):
                     _database_enabled = msg.get("database_enabled")
                     logger.info("Database persistence state changed to: %s", _database_enabled)
-                await websocket.send_json({
+                await manager.broadcast({
                     "type": "db",
                     "database_enabled": _database_enabled,
                 })
