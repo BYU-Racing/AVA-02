@@ -37,25 +37,6 @@ function LiveTelemetry() {
   const [wsConnected, setWsConnected] = React.useState(false);
   const [configuratorOpen, setConfiguratorOpen] = React.useState(false);
 
-<<<<<<< HEAD
-  const chartSeries = useChartSeries(wsConnected);
-
-  const { telemetryData, handleTelemetryMessage, getSensorValue } =
-    useTelemetryHandlers(chartSeries.updateSample);
-
-  const {
-    connected,
-    senderConnected,
-    database_enabled,
-    connect,
-    disconnect,
-    togglePersist,
-  } = useWebSocketTelemetry(handleTelemetryMessage);
-
-  // Sync WebSocket connection state with chart series
-  React.useEffect(() => {
-    setWsConnected(connected);
-=======
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -63,8 +44,10 @@ function LiveTelemetry() {
   // Database persistence state
   const [database_enabled, setDatabaseEnabled] = useState(true);
   const togglePersist = () => {
-    if(wsRef.current?.readyState == WebSocket.OPEN){
-      wsRef.current.send(JSON.stringify({ type: "db", database_enabled: !database_enabled }));
+    if (wsRef.current?.readyState == WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({ type: "db", database_enabled: !database_enabled }),
+      );
     }
   };
 
@@ -115,9 +98,7 @@ function LiveTelemetry() {
 
   const appendSeriesPoint = (seriesRef, value) => {
     const series = seriesRef.current;
-    const lastValue = series.length
-      ? series[series.length - 1]
-      : 0;
+    const lastValue = series.length ? series[series.length - 1] : 0;
     const nextValue = value ?? lastValue;
 
     if (series.length < MAX_DATA_POINTS) {
@@ -233,7 +214,10 @@ function LiveTelemetry() {
       updateLatest(id, name, rpm, ts);
       latestSamplesRef.current.rpm = rpm;
       sampleSeqRef.current += 1;
-      enqueueLogEntry(name, JSON.stringify(vals.map((v) => bigintToSafeNumber(v))));
+      enqueueLogEntry(
+        name,
+        JSON.stringify(vals.map((v) => bigintToSafeNumber(v))),
+      );
     },
 
     6: ({ id, name, data, ts }) => {
@@ -327,7 +311,8 @@ function LiveTelemetry() {
           if (data.type === "connection") {
             const source = String(data.source || "").toLowerCase();
             const message = String(data.message || "").toLowerCase();
-            const isSenderEvent = source === "sender" || message.includes("sender");
+            const isSenderEvent =
+              source === "sender" || message.includes("sender");
             if (isSenderEvent) {
               setSenderConnected(data.status === "connected");
             }
@@ -339,7 +324,6 @@ function LiveTelemetry() {
           } else if (data.type === "db") {
             setDatabaseEnabled(data.database_enabled);
           }
-
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
         }
@@ -354,7 +338,7 @@ function LiveTelemetry() {
         setConnected(false);
         setSenderConnected(false);
         enqueueLogEntry("SYSTEM", "Disconnected from telemetry stream");
-        if(autoReconnect){
+        if (autoReconnect) {
           reconnectTimeoutRef.current = setTimeout(() => {
             console.log("Attempting to reconnect...");
             connectWebSocket();
@@ -429,7 +413,6 @@ function LiveTelemetry() {
     }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
->>>>>>> origin/main
   }, [connected]);
 
   const {
