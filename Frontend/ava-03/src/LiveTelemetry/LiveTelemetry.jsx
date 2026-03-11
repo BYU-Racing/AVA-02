@@ -59,17 +59,17 @@ function LiveTelemetry() {
   // Latest telemetry per ID
   const [telemetryData, setTelemetryData] = useState({});
 
-  // Database persistence state
-  const [database_enabled, setDatabaseEnabled] = useState(true);
-  const togglePersist = async () => {
-    const next = !database_enabled;
-    await fetch(`/api/livetelemetry/db?enabled=${next}`, { method: "POST" });
-    setDatabaseEnabled(next);
-  };
-
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+
+  // Database persistence state
+  const [database_enabled, setDatabaseEnabled] = useState(true);
+  const togglePersist = () => {
+    if(wsRef.current?.readyState == WebSocket.OPEN){
+      wsRef.current.send(JSON.stringify({ type: "db", database_enabled: !database_enabled }));
+    }
+  };
 
   // Latest telemetry panel values (buffered)
   const latestRef = useRef({});
@@ -308,7 +308,6 @@ function LiveTelemetry() {
       updateLatest(id, name, n, ts);
       enqueueLogEntry(name, `${v.toString()}`);
     }
-    
   };
 
   // ---------- WebSocket connect/disconnect ----------
@@ -321,6 +320,7 @@ function LiveTelemetry() {
         console.log("WebSocket Connected!");
         setConnected(true);
         enqueueLogEntry("SYSTEM", "Connected to telemetry stream");
+        ws.send(JSON.stringify({ type: "db" }));
       };
 
       ws.onmessage = (event) => {
@@ -339,7 +339,7 @@ function LiveTelemetry() {
             // Expected: {type:"telemetry", id:<int>, data:<string|array>, timestamp?:iso}
             setSenderConnected(true);
             handleTelemetryMessage(data);
-          } else if (data.type === "database") {
+          } else if (data.type === "db") {
             setDatabaseEnabled(data.database_enabled);
           }
 
@@ -390,13 +390,6 @@ function LiveTelemetry() {
     connectWebSocket();
     return () => disconnectWebSocket();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // fect initial state of database persistence
-  useEffect(() => {
-    fetch("/api/livetelemetry/db", { method: "GET" })
-      .then(res => res.json())
-      .then(data => setDatabaseEnabled(data.database_enabled));
   }, []);
 
   useEffect(() => {

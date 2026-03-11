@@ -186,13 +186,12 @@ async def websocket_endpoint(websocket: WebSocket):
             # Turns on and off database persistence based on button
             elif msg.get("type") == "db":
                 global _database_enabled
-                _database_enabled = msg.get("enabled")
-                logger.info("Database persistence state changed to: %s", _database_enabled)
-                
+                if "database_enabled" in msg and isinstance(msg["database_enabled"], bool):
+                    _database_enabled = msg.get("database_enabled")
+                    logger.info("Database persistence state changed to: %s", _database_enabled)
                 await websocket.send_json({
                     "type": "db",
-                    "enabled": _database_enabled,
-                    "timestamp": datetime.now().isoformat()
+                    "database_enabled": _database_enabled,
                 })
                 
     except WebSocketDisconnect:
