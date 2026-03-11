@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,10 +9,14 @@ import {
   Tooltip,
   Filler,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
 import "./LiveTelemetry.css";
-import idMap from "../idMap";
-import { asBigIntArray, bigintToSafeNumber } from "./decode_data";
+import { useWebSocketTelemetry } from "./hooks/useWebSocketTelemetry";
+import { useTelemetryHandlers } from "./hooks/useTelemetryHandlers";
+import { useChartSeries } from "./hooks/useChartSeries";
+import { useWidgetPreferences } from "./hooks/useWidgetPreferences";
+import { TelemetryLayout } from "./components/TelemetryLayout";
+import { WidgetConfigurator } from "./components/WidgetConfigurator";
+import { DEFAULT_LAYOUT } from "./config/defaultLayout";
 
 // Register Chart.js components
 ChartJS.register(
@@ -25,40 +29,27 @@ ChartJS.register(
   Filler
 );
 
-// Configuration
-// Same-host websocket URL (works on EC2, EB, and behind Cloudflare)
-const WS_URL = (import.meta.env.VITE_WS_URL?.trim()) // Manual override via enc var
-  ? import.meta.env.VITE_WS_URL.trim()
-  : (() => { // Auto-detect ws/wss based on page protocol
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${window.location.host}/api/ws/livetelemetry`;
-})();
-
-const RECONNECT_INTERVAL = 3000;
-const TICK_TIME_MS = 100; // ms, how often data changes
-const ANIMATION_TIME = TICK_TIME_MS; // ms, Chart.js animation duration
-const DATA_SAVED_DURATION_S = 20; // seconds of data to keep in charts
-const MAX_DATA_POINTS = DATA_SAVED_DURATION_S * (1000 / TICK_TIME_MS); // max points to keep based on tick interval
-const MAX_LOG_ENTRIES = 30; // Max # of entries to keep in telemetry feed
-const LOG_FLUSH_TIME_MS = 250; // How often telemetry feed log is flushed (ms)
-const PERF_LOG_INTERVAL_MS = 5000;
-const PERF_DEBUG = (() => {
-  const raw = import.meta.env.VITE_LIVE_TELEMETRY_DEBUG_PERF;
-  if (raw == null) return false;
-  const normalized = String(raw).trim().toLowerCase();
-  return ["1", "true", "yes", "on"].includes(normalized);
-})();
-
-let autoReconnect = true; // when disconnect button is pushed, disables auto-reconnect
+// Configuration moved to hooks
 
 
 function LiveTelemetry() {
-  // Connection state
-  const [connected, setConnected] = useState(false);
-  const [senderConnected, setSenderConnected] = useState(false);
-  // Latest telemetry per ID
-  const [telemetryData, setTelemetryData] = useState({});
+  // Use custom hooks for modular functionality (order matters for dependencies)
+  const [wsConnected, setWsConnected] = React.useState(false);
+  const [configuratorOpen, setConfiguratorOpen] = React.useState(false);
 
+<<<<<<< HEAD
+  const chartSeries = useChartSeries(wsConnected);
+
+  const { telemetryData, handleTelemetryMessage, getSensorValue } =
+    useTelemetryHandlers(chartSeries.updateSample);
+
+  const { connected, senderConnected, database_enabled, connect, disconnect, togglePersist } =
+    useWebSocketTelemetry(handleTelemetryMessage);
+
+  // Sync WebSocket connection state with chart series
+  React.useEffect(() => {
+    setWsConnected(connected);
+=======
   // WebSocket refs
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -432,150 +423,11 @@ function LiveTelemetry() {
     }, TICK_TIME_MS);
 
     return () => clearInterval(interval);
+>>>>>>> origin/main
   }, [connected]);
 
-  useEffect(() => {
-    if (!PERF_DEBUG) return undefined;
-
-    const interval = setInterval(() => {
-      const totals = perfCountersRef.current;
-      const snapshot = perfSnapshotRef.current;
-      const delta = {
-        messagesProcessed: totals.messagesProcessed - snapshot.messagesProcessed,
-        chartTicks: totals.chartTicks - snapshot.chartTicks,
-        chartUpdates: totals.chartUpdates - snapshot.chartUpdates,
-        telemetryStateCommits:
-          totals.telemetryStateCommits - snapshot.telemetryStateCommits,
-        ticksWithNewSamples: totals.ticksWithNewSamples - snapshot.ticksWithNewSamples,
-      };
-
-      console.debug("[LiveTelemetry perf/5s]", delta);
-      perfSnapshotRef.current = { ...totals };
-    }, PERF_LOG_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // UI helper: get latest value for id
-  const getSensorValue = (msgId) => telemetryData[msgId]?.value ?? 0;
-  const latestTelemetryById = useMemo(() => (
-    Object.entries(telemetryData)
-      .map(([id, entry]) => ({
-        id: Number(id),
-        name: entry.name,
-        value: entry.value,
-        timestamp: entry.timestamp,
-      }))
-      .sort((a, b) => a.id - b.id)
-  ), [telemetryData]);
-
-  const formatLatestValue = (value) => {
-    if (Array.isArray(value)) return value.join(", ");
-    if (value === null || value === undefined) return "-";
-    return String(value);
-  };
-
-  // ---------- Chart options ----------
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: ANIMATION_TIME, // ms
-      easing: "linear",
-    },
-    animations: {
-      x: { duration: 0 },
-      y: { duration: ANIMATION_TIME, easing: "linear" },
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: { mode: "index", intersect: false },
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: { color: "rgba(255, 255, 255, 0.05)" },
-        ticks: { color: "#64748b", maxTicksLimit: 6 },
-      },
-      y: {
-        display: true,
-        grid: { color: "rgba(255, 255, 255, 0.05)" },
-        ticks: { color: "#64748b" },
-      },
-    },
-    interaction: { mode: "nearest", axis: "x", intersect: false },
-  }), []);
-
-  // Tire RPM chart
-  const rpmChartData = useMemo(() => ({
-    labels: labelsRef.current,
-    datasets: [
-      {
-        label: "Tire RPM",
-        data: rpmSeriesRef.current,
-        // fill: true,
-        // backgroundColor: "rgba(0, 217, 255, 0.1)",
-        borderColor: "#00d9ff",
-        borderWidth: 2,
-        tension: 0,
-        pointRadius: 0,
-      },
-    ],
-  }), []);
-
-  // Throttle & Brake chart
-  const throttleBrakeChartData = useMemo(() => ({
-    labels: labelsRef.current,
-    datasets: [
-      {
-        label: "Throttle 1",
-        data: throttle1SeriesRef.current,
-        // fill: true,
-        // backgroundColor: "rgba(16, 185, 129, 0.1)",
-        borderColor: "#10b981",
-        borderWidth: 2,
-        tension: 0,
-        pointRadius: 0,
-      },
-      {
-        label: "Throttle 2",
-        data: throttle2SeriesRef.current,
-        // fill: true,
-        // backgroundColor: "rgba(59, 130, 246, 0.08)",
-        borderColor: "#3b82f6",
-        borderWidth: 2,
-        tension: 0,
-        pointRadius: 0,
-      },
-      {
-        label: "Brake",
-        data: brakeSeriesRef.current,
-        // fill: true,
-        // backgroundColor: "rgba(239, 68, 68, 0.1)",
-        borderColor: "#ef4444",
-        borderWidth: 2,
-        tension: 0,
-        pointRadius: 0,
-      },
-    ],
-  }), []);
-
-  // Battery chart
-  const batteryChartData = useMemo(() => ({
-    labels: labelsRef.current,
-    datasets: [
-      {
-        label: "BMS %",
-        data: batterySeriesRef.current,
-        // fill: true,
-        // backgroundColor: "rgba(16, 185, 129, 0.1)",
-        borderColor: "#10b981",
-        borderWidth: 2,
-        tension: 0,
-        pointRadius: 0,
-      },
-    ],
-  }), []);
+  const { layout, addWidget, removeWidget, resetToDefault, applyProfile, isCustomized } =
+    useWidgetPreferences(DEFAULT_LAYOUT);
 
   return (
     <div className="telemetry-dashboard">
@@ -599,144 +451,55 @@ function LiveTelemetry() {
 
         <div className="control-panel">
           {!connected ? (
-            <button className="control-btn connect-btn" onClick={connectWebSocket}>
+            <button className="control-btn connect-btn" onClick={connect}>
               <span>{"\u25B6"}</span>
               <span>CONNECT</span>
             </button>
           ) : (
-            <button className="control-btn disconnect-btn" onClick={disconnectWebSocket}>
+            <button className="control-btn disconnect-btn" onClick={disconnect}>
               <span>{"\u23F8"}</span>
               <span>DISCONNECT</span>
             </button>
           )}
-          <button className="control-btn" onClick={togglePersist} style={{background: database_enabled ? "#10b981" : "#64748b"}}>
+          <button
+            className="control-btn"
+            onClick={togglePersist}
+            style={{ background: database_enabled ? "#10b981" : "#64748b" }}
+          >
             <span>{database_enabled ? "💾" : "⏸"}</span>
             <span>DB {database_enabled ? "ON" : "OFF"}</span>
+          </button>
+          <button
+            className="control-btn"
+            onClick={() => setConfiguratorOpen(true)}
+            style={{ background: isCustomized ? "#3b82f6" : "#64748b" }}
+          >
+            <span>⚙️</span>
+            <span>CUSTOMIZE</span>
           </button>
         </div>
       </header>
 
-      {/* Main Dashboard Grid */}
-      <div className="telemetry-grid">
-        {/* Left Panel - Primary Stats */}
-        <div className="left-panel">
-          <div className="stat-panel primary-stat">
-            <div className="stat-header">TIRE RPM</div>
-            <div className="stat-value-large speed-value">{getSensorValue(5)}</div>
-            <div className="stat-unit">rpm</div>
-          </div>
+      {/* Main Dashboard Grid - Now using modular layout */}
+      <TelemetryLayout
+        layout={layout}
+        getSensorValue={getSensorValue}
+        telemetryData={telemetryData}
+        series={chartSeries.series}
+        chartRefs={chartSeries.chartRefs}
+      />
 
-          <div className="stat-panel primary-stat">
-            <div className="stat-header">BMS %</div>
-            <div className="stat-value-large battery-value">{getSensorValue(7)}</div>
-            <div className="stat-unit">%</div>
-          </div>
-
-          <div className="secondary-stats">
-            <div className="stat-panel secondary-stat">
-              <div className="stat-header">THROTTLE 1</div>
-              <div className="stat-value-medium">{getSensorValue(1)}</div>
-              <div className="stat-unit">raw</div>
-            </div>
-
-            <div className="stat-panel secondary-stat">
-              <div className="stat-header">THROTTLE 2</div>
-              <div className="stat-value-medium">{getSensorValue(2)}</div>
-              <div className="stat-unit">raw</div>
-            </div>
-          </div>
-
-          <div className="secondary-stats">
-            <div className="stat-panel secondary-stat">
-              <div className="stat-header">BRAKE</div>
-              <div className="stat-value-medium">{getSensorValue(3)}</div>
-              <div className="stat-unit">raw</div>
-            </div>
-
-            <div className="stat-panel secondary-stat">
-              <div className="stat-header">START SW</div>
-              <div className="stat-value-medium">{getSensorValue(0)}</div>
-              <div className="stat-unit">0/1</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Panel - Charts */}
-        <div className="center-panel">
-          <div className="chart-section">
-            <div className="section-header">TIRE RPM</div>
-            <div className="chart-wrapper">
-              <Line ref={rpmChartRef} data={rpmChartData} options={chartOptions} />
-            </div>
-          </div>
-
-          <div className="chart-section">
-            <div className="section-header">THROTTLE & BRAKE</div>
-            <div className="chart-wrapper">
-              <Line ref={throttleBrakeChartRef} data={throttleBrakeChartData} options={chartOptions} />
-            </div>
-          </div>
-
-          <div className="chart-section">
-            <div className="section-header">BMS %</div>
-            <div className="chart-wrapper">
-              <Line ref={batteryChartRef} data={batteryChartData} options={chartOptions} />
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel - Additional Stats + Feed */}
-        <div className="right-panel">
-          <div className="stat-panel info-stat">
-            <div className="stat-header">TIRE TEMP</div>
-            <div className="stat-value-medium">{getSensorValue(6)}</div>
-          </div>
-
-          <div className="stat-panel info-stat">
-            <div className="stat-header">BMS TEMP</div>
-            <div className="stat-value-medium">{getSensorValue(8)}</div>
-          </div>
-
-          <div className="stat-panel info-stat">
-            <div className="stat-header">RVC</div>
-            <div className="stat-value-medium">{getSensorValue(4)}</div>
-          </div>
-
-          <div className="stat-panel info-stat">
-            <div className="stat-header">GPS</div>
-            <div className="stat-value-medium">{getSensorValue(9)}</div>
-          </div>
-
-          <div className="stat-panel info-stat">
-            <div className="stat-header">LAP</div>
-            <div className="stat-value-medium">{getSensorValue(10)}</div>
-          </div>
-
-          {/* Telemetry Feed */}
-          <div className="telemetry-feed">
-            <div className="feed-header">
-              <div className="section-header">LATEST IDS</div>
-            </div>
-            <div className="feed-content">
-              {latestTelemetryById.map((entry) => (
-                <div key={entry.id} className="log-entry">
-                  <span className="log-time">ID {entry.id}</span>
-                  <span className="log-data">
-                    <span className="log-sensor-name">{entry.name}</span>: {formatLatestValue(entry.value)}
-                  </span>
-                </div>
-              ))}
-              {latestTelemetryById.length === 0 && (
-                <div className="log-entry">
-                  <span className="log-data">
-                    Waiting for telemetry data...
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Widget Configurator Modal */}
+      <WidgetConfigurator
+        isOpen={configuratorOpen}
+        onClose={() => setConfiguratorOpen(false)}
+        layout={layout}
+        addWidget={addWidget}
+        removeWidget={removeWidget}
+        resetToDefault={resetToDefault}
+        applyProfile={applyProfile}
+        isCustomized={isCustomized}
+      />
     </div>
   );
 }

@@ -19,7 +19,7 @@ Before you begin, ensure you have the following installed:
 pip install -r Backend/requirements.txt
 
 # 3. Build frontend
-cd Frontend/ava-02 && npm install && npm run build && cd ../..
+cd Frontend/ava-03 && npm install && npm run build && cd ../..
 
 # 4. Run backend from project root
 uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000

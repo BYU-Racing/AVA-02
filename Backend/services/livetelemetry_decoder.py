@@ -72,33 +72,32 @@ def convert_decoded_can_data(decoded: Dict) -> Dict:
     msg_id = decoded["id"]
     b = decoded["bytes"] 
     
-    match(msg_id):
-        case 0: # StartSwitch
-            data = [b[0] if b else 0]
-        case 1 | 2 | 3: # Throttle1, Throttle2, Brake
-            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
-        case 4: # Acceleration and Rotation
-            data = [b[0] if b else 0, decode_i32_le(b, 1) if len(b) >= 5 else 0]
-        case 5: # Tire RPM (uint8 tire, uint32 rpm)
-            data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
-        case 6: # Tire heat sensor (uint8 tire, uint16 inner_temp, uint16 outer_temp, uint16 core_temp)
-            inner = decode_u16_le(b, 1) if len(b) >= 3 else 0
-            outer = decode_u16_le(b, 3) if len(b) >= 5 else 0
-            core = decode_u16_le(b, 5) if len(b) >= 7 else 0
-            data = [b[0] if b else 0, inner, outer, core]
-        case 7: # BMS percentage (0-100)
-            data = [b[0] if b else 0]
-        case 8: # BMS temperature (uint16 temp)
-            data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
-        case 9: # GPS (uint16 lat, uint16 long)
-            data = [decode_i32_le(b, 0) if len(b) >= 4 else 0, decode_i32_le(b, 4) if len(b) >= 8 else 0]
-        case 10: # Lap Number  ( soon to be time as well uint32 ms)
-            # data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
-            data = [b[0] if b else 0]
-        case _: # Unknown / ghost IDs
-            # Keep it visible in the feed but don't affect known sensors
-            # Send raw bytes as hex strings (easy to read) OR as ints
-            data = [f"0x{x:02X}" for x in b]  # readable
+    if msg_id == 0: # StartSwitch
+        data = [b[0] if b else 0]
+    elif msg_id in [1, 2, 3]: # Throttle1, Throttle2, Brake
+        data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
+    elif msg_id == 4: # Acceleration and Rotation
+        data = [b[0] if b else 0, decode_i32_le(b, 1) if len(b) >= 5 else 0]
+    elif msg_id == 5: # Tire RPM (uint8 tire, uint32 rpm)
+        data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
+    elif msg_id == 6: # Tire heat sensor (uint8 tire, uint16 inner_temp, uint16 outer_temp, uint16 core_temp)
+        inner = decode_u16_le(b, 1) if len(b) >= 3 else 0
+        outer = decode_u16_le(b, 3) if len(b) >= 5 else 0
+        core = decode_u16_le(b, 5) if len(b) >= 7 else 0
+        data = [b[0] if b else 0, inner, outer, core]
+    elif msg_id == 7: # BMS percentage (0-100)
+        data = [b[0] if b else 0]
+    elif msg_id == 8: # BMS temperature (uint16 temp)
+        data = [decode_u16_le(b, 0) if len(b) >= 2 else 0]
+    elif msg_id == 9: # GPS (uint16 lat, uint16 long)
+        data = [decode_i32_le(b, 0) if len(b) >= 4 else 0, decode_i32_le(b, 4) if len(b) >= 8 else 0]
+    elif msg_id == 10: # Lap Number  ( soon to be time as well uint32 ms)
+        # data = [b[0] if b else 0, decode_u32_le(b, 1) if len(b) >= 5 else 0]
+        data = [b[0] if b else 0]
+    else: # Unknown / ghost IDs
+        # Keep it visible in the feed but don't affect known sensors
+        # Send raw bytes as hex strings (easy to read) OR as ints
+        data = [f"0x{x:02X}" for x in b]  # readable
 
     return {
         "type": "telemetry",
