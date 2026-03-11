@@ -13,6 +13,7 @@ function ListView({
   setCachedData,
   setSensorData,
   pendingFetches,
+  handleDelete,
 }) {
   return (
     <Box
@@ -58,6 +59,7 @@ function ListView({
               sensorData={sensorData}
               setSensorData={setSensorData}
               pendingFetches={pendingFetches}
+              handleDelete={handleDelete}
             />
           ))}
       </Box>

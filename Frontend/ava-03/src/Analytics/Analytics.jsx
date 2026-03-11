@@ -31,6 +31,19 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
     }
   };
 
+  const handleDelete = async (driveId) => {
+  const response = await fetch(`/api/drive/${driveId}`, { method: "DELETE" });
+  if (response.ok) {
+    setDriveList((prev) => prev.filter((d) => d.drive_id !== driveId));
+    // Also clean up cached data for this drive
+    setCachedData((prev) => {
+      const next = { ...prev };
+      delete next[driveId];
+      return next;
+    });
+  }
+};
+
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
@@ -73,6 +86,7 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
             setCachedData={setCachedData}
             setSensorData={setSensorData}
             pendingFetches={pendingFetches}
+            handleDelete={handleDelete}
           />
         </Grid>
         <Grid

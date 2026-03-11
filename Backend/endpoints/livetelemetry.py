@@ -176,9 +176,23 @@ async def websocket_endpoint(websocket: WebSocket):
         
         while True:
             # For testing
-            msg = await websocket.receive_text()
-            if msg == "ping":
-                await websocket.send_text("pong")
+            msg = await websocket.receive_json()
+            if msg.get("type") == "ping":
+                await websocket.send_json({"type": "pong"})
+            
+            # "type": "db",
+            # "enabled": bool",
+            # "timestamp": datetime.now().isoformat()
+            # Turns on and off database persistence based on button
+            elif msg.get("type") == "db":
+                global _database_enabled
+                if "database_enabled" in msg and isinstance(msg["database_enabled"], bool):
+                    _database_enabled = msg.get("database_enabled")
+                    logger.info("Database persistence state changed to: %s", _database_enabled)
+                await manager.broadcast({
+                    "type": "db",
+                    "database_enabled": _database_enabled,
+                })
                 
     except WebSocketDisconnect:
         pass
@@ -251,19 +265,3 @@ async def websocket_sendpoint(websocket: WebSocket):
             _pi_db.close()
         
         _pi_reconnect_task = asyncio.create_task(wait_for_reconnect())
-        
-@router.post("/livetelemetry/db")
-async def enable_db(enabled: bool):
-    global _database_enabled
-    _database_enabled = enabled
-    logger.info("Database persistence state: %s", enabled)
-    await manager.broadcast({
-        "type": "database",
-        "timestamp": datetime.now().isoformat(),
-        "database_enabled": _database_enabled
-    })
-    return {"database_enabled": _database_enabled}
-
-@router.get("/livetelemetry/db")
-async def get_db_state():
-    return {"database_enabled": _database_enabled}
