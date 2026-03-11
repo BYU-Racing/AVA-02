@@ -66,7 +66,7 @@
 }
 
 .session-label {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: 1px;
   color: var(--text-secondary);
@@ -74,7 +74,7 @@
 }
 
 .session-status {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
   padding: 1rem 2rem;
   border-radius: 20px;
@@ -129,7 +129,7 @@
 }
 
 .sender-status-label {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 1px;
   color: var(--text-secondary);
@@ -150,7 +150,7 @@
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-family: 'avaFont', sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
