@@ -46,8 +46,8 @@ const Header = () => {
       position="fixed"
       sx={{
         backgroundColor: "#121212",
-        padding: "0 1.5rem",
-        height: "40px",
+        padding: "0 2.25rem",
+        height: "60px",
         justifyContent: "center",
         transform: visible ? "translateY(0)" : "translateY(-100%)",
         transition: "transform 0.3s ease-in-out",
@@ -55,7 +55,7 @@ const Header = () => {
     >
       <Toolbar
         sx={{
-          minHeight: "40px", // Ensure the Toolbar matches the AppBar height
+          minHeight: "60px", // Ensure the Toolbar matches the AppBar height
           padding: 0, // Remove extra padding
         }}
       >
@@ -63,7 +63,7 @@ const Header = () => {
           variant="h4"
           component="div"
           fontFamily="avaFont"
-          sx={{ flexGrow: 1, fontSize: "1.4rem" }}
+          sx={{ flexGrow: 1, fontSize: "2.1rem" }}
         >
           {value === "/live-telemetry" ? "AVA-02 LIVE" : "AVA-02"}
         </Typography>
@@ -75,10 +75,10 @@ const Header = () => {
             ml: "auto", // Push tabs to the right
             "& .MuiTabs-indicator": {
               backgroundColor: "#1d41a3",
-              height: "2px",
+              height: "2.5px",
             },
             "& .MuiTab-root": {
-              fontSize: "0.75rem",
+              fontSize: "1.125rem",
             },
           }}
         >
