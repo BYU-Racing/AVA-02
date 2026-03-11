@@ -67,7 +67,6 @@ function LiveTelemetry() {
   return (
     <div className="telemetry-dashboard">
       {/* Header */}
-      <h1>HELLO WORLD</h1>
       <header className="telemetry-header">
         <div className="header-left">
           <div className="session-info">
