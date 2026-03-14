@@ -26,6 +26,14 @@ export function useWebSocketTelemetry(onMessage) {
   const reconnectTimeoutRef = useRef(null);
 
   const connectWebSocket = () => {
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
     try {
       console.log("Connecting to WebSocket:", WS_URL);
       const ws = new WebSocket(WS_URL);
@@ -52,7 +60,7 @@ export function useWebSocketTelemetry(onMessage) {
             if (onMessage) {
               onMessage(data);
             }
-          } else if (data.type === "database") {
+          } else if (data.type === "database" || data.type === "db") {
             setDatabaseEnabled(data.database_enabled);
           }
         } catch (err) {
@@ -84,22 +92,44 @@ export function useWebSocketTelemetry(onMessage) {
   };
 
   const disconnectWebSocket = () => {
+    autoReconnect = false;
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     setConnected(false);
     setSenderConnected(false);
-    autoReconnect = false;
   };
 
   const togglePersist = async () => {
     const next = !database_enabled;
-    await fetch(`/api/livetelemetry/db?enabled=${next}`, { method: "POST" });
-    setDatabaseEnabled(next);
+    try {
+      const response = await fetch(`/api/livetelemetry/db?enabled=${next}`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to update DB persistence (${response.status})`);
+      }
+
+      const data = await response.json();
+      setDatabaseEnabled(data.database_enabled);
+    } catch (err) {
+      console.error("Failed to toggle DB persistence:", err);
+
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "database",
+            database_enabled: next,
+          }),
+        );
+        setDatabaseEnabled(next);
+      }
+    }
   };
 
   // Auto-connect on mount
@@ -112,8 +142,14 @@ export function useWebSocketTelemetry(onMessage) {
   // Fetch initial state of database persistence
   useEffect(() => {
     fetch("/api/livetelemetry/db", { method: "GET" })
-      .then((res) => res.json())
-      .then((data) => setDatabaseEnabled(data.database_enabled));
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch DB state (${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data) => setDatabaseEnabled(data.database_enabled))
+      .catch((err) => console.error("Failed to fetch DB persistence state:", err));
   }, []);
 
   return {

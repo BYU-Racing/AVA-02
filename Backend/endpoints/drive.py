@@ -33,6 +33,7 @@ def delete_drive(drive_id: int, db: Session = Depends(get_db)):
     drive = crud.get_drive(db, drive_id)
     if not drive:
         raise HTTPException(status_code=404, detail="Drive not found")
+    db.query(models.RawData).filter(models.RawData.drive_id == drive_id).delete(synchronize_session=False)
     db.delete(drive)
     db.commit()
     return {"message": "Drive deleted successfully"}

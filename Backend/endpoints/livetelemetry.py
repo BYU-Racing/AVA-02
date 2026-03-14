@@ -3,7 +3,7 @@
 # Desc: Our live telemetry WebSocket endpoint, based off of telemetry.py (the one from Claude)
 # Receives data from the Pi over /ws/send, decodes it, then sends to Frontend over /ws/livetelemetry and database
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from typing import List, Dict, Optional
 import logging
 import asyncio
@@ -162,6 +162,52 @@ RECONNECT_TIMEOUT_SEC = 5
 
 _database_enabled: bool = True
 
+
+def get_database_state_payload() -> Dict:
+    return {
+        "type": "database",
+        "database_enabled": _database_enabled,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+async def broadcast_database_state():
+    await manager.broadcast(get_database_state_payload())
+
+
+def update_database_enabled(enabled: bool) -> bool:
+    global _database_enabled
+    _database_enabled = enabled
+    logger.info("Database persistence state changed to: %s", _database_enabled)
+    return _database_enabled
+
+
+def reset_pi_state(close_db: bool = False):
+    global _pi_db, _pi_live_drive, _pi_packets_written, _pi_reconnect_task
+
+    if close_db and _pi_db is not None:
+        try:
+            _pi_db.close()
+        except Exception as exc:
+            logger.warning("Error closing live telemetry DB session: %s", exc)
+
+    _pi_db = None
+    _pi_live_drive = None
+    _pi_packets_written = 0
+    _pi_reconnect_task = None
+
+
+@router.get("/livetelemetry/db")
+def get_live_db_state():
+    return get_database_state_payload()
+
+
+@router.post("/livetelemetry/db")
+async def set_live_db_state(enabled: bool = Query(...)):
+    update_database_enabled(enabled)
+    await broadcast_database_state()
+    return get_database_state_payload()
+
 @router.websocket("/ws/livetelemetry") # handler for connecting to client for sending data to Frontend
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -173,6 +219,7 @@ async def websocket_endpoint(websocket: WebSocket):
             "timestamp": datetime.now().isoformat(),
             "message": "Connected to live telemetry WebSocket"
         })
+        await websocket.send_json(get_database_state_payload())
         
         while True:
             # For testing
@@ -184,21 +231,17 @@ async def websocket_endpoint(websocket: WebSocket):
             # "enabled": bool",
             # "timestamp": datetime.now().isoformat()
             # Turns on and off database persistence based on button
-            elif msg.get("type") == "db":
-                global _database_enabled
-                if "database_enabled" in msg and isinstance(msg["database_enabled"], bool):
-                    _database_enabled = msg.get("database_enabled")
-                    logger.info("Database persistence state changed to: %s", _database_enabled)
-                await manager.broadcast({
-                    "type": "db",
-                    "database_enabled": _database_enabled,
-                })
-                
+            elif msg.get("type") in {"db", "database"}:
+                enabled = msg.get("database_enabled", msg.get("enabled"))
+                if isinstance(enabled, bool):
+                    update_database_enabled(enabled)
+                await websocket.send_json(get_database_state_payload())
+                await broadcast_database_state()
     except WebSocketDisconnect:
         pass
     except Exception as e:
         logger.error(f"LiveTelemetry webSocket error: {e}")
-    except:
+    finally:
         await manager.disconnect(websocket)
     
 
@@ -208,15 +251,22 @@ async def websocket_sendpoint(websocket: WebSocket):
     global _pi_live_drive, _pi_db, _pi_packets_written, _pi_reconnect_task
     await manager.connect(websocket, client=False)
     logger.info("Pi connected to send telemetry WebSocket")
-    
-    if _pi_reconnect_task and not _pi_reconnect_task.done():
+
+    db: Optional[Session] = None
+    live_drive: Optional[models.Drive] = None
+
+    if (
+        _pi_reconnect_task
+        and not _pi_reconnect_task.done()
+        and _pi_db is not None
+        and _pi_live_drive is not None
+    ):
         _pi_reconnect_task.cancel()
         _pi_reconnect_task = None
         logger.info("Pi reconnected within window, resuming drive_id=%s", _pi_live_drive.drive_id)
         db, live_drive = _pi_db, _pi_live_drive
     else:
         db = SessionLocal()
-        live_drive = None
         try:
             live_drive = create_live_drive(db)
             logger.info(
@@ -225,43 +275,87 @@ async def websocket_sendpoint(websocket: WebSocket):
                 live_drive.driver_id
             )
         except Exception as e:
-            db.close()
             logger.error(f"Error creating live drive: {e}")
-            await manager.disconnect(websocket, client=False)
-            return
-        _pi_db, _pi_live_drive, _pi_packets_written = db, None, 0
-    
-    
-    await manager.broadcast({
-        "type": "drive",
-        "status": "started",
-        "timestamp": datetime.now().isoformat(),
-        "drive_id": live_drive.drive_id,
-        "driver_id": live_drive.driver_id
-    })
+            db.close()
+            db = None
+            live_drive = None
+
+        _pi_db, _pi_live_drive, _pi_packets_written = db, live_drive, 0
+
+    if live_drive is not None:
+        await manager.broadcast({
+            "type": "drive",
+            "status": "started",
+            "timestamp": datetime.now().isoformat(),
+            "drive_id": live_drive.drive_id,
+            "driver_id": live_drive.driver_id
+        })
     
     try:
         while True: # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
-            persist_live_packet(db, live_drive.drive_id, decoded_packet) # <-- puts data into database
-            _pi_packets_written += 1
+
+            if _database_enabled:
+                if db is None or live_drive is None:
+                    db = SessionLocal()
+                    try:
+                        live_drive = create_live_drive(db)
+                        _pi_db, _pi_live_drive, _pi_packets_written = db, live_drive, 0
+                        await manager.broadcast({
+                            "type": "drive",
+                            "status": "started",
+                            "timestamp": datetime.now().isoformat(),
+                            "drive_id": live_drive.drive_id,
+                            "driver_id": live_drive.driver_id
+                        })
+                    except Exception as exc:
+                        logger.error("Could not create live drive while persisting telemetry: %s", exc)
+                        db.close()
+                        db = None
+                        live_drive = None
+                        _pi_db, _pi_live_drive = None, None
+
+                if db is not None and live_drive is not None:
+                    try:
+                        persist_live_packet(db, live_drive.drive_id, decoded_packet)
+                        _pi_packets_written += 1
+                    except Exception as exc:
+                        db.rollback()
+                        logger.error(
+                            "Failed to persist live telemetry packet for drive_id=%s: %s",
+                            live_drive.drive_id,
+                            exc
+                        )
+
             sensor_data = convert_decoded_can_data(decoded_packet)
             await manager.broadcast(sensor_data)
     
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        db.rollback()
+        if db is not None:
+            db.rollback()
         logger.error(f"SendTelemetry webSocket error: {e}")
     finally:
         await manager.disconnect(websocket, client=False)
+        if db is None or live_drive is None:
+            reset_pi_state(close_db=True)
+            return
+
         logger.info("Pi disconnecting, attempting to reconnect within %ss", RECONNECT_TIMEOUT_SEC)
-        
-        async def wait_for_reconnect():
-            await asyncio.sleep(RECONNECT_TIMEOUT_SEC)
-            logger.info("Reconnect timer expired, closing drive_id=%s with %s packets written", 
-                        live_drive.drive_id, _pi_packets_written)
-            _pi_db.close()
-        
-        _pi_reconnect_task = asyncio.create_task(wait_for_reconnect())
+
+        async def wait_for_reconnect(drive_id: int):
+            try:
+                await asyncio.sleep(RECONNECT_TIMEOUT_SEC)
+                logger.info(
+                    "Reconnect timer expired, closing drive_id=%s with %s packets written",
+                    drive_id,
+                    _pi_packets_written
+                )
+                reset_pi_state(close_db=True)
+            except asyncio.CancelledError:
+                logger.info("Reconnect timer cancelled for drive_id=%s", drive_id)
+                raise
+
+        _pi_reconnect_task = asyncio.create_task(wait_for_reconnect(live_drive.drive_id))
