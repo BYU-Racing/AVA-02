@@ -38,6 +38,7 @@ function DriveObject({
 
   // Format the date to MM:DD:YY HH:MM
   const formattedDate = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Mst/GMT-6",
     month: "2-digit",
     day: "2-digit",
     year: "2-digit",
