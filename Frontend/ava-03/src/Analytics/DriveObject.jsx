@@ -39,7 +39,7 @@ function DriveObject({
 
   // Format the date to MM:DD:YY HH:MM
   const formatDate = (dateStr, timeZone = "America/Denver") => {
-    const UTCnormalized = dateStr.endsWith("Z") || dateStr.includes("+") ? dateStr : dateStr + "Z";
+    const UTCnormalized = dateStr.trimEnd() + "Z";
     const date = new Date(UTCnormalized);
   
     if (isNaN(date)) {
