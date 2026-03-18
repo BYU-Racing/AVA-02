@@ -70,8 +70,10 @@ function DriveObject({
       }).format(new Date(dateStr));
     }
   }
-
-  const formattedDate = formatDate(drive.date)
+  console.log("raw drive.date:", drive.date);
+  console.log("parsed:", new Date(drive.date).toString());
+  const formattedDate = formatDate(drive.date);
+  console.log("formatted:", formattedDate);
 
   const handleDragStart = (event, sensorId) => {
     event.dataTransfer.setData("sensorId", sensorId);
