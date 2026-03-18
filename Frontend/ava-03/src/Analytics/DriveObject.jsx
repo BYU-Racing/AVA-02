@@ -39,6 +39,13 @@ function DriveObject({
 
   // Format the date to MM:DD:YY HH:MM
   const formatDate = (dateStr, timeZone = "America/Denver") => {
+    const date = new Date(dateStr);
+  
+    if (isNaN(date)) {
+      console.error("Invalid date value:", dateStr);
+      return "Invalid date";
+    }
+
     try {
       return new Intl.DateTimeFormat("en-US", {
         timeZone,
