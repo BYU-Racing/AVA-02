@@ -56,7 +56,7 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(date));
+      }).format(date);
     }
     catch (e) {
       console.warn("Input Timezone is invalid", e)
@@ -68,14 +68,11 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(date));
+      }).format(date);
     }
   }
 
-  console.log("raw drive.date:", drive.date);
-  console.log("parsed:", new Date(drive.date).toString());
   const formattedDate = formatDate(drive.date);
-  console.log("formatted:", formattedDate);
 
   const handleDragStart = (event, sensorId) => {
     event.dataTransfer.setData("sensorId", sensorId);
