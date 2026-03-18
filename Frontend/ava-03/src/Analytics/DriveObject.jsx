@@ -39,7 +39,8 @@ function DriveObject({
 
   // Format the date to MM:DD:YY HH:MM
   const formatDate = (dateStr, timeZone = "America/Denver") => {
-    const date = new Date(dateStr);
+    const UTCnormalized = dateStr.endsWith("Z") || dateStr.includes("+") ? dateStr : dateStr + "Z";
+    const date = new Date(UTCnormalized);
   
     if (isNaN(date)) {
       console.error("Invalid date value:", dateStr);
@@ -70,6 +71,7 @@ function DriveObject({
       }).format(new Date(dateStr));
     }
   }
+
   console.log("raw drive.date:", drive.date);
   console.log("parsed:", new Date(drive.date).toString());
   const formattedDate = formatDate(drive.date);
