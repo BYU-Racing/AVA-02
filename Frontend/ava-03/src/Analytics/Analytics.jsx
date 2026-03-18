@@ -31,18 +31,35 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
     }
   };
 
-  const handleDelete = async (driveId) => {
-  const response = await fetch(`/api/drive/${driveId}`, { method: "DELETE" });
-  if (response.ok) {
-    setDriveList((prev) => prev.filter((d) => d.drive_id !== driveId));
-    // Also clean up cached data for this drive
-    setCachedData((prev) => {
-      const next = { ...prev };
-      delete next[driveId];
-      return next;
+  const handleDelete = async (driveId, deletepassword) => {
+    const response = await fetch(`/api/drive/${driveId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletepassword }),
     });
-  }
-};
+
+    if (response.ok) {
+      setDriveList((prev) => prev.filter((d) => d.drive_id !== driveId));
+      setCachedData((prev) => {
+        const next = { ...prev };
+        delete next[driveId];
+        return next;
+      });
+      return;
+    }
+
+    let errorMessage = "Failed to delete drive";
+    try {
+      const errorData = await response.json();
+      if (errorData?.detail) {
+        errorMessage = errorData.detail;
+      }
+    } catch {
+      // Ignore JSON parse failures and use fallback message.
+    }
+
+    throw new Error(errorMessage);
+  };
 
   // Fetch drives on component mount
   const getDrives = async () => {

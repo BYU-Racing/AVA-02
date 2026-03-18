@@ -42,6 +42,10 @@ class Drive(DriveBase):
 
     class Config:
         orm_mode = True
+        
+# Schema for deleting drives; the drive_id is included in the url
+class DeleteDriveRequest(BaseModel):
+    password: str
 
 
 # Schema for Driver
@@ -49,10 +53,8 @@ class Drive(DriveBase):
 class DriverBase(BaseModel):
     name: str
 
-
 class DriverCreate(DriverBase):
     pass
-
 
 class Driver(DriverBase):
     driver_id: int
@@ -77,6 +79,4 @@ class DriveSimple(BaseModel):
 
     class Config:
         orm_mode = True
-
-
 

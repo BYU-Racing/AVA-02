@@ -7,6 +7,9 @@ import io
 from .. import crud, models, schemas
 from ..database import SessionLocal, engine
 from sqlalchemy.orm import Session
+from secrets import compare_digest
+from ..configDB import DELETE_PASSWORD
+
 router = APIRouter()
 
 models.Base.metadata.create_all(bind=engine)
@@ -29,13 +32,16 @@ def get_drive_by_id(drive_id: int, db: Session = Depends(get_db)):
     return drive
 
 @router.delete("/drive/{drive_id}", response_model=dict)
-def delete_drive(drive_id: int, db: Session = Depends(get_db)):
+def delete_drive(drive_id: int, 
+                 delete_request: schemas.DeleteDriveRequest,
+                 db: Session = Depends(get_db)):
     drive = crud.get_drive(db, drive_id)
     if not drive:
         raise HTTPException(status_code=404, detail="Drive not found")
-    db.query(models.RawData).filter(models.RawData.drive_id == drive_id).delete(synchronize_session=False)
-    db.delete(drive)
-    db.commit()
+    if not compare_digest(delete_request.password, DELETE_PASSWORD):
+        raise HTTPException(status_code=403, detail="Wrong password")
+
+    crud.delete_drive(db, drive)
     return {"message": "Drive deleted successfully"}
 
 @router.get("/sensors/{drive_id}", response_model=list[int])

@@ -59,6 +59,13 @@ def create_drive(db: Session, drive: schemas.DriveCreate):
 
     return db_drive
 
+def delete_drive(db: Session, drive: models.Drive):
+    db.query(models.RawData).filter(models.RawData.drive_id == drive.drive_id).delete(
+        synchronize_session=False
+    )
+    db.delete(drive)
+    db.commit()
+
 ## READ RAW DATA
 
 def get_all_data_from_drive(db: Session, drive_id: int):

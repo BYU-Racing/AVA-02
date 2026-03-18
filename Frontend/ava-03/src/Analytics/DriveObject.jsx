@@ -20,6 +20,9 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+
+const HOVER_TIMEOUT = 200;
 
 function DriveObject({
   drive,
@@ -33,6 +36,9 @@ function DriveObject({
   handleDelete,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
 
@@ -140,19 +146,37 @@ function DriveObject({
 
   const handleDeleteClick = (e) => {
     e.stopPropagation();
+    setDeletePassword("");
+    setDeleteError("");
     setConfirmOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleDeleteClose = () => {
     setConfirmOpen(false);
-    await handleDelete(drive.drive_id);
+    setDeletePassword("");
+    setDeleteError("");
+    setDeleteSubmitting(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteSubmitting(true);
+    setDeleteError("");
+
+    try {
+      await handleDelete(drive.drive_id, deletePassword);
+      handleDeleteClose();
+    } catch (error) {
+      setDeleteError(error.message || "Failed to delete drive");
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   const handleMouseEnter = (driveId, sensorId) => {
     clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       fetchAdditionalData(driveId, sensorId);
-    }, 200);
+    }, HOVER_TIMEOUT);
   };
 
   const handleMouseLeave = () => {
@@ -224,16 +248,34 @@ function DriveObject({
         </AccordionDetails>
       </Accordion>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+      <Dialog open={confirmOpen} onClose={handleDeleteClose}>
         <DialogTitle>Delete Drive?</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Delete the drive from {formattedDate} by {drive.driver.name}? This cannot be undone.
           </DialogContentText>
+          <TextField
+            autoFocus
+            fullWidth
+            margin="dense"
+            type="password"
+            label="Delete Password"
+            value={deletePassword}
+            onChange={(event) => setDeletePassword(event.target.value)}
+            error={Boolean(deleteError)}
+            helperText={deleteError}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+          <Button onClick={handleDeleteClose} disabled={deleteSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteSubmitting || deletePassword.trim() === ""}
+          >
             Delete
           </Button>
         </DialogActions>
