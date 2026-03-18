@@ -46,7 +46,7 @@ class ConnectionManager:
             await self.broadcast({
                 "type": "connection",
                 "status": "connected",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message": "Connected to sender WebSocket!"
             })
         
@@ -60,7 +60,7 @@ class ConnectionManager:
             await self.broadcast({
                 "type": "connection",
                 "status": "disconnected",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message": "Sender disconnected from WebSocket"
             })
     
@@ -167,7 +167,7 @@ def get_database_state_payload() -> Dict:
     return {
         "type": "database",
         "database_enabled": _database_enabled,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -216,7 +216,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json({
             "type": "connection",
             "status": "connected",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "message": "Connected to live telemetry WebSocket"
         })
         await websocket.send_json(get_database_state_payload())
@@ -229,7 +229,7 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # "type": "db",
             # "enabled": bool",
-            # "timestamp": datetime.now().isoformat()
+            # "timestamp": datetime.now(timezone.utc).isoformat()
             # Turns on and off database persistence based on button
             elif msg.get("type") in {"db", "database"}:
                 enabled = msg.get("database_enabled", msg.get("enabled"))
@@ -286,7 +286,7 @@ async def websocket_sendpoint(websocket: WebSocket):
         await manager.broadcast({
             "type": "drive",
             "status": "started",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "drive_id": live_drive.drive_id,
             "driver_id": live_drive.driver_id
         })
@@ -305,7 +305,7 @@ async def websocket_sendpoint(websocket: WebSocket):
                         await manager.broadcast({
                             "type": "drive",
                             "status": "started",
-                            "timestamp": datetime.now().isoformat(),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
                             "drive_id": live_drive.drive_id,
                             "driver_id": live_drive.driver_id
                         })
