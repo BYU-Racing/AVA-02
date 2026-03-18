@@ -13,6 +13,7 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql://evangelion:FormulaE1@db:5432/appdb
+      DELETE_PASSWORD: ava2
     depends_on:
       - db
     ports:
