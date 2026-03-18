@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
@@ -32,7 +32,6 @@ function DriveObject({
   pendingFetches,
   handleDelete,
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
@@ -81,54 +80,61 @@ function DriveObject({
 
   const updateCachedData = (driveId, sensorId, newArray) => {
     setCachedData((prevState) => ({
-      ...prevState, // Spread the top-level dictionary (drive_ids)
+      ...prevState,
       [driveId]: {
-        ...prevState[driveId], // Spread the sensors for the specified drive_id
+        ...(prevState[driveId] || {}),
         [sensorId]: newArray, // Overwrite the array for the specific sensorId
       },
     }));
   };
 
   const updateHoverFetch = (driveId, sensorId, fetchStatus) => {
-    var handOff = sensorData;
-
-    handOff[driveId][sensorId] = fetchStatus;
-    setSensorData(handOff);
+    setSensorData((prevState) => ({
+      ...prevState,
+      [driveId]: {
+        ...(prevState[driveId] || {}),
+        [sensorId]: fetchStatus,
+      },
+    }));
   };
 
   const fetchAdditionalData = async (driveId, sensorId) => {
-    if (pendingFetches.current[sensorId]) {
+    const fetchKey = `${driveId}:${sensorId}`;
+    const normalizedDriveId = String(driveId);
+    const normalizedSensorId = String(sensorId);
+
+    if (cachedData[normalizedDriveId]?.[normalizedSensorId]) {
+      return cachedData[normalizedDriveId][normalizedSensorId];
+    }
+
+    if (pendingFetches.current[fetchKey]) {
       console.log("Fetch already in progress for sensorId:", sensorId);
-      return pendingFetches.current[sensorId]; // Return the existing Promise
+      return pendingFetches.current[fetchKey];
     }
 
     updateHoverFetch(driveId, sensorId, true);
 
     const fetchPromise = (async () => {
-      if (!(sensorId in cachedData[driveId])) {
+      try {
         const response = await fetch(
           `/api/data/${driveId}/${sensorId}`
         );
         const canMessages = await response.json();
-        let timeSeriesData;
-        // Process data transformations...
-        sensorId = String(sensorId);
-        driveId = String(driveId);
+        const timeSeriesData = CANtoTimeseries(canMessages, normalizedSensorId);
 
-        timeSeriesData = CANtoTimeseries(canMessages, sensorId);
-
-        updateCachedData(driveId, sensorId, timeSeriesData);
+        updateCachedData(normalizedDriveId, normalizedSensorId, timeSeriesData);
         return timeSeriesData;
+      } finally {
+        updateHoverFetch(driveId, sensorId, false);
       }
-      updateHoverFetch(driveId, sensorId, false);
     })();
 
-    pendingFetches.current[sensorId] = fetchPromise;
+    pendingFetches.current[fetchKey] = fetchPromise;
 
     try {
-      await fetchPromise;
+      return await fetchPromise;
     } finally {
-      delete pendingFetches.current[sensorId]; // Clear the fetch from the map
+      delete pendingFetches.current[fetchKey];
     }
   };
 
@@ -143,18 +149,19 @@ function DriveObject({
   };
 
   const handleMouseEnter = (driveId, sensorId) => {
-    setIsHovered(true);
+    clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
-      if (isHovered) {
-        fetchAdditionalData(driveId, sensorId); // Trigger the async function
-      }
-    }, 100); // 100ms delay
+      fetchAdditionalData(driveId, sensorId);
+    }, 200);
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    clearTimeout(hoverTimeoutRef.current); // Clear the timeout if the mouse leaves before 500ms
+    clearTimeout(hoverTimeoutRef.current);
   };
+
+  useEffect(() => {
+    return () => clearTimeout(hoverTimeoutRef.current);
+  }, []);
 
   return (
     <>
@@ -191,6 +198,10 @@ function DriveObject({
                     <ListItem
                       draggable
                       onDragStart={(event) => handleDragStart(event, sensor)}
+                      onMouseEnter={() =>
+                        handleMouseEnter(drive.drive_id, sensor)
+                      }
+                      onMouseLeave={handleMouseLeave}
                       sx={{
                         padding: 1,
                         borderRadius: 1,
