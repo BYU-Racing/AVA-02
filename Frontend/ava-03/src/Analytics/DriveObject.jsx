@@ -42,7 +42,7 @@ function DriveObject({
     const UTCnormalized = dateStr.trimEnd() + "Z";
     console.log("UTCnormalized:", UTCnormalized);
     const date = new Date(UTCnormalized);
-    console.log("parsed:", date.toString());
+    console.log("UTC parsed:", date.toString());
   
     if (isNaN(date)) {
       console.error("Invalid date value:", dateStr);
