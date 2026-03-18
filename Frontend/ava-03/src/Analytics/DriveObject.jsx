@@ -40,12 +40,10 @@ function DriveObject({
   // Format the date to MM:DD:YY HH:MM
   const formatDate = (dateStr, timeZone = "America/Denver") => {
     const UTCnormalized = dateStr.trimEnd() + "Z";
-    console.log("UTCnormalized:", UTCnormalized);
     const date = new Date(UTCnormalized);
-    console.log("UTC parsed:", date.toString());
   
     if (isNaN(date)) {
-      console.error("Invalid date value:", dateStr);
+      console.error("Invalid date value:", date);
       return "Invalid date";
     }
 
@@ -58,7 +56,7 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(dateStr));
+      }).format(new Date(date));
     }
     catch (e) {
       console.warn("Input Timezone is invalid", e)
@@ -70,7 +68,7 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(dateStr));
+      }).format(new Date(date));
     }
   }
 
