@@ -55,7 +55,7 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(drive.date));
+      }).format(new Date(dateStr));
     }
     catch (e) {
       console.warn("Input Timezone is invalid", e)
@@ -67,7 +67,7 @@ function DriveObject({
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(new Date(drive.date));
+      }).format(new Date(dateStr));
     }
   }
 
