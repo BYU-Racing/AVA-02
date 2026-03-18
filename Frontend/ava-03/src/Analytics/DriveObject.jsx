@@ -36,16 +36,35 @@ function DriveObject({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
+
   // Format the date to MM:DD:YY HH:MM
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Mst/GMT-6",
-    month: "2-digit",
-    day: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(drive.date));
+  const formatDate = (dateStr, timeZone = "America/Denver") => {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        month: "2-digit",
+        day: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(drive.date));
+    }
+    catch (e) {
+      console.warn("Input Timezone is invalid", e)
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "UTC",
+        month: "2-digit",
+        day: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(drive.date));
+    }
+  }
+
+  const formattedDate = formatDate(drive.date)
 
   const handleDragStart = (event, sensorId) => {
     event.dataTransfer.setData("sensorId", sensorId);
