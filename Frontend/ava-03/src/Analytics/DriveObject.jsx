@@ -14,6 +14,7 @@ import { CANtoTimeseries } from "./CANtransformations";
 import CircularProgress from "@mui/material/CircularProgress";
 // Deleting drives
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -21,6 +22,9 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Tooltip from "@mui/material/Tooltip";
 
 const HOVER_TIMEOUT = 200;
 
@@ -34,11 +38,14 @@ function DriveObject({
   setSensorData,
   pendingFetches,
   handleDelete,
+  handleDownload,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [downloadSubmitting, setDownloadSubmitting] = useState(false);
+  const [downloadFeedback, setDownloadFeedback] = useState(null);
   const hoverTimeoutRef = useRef(null);
 
 
@@ -172,6 +179,27 @@ function DriveObject({
     }
   };
 
+  const handleDownloadClick = async (e) => {
+    e.stopPropagation();
+    setDownloadSubmitting(true);
+    setDownloadFeedback(null);
+
+    try {
+      await handleDownload(drive.drive_id);
+      setDownloadFeedback({
+        severity: "success",
+        message: `Downloaded CSV for ${drive.driver.name}`,
+      });
+    } catch (error) {
+      setDownloadFeedback({
+        severity: "error",
+        message: error.message || "Failed to download drive CSV",
+      });
+    } finally {
+      setDownloadSubmitting(false);
+    }
+  };
+
   const handleMouseEnter = (driveId, sensorId) => {
     clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
@@ -201,13 +229,30 @@ function DriveObject({
           <Typography sx={{ flexGrow: 1 }}>
             {formattedDate} - {drive.driver.name}
           </Typography>
-          <IconButton
-            size="small"
-            onClick={handleDeleteClick}
-            sx={{ color: "error.main" }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Download CSV">
+            <span>
+              <IconButton
+                size="small"
+                onClick={handleDownloadClick}
+                disabled={downloadSubmitting}
+              >
+                {downloadSubmitting ? (
+                  <CircularProgress color="inherit" size="18px" />
+                ) : (
+                  <DownloadIcon fontSize="small" />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Delete drive">
+            <IconButton
+              size="small"
+              onClick={handleDeleteClick}
+              sx={{ color: "error.main" }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </AccordionSummary>
         <AccordionDetails>
           {loadingSensors === true ? (
@@ -280,6 +325,21 @@ function DriveObject({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(downloadFeedback)}
+        autoHideDuration={3000}
+        onClose={() => setDownloadFeedback(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={downloadFeedback?.severity || "success"}
+          onClose={() => setDownloadFeedback(null)}
+          sx={{ width: "100%" }}
+        >
+          {downloadFeedback?.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

@@ -2,8 +2,11 @@
 # Desc: Endpoint for adding and getting drive data
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi.responses import StreamingResponse
 import pandas as pd
 import io
+import csv
+import re
 from .. import crud, models, schemas
 from ..database import SessionLocal, engine
 from sqlalchemy.orm import Session
@@ -43,6 +46,43 @@ def delete_drive(drive_id: int,
 
     crud.delete_drive(db, drive)
     return {"message": "Drive deleted successfully"}
+
+@router.get("/drive/{drive_id}/csv")
+def download_drive_csv(drive_id: int, db: Session = Depends(get_db)):
+    drive = crud.get_drive(db, drive_id)
+    if not drive:
+        raise HTTPException(status_code=404, detail="Drive not found")
+    
+    raw_rows = crud.get_all_data_from_drive(db, drive_id)
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+    writer.writerow([
+        "msg_id",
+        "time",
+        "buffer0",
+        "buffer1",
+        "buffer2",
+        "buffer3",
+        "buffer4",
+        "buffer5",
+        "buffer6",
+        "buffer7",
+    ])
+
+    for row in raw_rows:
+        raw_data = list(row.raw_data or [])
+        padded_raw_data = raw_data + [None] * (8 - len(raw_data))
+        writer.writerow([row.msg_id, row.time, *padded_raw_data[:8]])
+
+    safe_driver_name = re.sub(r"[^A-Za-z0-9_-]+", "_", drive.driver.name).strip("_") or "driver"
+    formatted_date = drive.date.strftime("%Y%m%d_%H%M%S")
+    filename = f"{safe_driver_name}_{formatted_date}_drive_{drive.drive_id}.csv"
+
+    return StreamingResponse(
+        iter([csv_buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 @router.get("/sensors/{drive_id}", response_model=list[int])
 def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):

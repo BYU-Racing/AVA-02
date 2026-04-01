@@ -61,6 +61,39 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
     throw new Error(errorMessage);
   };
 
+  const handleDownload = async (driveId) => {
+    const response = await fetch(`/api/drive/${driveId}/csv`);
+
+    if (response.ok) {
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] || `drive_${driveId}.csv`;
+      const link = document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return;
+    }
+
+    let errorMessage = "Failed to download drive CSV";
+    try {
+      const errorData = await response.json();
+      if (errorData?.detail) {
+        errorMessage = errorData.detail;
+      }
+    } catch {
+      // Ignore JSON parse failures and use fallback message.
+    }
+
+    throw new Error(errorMessage);
+  };
+
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
@@ -98,12 +131,13 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
             driveList={driveList}
             handleExpand={handleExpand}
             sensorData={sensorData}
-            loadingSensor={loadingSensors}
+            loadingSensors={loadingSensors}
             cachedData={cachedData}
             setCachedData={setCachedData}
             setSensorData={setSensorData}
             pendingFetches={pendingFetches}
             handleDelete={handleDelete}
+            handleDownload={handleDownload}
           />
         </Grid>
         <Grid
