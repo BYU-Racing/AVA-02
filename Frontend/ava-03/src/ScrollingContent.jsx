@@ -25,7 +25,7 @@ const contentBoxStyles = {
 };
 
 const headingStyles = {
-  fontFamily: "avaFont, sans-serif",
+  fontFamily: "Roboto, sans-serif",
   marginBottom: "1rem",
   fontSize: "clamp(2rem, 5vw, 5rem)",
 };
@@ -90,7 +90,7 @@ const ScrollingContent = () => {
       >
         <motion.h1
           style={{
-            fontFamily: "avaFont, sans-serif",
+            fontFamily: "Roboto, sans-serif",
             marginBottom: "1px",
             fontSize: "clamp(3rem, 10vw, 10rem)",
           }}

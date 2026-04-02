@@ -20,6 +20,26 @@ function DataView({
   const [globalZoomHistory, setGlobalZoomHistory] = useState([]);
   const [globalZoomed, setGlobalZoomed] = useState(false);
 
+  const getInitialSeriesData = async (driveId, sensorId) => {
+    const normalizedDriveId = String(driveId);
+    const normalizedSensorId = String(sensorId);
+    const fetchKey = `${normalizedDriveId}:${normalizedSensorId}`;
+
+    if (cachedData[normalizedDriveId]?.[normalizedSensorId]) {
+      return cachedData[normalizedDriveId][normalizedSensorId];
+    }
+
+    if (pendingFetches.current[fetchKey]) {
+      try {
+        return await pendingFetches.current[fetchKey];
+      } catch (error) {
+        console.error("Pending sensor prefetch failed:", error);
+      }
+    }
+
+    return [];
+  };
+
   const handleDrop = async (event, targetChartId = null) => {
     event.preventDefault();
     event.stopPropagation();
@@ -42,7 +62,7 @@ function DataView({
     setLoading(true);
 
     try {
-      let timeSeriesData = [];
+      const timeSeriesData = await getInitialSeriesData(driveId, sensorId);
 
       if (targetChartIndex >= 0) {
         const updatedCharts = [...sensorDataArray];
@@ -113,6 +133,8 @@ function DataView({
                   chartId={chartId}
                   sensorIds={sensorIds}
                   dataSets={dataSets}
+                  cachedData={cachedData}
+                  pendingFetches={pendingFetches}
                   onRemove={() => removeChart(chartId)}
                   onDrop={(event) => {
                     event.stopPropagation();

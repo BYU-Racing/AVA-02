@@ -32,7 +32,7 @@
 }
 
 .telemetry-dashboard {
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
@@ -149,7 +149,7 @@
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-size: 0.825rem;
   font-weight: 500;
   cursor: pointer;
@@ -215,7 +215,7 @@
 }
 
 .stat-header {
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 1px;
@@ -225,7 +225,7 @@
 }
 
 .stat-value-large {
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-size: 5.625rem;
   font-weight: 700;
   line-height: 1;
@@ -234,7 +234,7 @@
 }
 
 .stat-value-medium {
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-size: 2.8125rem;
   font-weight: 600;
   line-height: 1;
@@ -307,7 +307,7 @@
 }
 
 .section-header {
-  font-family: 'avaFont', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: 1px;
@@ -377,7 +377,7 @@
 .feed-content {
   flex: 1;
   overflow-y: auto;
-  font-family: 'Courier New', monospace;
+  font-family: "Roboto", sans-serif;
   font-size: 1.0125rem;
   line-height: 1.8;
 }

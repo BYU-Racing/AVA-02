@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { useState, useMemo, useEffect } from "react";
 import "./LineChartComponent.css";
+import { formatTelemetryTimestamp } from "./timeFormatting";
 
 function LineChartComponent({
   dataSets,
@@ -98,9 +99,14 @@ function LineChartComponent({
           allowDataOverflow
           domain={[left, right]}
           type="number"
+          tickFormatter={(value) =>
+            formatTelemetryTimestamp(value, { compact: true })
+          }
         />
         <YAxis domain={min0 ? [0, "dataMax+1"] : [minValue, "dataMax+1"]} />
-        <Tooltip />
+        <Tooltip
+          labelFormatter={(value) => formatTelemetryTimestamp(value)}
+        />
         <Legend />
         {dataSets.map(({ sensorId, data }, index) => (
           <Line

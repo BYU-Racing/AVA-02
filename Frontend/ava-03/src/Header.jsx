@@ -62,7 +62,7 @@ const Header = () => {
         <Typography
           variant="h4"
           component="div"
-          fontFamily="avaFont"
+          fontFamily="Roboto"
           sx={{ flexGrow: 1, fontSize: "2.1rem" }}
         >
           {value === "/live-telemetry" ? "AVA-02 LIVE" : "AVA-02"}

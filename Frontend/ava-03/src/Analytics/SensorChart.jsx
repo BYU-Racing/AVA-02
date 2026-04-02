@@ -27,6 +27,8 @@ function SensorChart({
   chartId,
   sensorIds,
   dataSets,
+  cachedData,
+  pendingFetches,
   onRemove,
   onDrop,
   setGlobalZoomBounds,
@@ -57,6 +59,11 @@ function SensorChart({
   const [newDataSets, setNewDataSets] = useState([]);
 
   const [loadingData, setLoadingData] = useState(true);
+  const sensorKey = sensorIds
+    .map(({ driveId, sensorId }) => `${driveId}:${sensorId}`)
+    .join("|");
+  const activeLeft = globalZoom ? globalZoomBounds.left : left;
+  const activeRight = globalZoom ? globalZoomBounds.right : right;
 
   const handleGlobalZoomExcludeSwitch = (event) => {
     setGlobalZoom(event.target.checked);
@@ -83,11 +90,7 @@ function SensorChart({
     if (globalZoom) {
       setZoomHistory(globalZoomHistory);
     }
-  }, [globalZoomHistory]);
-
-  useEffect(() => {
-    handleZoomQuery(left, right);
-  }, [left, right, sensorIds.length]);
+  }, [globalZoom, globalZoomHistory]);
 
   const zoomToPrevious = () => {
     let prevZoom;
@@ -109,14 +112,41 @@ function SensorChart({
     }
   };
 
-  useEffect(() => {
-    handleZoomQuery(globalZoomBounds.left, globalZoomBounds.right);
-  }, []);
+  const getPrefetchedSeries = async (driveId, sensorId) => {
+    const normalizedDriveId = String(driveId);
+    const normalizedSensorId = String(sensorId);
+    const fetchKey = `${normalizedDriveId}:${normalizedSensorId}`;
+
+    if (cachedData?.[normalizedDriveId]?.[normalizedSensorId]) {
+      return cachedData[normalizedDriveId][normalizedSensorId];
+    }
+
+    if (pendingFetches?.current?.[fetchKey]) {
+      try {
+        return await pendingFetches.current[fetchKey];
+      } catch (error) {
+        console.error("Pending chart prefetch failed:", error);
+      }
+    }
+
+    return null;
+  };
 
   const handleZoomQuery = async (nLeft, nRight) => {
-    //console.log("handling zoom query for ", sensorIds);
     setLoadingData(true);
     try {
+      const requestedLeft = nLeft;
+      const requestedRight = nRight;
+      const isFullRange =
+        (requestedLeft === "dataMin" || requestedLeft === 0) &&
+        (requestedRight === "dataMax" || requestedRight === -1);
+
+      if (isFullRange && dataSets.every(({ data }) => Array.isArray(data) && data.length > 0)) {
+        setNewDataSets(dataSets);
+        setLoadingData(false);
+        return dataSets;
+      }
+
       if (nLeft === "dataMin") {
         nLeft = 0;
       }
@@ -126,26 +156,40 @@ function SensorChart({
 
       const tempDataSets = await Promise.all(
         sensorIds.map(async ({ driveId, sensorId }) => {
+          if (isFullRange) {
+            const prefetchedData = await getPrefetchedSeries(driveId, sensorId);
+            if (prefetchedData && prefetchedData.length > 0) {
+              return { driveId, sensorId, data: prefetchedData };
+            }
+          }
+
           const response = await fetch(
             `/api/data/${driveId}/${sensorId}/${nLeft}/${nRight}`
           );
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch chart data for ${driveId}:${sensorId} (${response.status})`
+            );
+          }
           const canMessages = await response.json();
-          let timeSeriesData;
-
-          timeSeriesData = CANtoTimeseries(canMessages, sensorId);
-
-          setLoadingData(false);
+          const timeSeriesData = CANtoTimeseries(canMessages, sensorId);
 
           return { driveId, sensorId, data: timeSeriesData };
         })
       );
 
       setNewDataSets(tempDataSets);
+      setLoadingData(false);
       return tempDataSets;
     } catch (error) {
       console.error("Error in handleZoomQuery:", error);
+      setLoadingData(false);
     }
   };
+
+  useEffect(() => {
+    handleZoomQuery(activeLeft, activeRight);
+  }, [activeLeft, activeRight, sensorKey]);
 
   const handleZoomOut = () => {
     if (globalZoom) {

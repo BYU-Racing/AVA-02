@@ -7,6 +7,7 @@ import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
 import Paper from "@mui/material/Paper";
 import { useState } from "react";
+import { formatTelemetryTimestamp } from "./timeFormatting";
 
 function ErrorCodesTableComponent({
   data,
@@ -58,7 +59,7 @@ function ErrorCodesTableComponent({
                   key={`${row.timestamp}-${index}`}
                   sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                 >
-                  <TableCell>{row.timestamp}</TableCell>
+                  <TableCell>{formatTelemetryTimestamp(row.timestamp)}</TableCell>
                   <TableCell>{errorMap[row.value]}</TableCell>
                   <TableCell>{row.value}</TableCell>
                 </TableRow>
