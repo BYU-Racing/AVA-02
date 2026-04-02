@@ -94,23 +94,45 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
     throw new Error(errorMessage);
   };
 
+  const syncCachedDataWithDrives = (drives) => {
+    setCachedData((prev) => {
+      const next = {};
+
+      drives.forEach((drive) => {
+        const driveKey = String(drive.drive_id);
+        next[driveKey] = prev[driveKey] || {};
+      });
+
+      return next;
+    });
+  };
+
   // Fetch drives on component mount
   const getDrives = async () => {
     async function fetchDrives() {
       const response = await fetch("/api/drive");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch drives (${response.status})`);
+      }
       const data = await response.json();
       return data;
     }
 
-    const drives = await fetchDrives();
-    setDriveList(drives);
+    try {
+      const drives = await fetchDrives();
+      setDriveList(drives);
+      syncCachedDataWithDrives(drives);
+    } catch (error) {
+      console.error("Failed to refresh drives for analytics:", error);
+    }
   };
 
   useEffect(() => {
-    if (driveList.length === 0) {
-      getDrives();
-    }
-  }, [driveList]);
+    getDrives();
+    // Intentionally refresh every time Analytics mounts so live drives
+    // created elsewhere in the SPA show up without a full page reload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Box sx={{ flexGrow: 1, height: "calc(100vh - 70px)" }}>
