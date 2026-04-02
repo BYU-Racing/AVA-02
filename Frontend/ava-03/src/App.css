@@ -28,6 +28,13 @@
   color: #61dafb;
 }
 
+@font-face {
+  font-family: "avaFont";
+  src: url("./Assets/skyrox-mediumcondensed.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

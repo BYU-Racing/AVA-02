@@ -90,7 +90,7 @@ const ScrollingContent = () => {
       >
         <motion.h1
           style={{
-            fontFamily: "Roboto, sans-serif",
+            fontFamily: "avaFont, sans-serif",
             marginBottom: "1px",
             fontSize: "clamp(3rem, 10vw, 10rem)",
           }}
