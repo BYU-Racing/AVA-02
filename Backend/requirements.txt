@@ -6,4 +6,4 @@ python-multipart==0.0.20
 pydantic==2.10.3
 pandas==2.2.3
 websockets==13.1
-protobuf==6.28.0
+protobuf
