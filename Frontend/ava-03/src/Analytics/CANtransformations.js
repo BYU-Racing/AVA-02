@@ -5,6 +5,36 @@ export const transformCANMessagesToTimeSeriesDIGITAL = (canMessages) => {
   }));
 };
 
+const decodeInt32LE = (rawData, offset = 0) => {
+  const bytes = rawData.slice(offset, offset + 4);
+  while (bytes.length < 4) {
+    bytes.push(0);
+  }
+
+  const view = new DataView(new Uint8Array(bytes).buffer);
+  return view.getInt32(0, true);
+};
+
+const decodeUint32LE = (rawData, offset = 0) => {
+  const bytes = rawData.slice(offset, offset + 4);
+  while (bytes.length < 4) {
+    bytes.push(0);
+  }
+
+  const view = new DataView(new Uint8Array(bytes).buffer);
+  return view.getUint32(0, true);
+};
+
+const decodeFloat32LE = (rawData, offset = 0) => {
+  const bytes = rawData.slice(offset, offset + 4);
+  while (bytes.length < 4) {
+    bytes.push(0);
+  }
+
+  const view = new DataView(new Uint8Array(bytes).buffer);
+  return view.getFloat32(0, true);
+};
+
 export const transformCANMessagesToTimeSeriesANALOG = (canMessages) => {
   return canMessages.map((message) => ({
     timestamp: message.time,
@@ -63,25 +93,42 @@ export const transformCANMessagesToTimeSeriesACCEL = (canMessages) => {
   });
 };
 
+export const transformCANMessagesToTimeSeriesLiveRVC = (canMessages) => {
+  return canMessages.map((message) => ({
+    timestamp: message.time,
+    value: decodeInt32LE(message.raw_data, 1),
+  }));
+};
+
+export const transformCANMessagesToTimeSeriesLiveTireRPM = (canMessages) => {
+  return canMessages.map((message) => ({
+    timestamp: message.time,
+    value: decodeUint32LE(message.raw_data, 1),
+  }));
+};
+
+export const transformCANMessagesToTimeSeriesLiveTireTemp = (canMessages) => {
+  return canMessages.map((message) => ({
+    timestamp: message.time,
+    value: ((message.raw_data[6] ?? 0) << 8) | (message.raw_data[5] ?? 0),
+  }));
+};
+
 export const transformCANmessagesToTimeSeriesGPS = (canMessages) => {
   return canMessages.map((message) => {
-    let buffer = new ArrayBuffer(4);
-    let view = new DataView(buffer);
+    let lat = decodeFloat32LE(message.raw_data, 0);
+    let long = decodeFloat32LE(message.raw_data, 4);
 
-    for (let i = 0; i < 4; i++) {
-      view.setUint8(i, message.raw_data[i]);
+    const floatLooksValid =
+      Number.isFinite(lat) &&
+      Number.isFinite(long) &&
+      Math.abs(lat) <= 90 &&
+      Math.abs(long) <= 180;
+
+    if (!floatLooksValid) {
+      lat = decodeInt32LE(message.raw_data, 0) / 1e7;
+      long = decodeInt32LE(message.raw_data, 4) / 1e7;
     }
-
-    let lat = view.getFloat32(0, true);
-
-    buffer = new ArrayBuffer(4);
-    view = new DataView(buffer);
-
-    for (let i = 0; i < 4; i++) {
-      view.setUint8(i, message.raw_data[i + 4]);
-    }
-
-    let long = view.getFloat32(0, true);
 
     return {
       timestamp: message.time,
@@ -95,6 +142,12 @@ export const CANtoTimeseries = (canMessages, sensorId) => {
 
   if (sensorId === "0") {
     timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
+  } else if (sensorId === "4") {
+    timeSeriesData = transformCANMessagesToTimeSeriesLiveRVC(canMessages);
+  } else if (sensorId === "5") {
+    timeSeriesData = transformCANMessagesToTimeSeriesLiveTireRPM(canMessages);
+  } else if (sensorId === "6") {
+    timeSeriesData = transformCANMessagesToTimeSeriesLiveTireTemp(canMessages);
   } else if (sensorId === "192") {
     timeSeriesData = transformCANMessagesToTimeSeriesTORQUE(canMessages);
   } else if (sensorId === "500" || sensorId === "501" || sensorId === "502") {
@@ -112,6 +165,8 @@ export const CANtoTimeseries = (canMessages, sensorId) => {
     timeSeriesData = transforCANMessagesToTimeSeriesHEALTH(canMessages);
   } else if (sensorId === "9") {
     timeSeriesData = transformCANmessagesToTimeSeriesGPS(canMessages);
+  } else if (sensorId === "10") {
+    timeSeriesData = transformCANMessagesToTimeSeriesDIGITAL(canMessages);
   } else {
     timeSeriesData = transformCANMessagesToTimeSeriesANALOG(canMessages);
   }
