@@ -1,0 +1,6 @@
+version: v1
+plugins:
+  - name: python
+    out: Backend/protobuf
+  - name: es
+    out: Frontend/ava-03/src/protobuf

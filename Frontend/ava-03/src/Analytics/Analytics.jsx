@@ -4,6 +4,8 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid"; // Use Grid instead of Grid2
 import { useState, useEffect, useRef } from "react";
 
+const DRIVE_REFRESH_INTERVAL_MS = 15000;
+
 function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
   // Ensure correct destructuring
   const [sensorData, setSensorData] = useState({}); // Stores sensor data for each drive
@@ -129,8 +131,13 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
 
   useEffect(() => {
     getDrives();
-    // Intentionally refresh every time Analytics mounts so live drives
-    // created elsewhere in the SPA show up without a full page reload.
+    const intervalId = setInterval(() => {
+      getDrives();
+    }, DRIVE_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+    // Intentionally refresh every time Analytics mounts and periodically
+    // afterwards so newly-created live drives appear without a full reload.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

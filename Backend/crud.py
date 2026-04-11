@@ -35,14 +35,25 @@ def create_driver(db: Session, user: schemas.DriverCreate):
 def get_unique_sensors_from_drive(db: Session, drive_id: int):
     return db.query(distinct(models.RawData.msg_id)).filter(models.RawData.drive_id == drive_id).all()
 
-def get_drives(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Drive).offset(skip).limit(limit).all()
+def get_drives(db: Session, skip: int = 0, limit: int = 500):
+    return (
+        db.query(models.Drive)
+        .order_by(models.Drive.drive_id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 def get_drive(db: Session, drive_id: int):
     return db.query(models.Drive).filter(models.Drive.drive_id == drive_id).first()
 
 def get_drives_by_driver(db: Session, driver_id: int):
-    return db.query(models.Drive).filter(models.Drive.driver_id == driver_id).all()
+    return (
+        db.query(models.Drive)
+        .filter(models.Drive.driver_id == driver_id)
+        .order_by(models.Drive.drive_id.desc())
+        .all()
+    )
 
 def get_drive_by_hash(db: Session, hash: str):
     return db.query(models.Drive).filter(models.Drive.hash == hash).first()

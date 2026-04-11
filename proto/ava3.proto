@@ -1,0 +1,11 @@
+// ava3 telemtry message definition
+
+syntax = "proto3";
+
+package ava3;
+message Telemetry {
+    string type = 1;
+    string timestamp = 2;
+    uint32 id = 3;
+    repeated string data = 4;
+}
