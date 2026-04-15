@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10proto/ava3.proto\x12\x04\x61va3\"a\n\tTelemetry\x12\x12\n\x04type\x18\x01 \x01(\tR\x04type\x12\x1c\n\ttimestamp\x18\x02 \x01(\tR\ttimestamp\x12\x0e\n\x02id\x18\x03 \x01(\rR\x02id\x12\x12\n\x04\x64\x61ta\x18\x04 \x03(\tR\x04\x64\x61tab\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10proto/ava3.proto\x12\x04\x61va3\"f\n\tTelemetry\x12\x12\n\x04type\x18\x01 \x01(\tR\x04type\x12!\n\x0ctimestamp_ms\x18\x02 \x01(\x04R\x0btimestampMs\x12\x0e\n\x02id\x18\x03 \x01(\rR\x02id\x12\x12\n\x04\x64\x61ta\x18\x04 \x03(\x02R\x04\x64\x61tab\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,5 +32,5 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.ava3_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_TELEMETRY']._serialized_start=26
-  _globals['_TELEMETRY']._serialized_end=123
+  _globals['_TELEMETRY']._serialized_end=128
 # @@protoc_insertion_point(module_scope)

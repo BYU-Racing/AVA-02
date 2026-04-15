@@ -3,9 +3,10 @@
 syntax = "proto3";
 
 package ava3;
+
 message Telemetry {
     string type = 1;
-    string timestamp = 2;
+    uint64 timestamp_ms = 2;
     uint32 id = 3;
-    repeated string data = 4;
+    repeated float data = 4;
 }

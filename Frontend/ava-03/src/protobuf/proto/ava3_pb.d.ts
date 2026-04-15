@@ -18,9 +18,9 @@ export declare class Telemetry extends Message<Telemetry> {
   type: string;
 
   /**
-   * @generated from field: string timestamp = 2;
+   * @generated from field: uint64 timestamp_ms = 2;
    */
-  timestamp: string;
+  timestampMs: bigint;
 
   /**
    * @generated from field: uint32 id = 3;
@@ -28,9 +28,9 @@ export declare class Telemetry extends Message<Telemetry> {
   id: number;
 
   /**
-   * @generated from field: repeated string data = 4;
+   * @generated from field: repeated float data = 4;
    */
-  data: string[];
+  data: number[];
 
   constructor(data?: PartialMessage<Telemetry>);
 

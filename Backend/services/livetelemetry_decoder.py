@@ -63,10 +63,10 @@ def convert_decoded_can_data(decoded: Dict) -> Dict:
     }
     Output format expected by the new React component:
     {
-      type: "telemetry",
-      timestamp: "<iso8601>",
-      id: <int 0-255>,
-      data: "<integer as string>" OR ["<...>", "<...>"]
+      string type: "telemetry",
+      uint64 timestamp_ms: "<iso8601>",
+      uint32 id: <int 0-255>,
+      repeated float data: list of floats
     }
     '''
     msg_id = decoded["id"]

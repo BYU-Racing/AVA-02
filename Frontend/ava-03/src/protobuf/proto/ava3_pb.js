@@ -14,9 +14,9 @@ export const Telemetry = /*@__PURE__*/ proto3.makeMessageType(
   "ava3.Telemetry",
   () => [
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "timestamp", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "timestamp_ms", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 3, name: "id", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "data", kind: "scalar", T: 2 /* ScalarType.FLOAT */, repeated: true },
   ],
 );
 
