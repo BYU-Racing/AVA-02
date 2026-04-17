@@ -11,6 +11,9 @@ Frontend/ava-vite/.env.*
 Backend/secrets.py
 # Backend/configDB.py
 Backend/__pycache__/*
+__pycache__/*
+*.py[cod]
+*$py.class
 
 *.zip
 node_modules
