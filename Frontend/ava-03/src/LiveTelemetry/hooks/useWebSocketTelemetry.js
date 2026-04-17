@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Telemetry } from "../../protobuf/proto/ava3_pb";
 
 // Configuration
 const WS_URL = (import.meta.env.VITE_WS_URL?.trim())
@@ -37,6 +38,7 @@ export function useWebSocketTelemetry(onMessage) {
     try {
       console.log("Connecting to WebSocket:", WS_URL);
       const ws = new WebSocket(WS_URL);
+      ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
         console.log("WebSocket Connected!");
@@ -45,6 +47,25 @@ export function useWebSocketTelemetry(onMessage) {
 
       ws.onmessage = (event) => {
         try {
+          if (typeof event.data !== "string") {
+            const telemetry = Telemetry.fromBinary(new Uint8Array(event.data));
+            const data = {
+              type: telemetry.type,
+              timestamp: Number(telemetry.timestampMs),
+              timestamp_ms: Number(telemetry.timestampMs),
+              id: telemetry.id,
+              data: telemetry.data,
+            };
+
+            if (data.type === "telemetry") {
+              setSenderConnected(true);
+              if (onMessage) {
+                onMessage(data);
+              }
+            }
+            return;
+          }
+
           const data = JSON.parse(event.data);
 
           if (data.type === "connection") {

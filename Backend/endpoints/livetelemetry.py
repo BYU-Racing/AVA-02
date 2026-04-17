@@ -78,6 +78,20 @@ class ConnectionManager:
         # Clean up dead connections
         for conn in disconnected:
             await self.disconnect(conn)
+    
+    async def broadcast_bytes(self, message: bytes):
+        disconnected: List[WebSocket] = []
+
+        for conn in self.active_connections:
+            try:
+                await conn.send_bytes(message)
+            except Exception as e:
+                logger.error(f"Error sending to client: {e}")
+                disconnected.append(conn)
+
+        # Clean up dead connections
+        for conn in disconnected:
+            await self.disconnect(conn)
 
 
 # ========== Functions for adding data to database ===========
@@ -328,8 +342,9 @@ async def websocket_sendpoint(websocket: WebSocket):
                             exc
                         )
 
+            # Put decoded_packet through CAN_DBC decoder
             sensor_data = convert_decoded_can_data(decoded_packet)
-            await manager.broadcast(sensor_data)
+            await manager.broadcast_bytes(sensor_data.SerializeToString())
     
     except WebSocketDisconnect:
         pass

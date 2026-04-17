@@ -1,0 +1,244 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: DCR DCF Inverter
+VAL_TABLE_ InverterCommandMode 1 "VSM Mode" 0 "CAN Mode" ;
+VAL_TABLE_ InverterActiveDischargeState 4 "Discharge Completed" 3 "Discharge Actively occurring" 2 "Performing Speed Check" 1 "Discharge Enabled, waiting" 0 "Discharge Disabled" ;
+VAL_TABLE_ SelfSensingAssistEnable 1 "Enabled" 0 "Disabled" ;
+VAL_TABLE_ InverterRunMode 1 "Speed Mode" 0 "Torque Mode" ;
+VAL_TABLE_ RelayState 5 "Relay 6 Status" 4 "Relay 5 Status" 3 "Relay 4 Status" 2 "Relay 3 Status" 1 "Relay 2 Status" 0 "Relay 1 Status" ;
+VAL_TABLE_ InverterState 12 "Internal" 11 "Internal" 10 "Internal" 9 "Idle Stop" 8 "Idle Run" 7 "Internal" 6 "Internal" 5 "Internal" 4 "Wait" 3 "Closed Loop" 2 "Open Loop" 1 "Stop" 0 "Power On" ;
+VAL_TABLE_ VSMState 15 "Recycle Power" 14 "Shutdown in Process" 7 "Blink Fault Code" 6 "Motor Running" 5 "VSM Ready" 4 "VSM Wait" 3 "Pre-charge Complete" 2 "Pre-charge Active" 1 "Pre-charge Init" 0 "VSM Start" ;
+VAL_TABLE_ Write_Success 1 "Success" 0 "Not Written" ;
+VAL_TABLE_ Read_Write 1 "Write" 0 "Read" ;
+
+
+BO_ 170 InternalStates: 8 Inverter
+ SG_ InverterRollingCounter : 44|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ InverterCommandMode : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ InverterDischarge : 37|3@1+ (1,0) [0|4] "" Vector__XXX
+ SG_ SelfSensingAssistActive : 33|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ InverterRunModeState : 32|1@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ RelayState : 24|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ InverterState : 16|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ PWMFrequency : 8|8@1+ (1,0) [0|255] "kHz" Vector__XXX
+ SG_ VSMState : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+
+BO_ 193 ParameterCommand: 8 Inverter
+ SG_ ParamCommand_Data : 32|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ ParamCom_RW : 16|8@1- (1,0) [0|1] "" Vector__XXX
+ SG_ ParamCom_ParameterAddress : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 194 ParameterResponse: 8 Inverter
+ SG_ ParamResp_Data : 32|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ ParamResp_Success : 16|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ParamResp_ParameterAddress : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 192 ControlCommand: 8 Inverter
+ SG_ TorqueLimit : 48|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+ SG_ CC_Unused : 43|5@1- (1,0) [0|0] "" Vector__XXX
+ SG_ OverrideSpeed : 42|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Discharge : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ EnableInverter : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Direction : 32|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Speed : 16|16@1- (1,0) [-32768|32767] "RPM" Vector__XXX
+ SG_ Torque : 0|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+
+BO_ 177 TorqueCapability: 8 Inverter
+ SG_ TorqueCapability : 0|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+
+BO_ 176 HighSpeed: 8 Inverter
+ SG_ DCBusVoltage : 48|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ MotorSpeed : 32|16@1- (1,0) [-32768|32767] "RPM" Vector__XXX
+ SG_ TorqueFeedback : 16|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+ SG_ TorqueCommand : 0|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+
+BO_ 173 ModulationIndex: 8 Inverter
+ SG_ IqCommand : 48|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ IdCommand : 32|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ FluxWeakeningOutput : 16|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ ModulationIndex : 0|16@1- (1,0) [-32768|32767] "0.01x" Vector__XXX
+
+BO_ 172 TorqueAndTimerInfo: 8 Inverter
+ SG_ PowerOnTimer : 32|32@1+ (1,0) [0|4294967295] "3ms" Vector__XXX
+ SG_ TorqueFeedback : 16|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+ SG_ CommandedTorque : 0|16@1- (1,0) [-32768|32767] "0.1Nm" Vector__XXX
+
+BO_ 171 FaultCodes: 8 Inverter
+ SG_ RunFaultHigh : 48|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ RunFaultLow : 32|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ POSTFaultHigh : 16|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ POSTFaultLow : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 169 InternalVoltages: 8 Inverter
+ SG_ Reference12V : 48|16@1- (1,0) [-32768|32767] "0.01V" Vector__XXX
+ SG_ Reference5_0V : 32|16@1- (1,0) [-32768|32767] "0.01V" Vector__XXX
+ SG_ Reference2_5V : 16|16@1- (1,0) [-32768|32767] "0.01V" Vector__XXX
+ SG_ Reference1_5V : 0|16@1- (1,0) [-32768|32767] "0.01V" Vector__XXX
+
+BO_ 168 FluxInfo: 8 Inverter
+ SG_ IqFeedback : 48|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+ SG_ IdFeedback : 32|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+ SG_ FluxFeedback : 16|16@1- (1,0) [-32768|32767] "mWb" Vector__XXX
+ SG_ FluxCommand : 0|16@1- (1,0) [-32768|32767] "mWb" Vector__XXX
+
+BO_ 167 VoltageInfo: 8 Inverter
+ SG_ VBC_Voltage : 48|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ VAB_Voltage : 32|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ OutputVoltage : 16|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+ SG_ DCBusVoltage : 0|16@1- (1,0) [-32768|32767] "0.1V" Vector__XXX
+
+BO_ 166 CurrentInfo: 8 Inverter
+ SG_ DCBusCurrent : 48|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+ SG_ PhaseCCurrent : 32|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+ SG_ PhaseBCurrent : 16|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+ SG_ PhaseACurrent : 0|16@1- (1,0) [-32768|32767] "0.1A" Vector__XXX
+
+BO_ 165 MotorPositionInfo: 8 Inverter
+ SG_ DeltaResolverAngle : 48|16@1- (1,0) [-32768|32767] "0.1deg" Vector__XXX
+ SG_ ElectricalFrequency : 32|16@1- (1,0) [-32768|32767] "0.1Hz" Vector__XXX
+ SG_ MotorSpeed : 16|16@1- (1,0) [-32768|32767] "RPM" Vector__XXX
+ SG_ MotorAngle : 0|16@1- (1,0) [-32768|32767] "0.1deg" Vector__XXX
+
+BO_ 164 DigitalInputStatus: 8 Inverter
+ SG_ DigitalInput8 : 56|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ValetMode : 48|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ StartSwitch : 40|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ IgnitionSwitch : 32|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ REGENDisableSwitch : 24|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BrakeSwitch : 16|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ReverseSwitch : 8|8@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ForwardSwitch : 0|8@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 163 AnalogInputVoltages: 8 Inverter
+ SG_ AnalogInput4 : 48|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ AnalogInput3 : 32|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ AnalogInput2 : 16|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ AnalogInput1 : 0|16@1- (1,0) [-32768|32767] "" Vector__XXX
+
+BO_ 162 MotorTemps: 8 Inverter
+ SG_ TorqueShudder : 48|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ MotorTemp : 32|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ HotSpotTemp : 16|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ CoolantTemp : 0|16@1- (1,0) [-32768|32767] "" Vector__XXX
+
+BO_ 161 ControlBoardTemp: 8 Inverter
+ SG_ RTD3 : 48|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RTD2 : 32|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RTD1 : 16|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ ControlBoardTemp : 0|16@1- (1,0) [-32768|32767] "" Vector__XXX
+
+BO_ 160 InverterTemps: 8 Inverter
+ SG_ GateDriverTemp : 48|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ TempPhaseC : 32|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ TempPhaseB : 16|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ TempPhaseA : 0|16@1- (1,0) [-32768|32767] "" Vector__XXX
+
+BO_ 6 TireTemperature: 7 DCR
+ SG_ RearRight_Temp_Mid m3 : 40|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RearRight_Temp_Out m3 : 24|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RearLeft_Temp_Mid m2 : 40|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RearLeft_Temp_Out m2 : 24|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontRight_Temp_Mid m1 : 40|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontRight_Temp_Out m1 : 24|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontLeft_Temp_Mid m0 : 40|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontLeft_Temp_Out m0 : 24|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RearRight_Temp_In m3 : 8|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ RearLeft_Temp_In m2 : 8|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontRight_Temp_In m1 : 8|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ FrontLeft_Temp_In m0 : 8|16@1- (1,0) [-32768|32767] "" Vector__XXX
+ SG_ TireTemperature_MultiPlex M : 0|8@1+ (1,0) [0|3] "" Vector__XXX
+
+BO_ 5 TireRPM: 5 DCR
+ SG_ RearRight m3 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ RearLeft m2 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ FrontRight m1 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ FrontLeft m0 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ TireRPM_MultiPlex M : 0|8@1+ (1,0) [0|3] "" Vector__XXX
+
+BO_ 4 RVC: 5 DCR
+ SG_ Y_Rotation m4 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ Z_Rotation m5 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ X_Rotation m3 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ Z_Acceleration m2 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ Y_Acceleration m1 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ X_Acceleration m0 : 8|32@1- (1,0) [-3.4E+38|3.4E+38] "" Vector__XXX
+ SG_ RVC_MultiPlex M : 0|8@1+ (1,0) [0|5] "" Vector__XXX
+
+BO_ 9 GPS: 8 DCR
+ SG_ GPSLatitude : 32|32@1- (1,0) [-2147483648|2147483647] "" Vector__XXX
+ SG_ GPSLongitude : 0|32@1- (1,32) [-2147483616|2147483679] "" Vector__XXX
+
+BO_ 0 StartSwitch: 1 DCF
+ SG_ StartSwitch : 0|8@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 1 Throttle1Position: 2 DCF
+ SG_ Throttle1Position : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 2 Throttle2Position: 2 DCF
+ SG_ Throttle2Position : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 3 BrakePressure: 2 DCF
+ SG_ Brake : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+
+
+CM_ SG_ 1 Throttle1Position "throttle 1 pos sensor";
+CM_ SG_ 2 Throttle2Position "Throttle 2 pos sensor";
+CM_ SG_ 3 Brake "Brake sensor";
+BA_DEF_  "MultiplexExtEnabled" ENUM  "No","Yes";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_DEF_  "MultiplexExtEnabled" "No";
+BA_DEF_DEF_  "BusType" "CAN";
+VAL_ 170 InverterCommandMode 1 "VSM Mode" 0 "CAN Mode" ;
+VAL_ 170 InverterDischarge 4 "Discharge Completed" 3 "Discharge Actively occurring" 2 "Performing Speed Check" 1 "Discharge Enabled, waiting" 0 "Discharge Disabled" ;
+VAL_ 170 SelfSensingAssistActive 1 "Enabled" 0 "Disabled" ;
+VAL_ 170 InverterRunModeState 1 "Speed Mode" 0 "Torque Mode" ;
+VAL_ 170 RelayState 5 "Relay 6 Status" 4 "Relay 5 Status" 3 "Relay 4 Status" 2 "Relay 3 Status" 1 "Relay 2 Status" 0 "Relay 1 Status" ;
+VAL_ 170 InverterState 12 "Internal" 11 "Internal" 10 "Internal" 9 "Idle Stop" 8 "Idle Run" 7 "Internal" 6 "Internal" 5 "Internal" 4 "Wait" 3 "Closed Loop" 2 "Open Loop" 1 "Stop" 0 "Power On" ;
+VAL_ 170 VSMState 15 "Recycle Power" 14 "Shutdown in Process" 7 "Blink Fault Code" 6 "Motor Running" 5 "VSM Ready" 4 "VSM Wait" 3 "Pre-charge Complete" 2 "Pre-charge Active" 1 "Pre-charge Init" 0 "VSM Start" ;
+VAL_ 193 ParamCom_RW 1 "Write" 0 "Read" ;
+VAL_ 194 ParamResp_Success 1 "Success" 0 "Not Written" ;
+SIG_VALTYPE_ 5 RearRight : 1;
+SIG_VALTYPE_ 5 RearLeft : 1;
+SIG_VALTYPE_ 5 FrontRight : 1;
+SIG_VALTYPE_ 5 FrontLeft : 1;
+SIG_VALTYPE_ 4 Y_Rotation : 1;
+SIG_VALTYPE_ 4 Z_Rotation : 1;
+SIG_VALTYPE_ 4 X_Rotation : 1;
+SIG_VALTYPE_ 4 Z_Acceleration : 1;
+SIG_VALTYPE_ 4 Y_Acceleration : 1;
+SIG_VALTYPE_ 4 X_Acceleration : 1;
+
