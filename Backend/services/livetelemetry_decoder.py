@@ -6,10 +6,12 @@ from typing import List, Dict
 import struct
 import os
 import cantools
+from pathlib import Path
 from Backend.protobuf.proto.ava3_pb2 import Telemetry
 
-CAN_DBC_PATH = os.getenv("CAN_DBC_PATH", "../candb/BYU_Racing_CAN.dbc")
-CAN_DB = cantools.database.load_file(CAN_DBC_PATH)
+DEFAULT_CAN_DBC_PATH = Path(__file__).resolve().parents[1] / "candb" / "BYU_Racing_CAN.dbc"
+CAN_DBC_PATH = Path(os.getenv("CAN_DBC_PATH", DEFAULT_CAN_DBC_PATH))
+CAN_DB = cantools.database.load_file(str(CAN_DBC_PATH))
 
 # Expected format of incoming data from Pi (17 bytes total):
 PI_TO_SERVER_FMT = "<I I B 8s"
@@ -26,30 +28,36 @@ def decode_can_dbc(decoded_packet) -> tuple:
     msg_id = decoded_packet['id']
     msg_bytes = bytes(decoded_packet['bytes'][:decoded_packet['length']])
     
-    message = CAN_DB.get_message_by_frame_id(msg_id)
-    if message is None:
+    try:
+        message = CAN_DB.get_message_by_frame_id(msg_id)
+    except KeyError:
         print(f"Warning: No message found in DBC for ID {msg_id}")
-        return None
-    else:
-        signals = message.decode(
-            msg_bytes,
-            decode_choices=False,  # Keep raw values instead of mapping to enums
-            scaling=True,  # Apply scaling and offsets from DBC
-        )
+        return None, {}
+
+    signals = message.decode(
+        msg_bytes,
+        decode_choices=False,  # Keep raw values instead of mapping to enums
+        scaling=True,  # Apply scaling and offsets from DBC
+    )
     
     return message, signals
         
 def convert_decoded_can_data(decoded_packet: Dict) -> Telemetry:
     message, signals = decode_can_dbc(decoded_packet)
+    if message is None:
+        data = [float(value) for value in decoded_packet["bytes"]]
+    else:
+        data = [
+            float(signals[signal.name])
+            for signal in message.signals
+            if signal.name in signals
+        ]
 
     return Telemetry(
         type="telemetry",
         timestamp_ms=decoded_packet["timestamp"],
         id=decoded_packet["id"],
-        data=[float(signals[signal.name])
-              for signal in message.signals
-              if signal.name in signals
-        ],
+        data=data,
     )
     
 # Decodes incoming raw bytes from Pi to a structured dict for JSON
