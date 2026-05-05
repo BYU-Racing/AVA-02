@@ -2,7 +2,7 @@
 
 Third Generation BYU-Racing Analytics Application
 
-![AVA Image](./Frontend/ava-03/dist/favicon.ico)
+![AVA Image](./maxverstappen.jpg)
 
 ## Architecture
 
