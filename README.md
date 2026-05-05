@@ -2,7 +2,7 @@
 
 Third Generation BYU-Racing Analytics Application
 
-![AVA Image](./Frontend/ava-03/dist/ava2LogoREAL.png)
+![AVA Image](./Frontend/ava-03/dist/favicon.ico)
 
 ## Architecture
 
