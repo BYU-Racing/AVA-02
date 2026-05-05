@@ -1,4 +1,5 @@
-// ava3 telemtry message definition
+// ava3 telemetry message definition; for sending data
+//      from the backend to the frontend
 
 syntax = "proto3";
 

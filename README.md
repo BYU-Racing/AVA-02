@@ -1,23 +1,49 @@
-# AVA-02
+# AVA-03
 
-Second Generation BYU-Racing Analytics Application
+Third Generation BYU-Racing Analytics Application
+
+![AVA Image](./Frontend/ava-03/dist/ava2LogoREAL.png)
 
 ## Architecture
 
 - **Backend**: FastAPI (Python) with PostgreSQL database
-- **Frontend**: React application
-- **Deployment**: AWS Elastic Beanstalk with RDS PostgreSQL
+- **Frontend**: React application, run with Vite
+- **Deployment**: Deployed via a Docker container on an AWS EC2 instance
+
+### Backend
+
+Backend folder has `main.py`, from which everything runs. \
+--It technically runs `__init__.py` first, but that does nothing.
+
+`models.py` contains database models. \
+`schemas.py` contains schemas for CRUD (Create, Read, Update, Delete) operations. \
+`crud.py` has functions for CRUD. \
+`database.py` connects to the Database. \
+`configDB.py` configures the DB URL from env vars.
+
+`endpoints` folder contains DB endpoints and LiveTelemetry WebSocket endpoint. \
+`services` folder contains helper functions. \
+`protobuf` folder contains python protobuf file for Backend->Frontend data.
+
+### Frontend
+
+`.env.development` has VITE_WS_URL, for setting where the Frontend connects to the Backend. \
+`index.html` is the starter HTML page. \
+
+Rest of the stuff is self-explanatory.
 
 ## Getting Started
 
-###
+### Redeploy Changes
 
-To build the application, 
-- ```cd Frontend/ava-02```, then 
-- ```npm run build```
+To redeploy AVA, run from the base folder on Linux or WSL:
+- ```./autodeploy.sh```
 
-Then in the base folder in Linux or WSL,
-- ```./autodeploy.sh [version_name]```
+Optionally, you can also restart the database as well:
+- ```./autodeploy.sh --restart-db```
+
+If you change the `autodeploy.sh` script, do a `git pull`.
+
 
 ### Local Development
 
@@ -27,21 +53,6 @@ See [Setup_Guides/LOCAL_SETUP.md](Setup_Guides/LOCAL_SETUP.md)
 
 ### AWS Deployment
 
-To deploy to AWS Elastic Beanstalk:
+To deploy to AWS EC2:
 
 See [Setup_Guides/AWS_DEPLOYMENT.md](Setup_Guides/AWS_DEPLOYMENT.md)
-
-## Quick Start
-
-```bash
-# 1. Set up local environment
-See Setup_Guides/LOCAL_SETUP.md for detailed instructions
-
-# 2. Run locally
-uvicorn Backend.main:app --reload
-
-# 3. Deploy to AWS
-eb init
-eb create ava-production --database
-eb deploy
-```
