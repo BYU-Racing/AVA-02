@@ -5,6 +5,8 @@ set -euo pipefail
 RESTART_DB=false
 [[ "${1:-}" == "--restart-db" ]] && RESTART_DB=true
 
+echo "===== Starting AVA-03 auto-deployment! ====="
+
 echo "Pulling latest code from git repository..."
 git pull
 
@@ -16,6 +18,8 @@ docker compose up -d --no-deps --build web
 if $RESTART_DB; then
   echo "Restarting db service..."
   docker compose restart db
+else
+  echo "DB already running."
 fi
 
 echo "Deployment complete!"
