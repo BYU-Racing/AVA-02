@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Usage: ./autoDeploy.sh [--restart-db]
+# Usage: ./redeploy.sh [--restart-db]
+
+# ===== This script is for re-deploying after changes =====
+
 set -euo pipefail
 
 RESTART_DB=false
 [[ "${1:-}" == "--restart-db" ]] && RESTART_DB=true
 
-echo "===== Starting AVA-03 auto-deployment! ====="
+echo "===== Starting AVA-03 re-deployment! ====="
 
 echo "Pulling latest code from git repository..."
 git pull

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSensorConfig, getSensorName } from "../config/sensorConfig";
 import { asBigIntArray, bigintToSafeNumber } from "../decode_data";
 
@@ -94,6 +94,6 @@ export function useTelemetryHandlers(onSampleUpdate) {
     telemetryData,
     handleTelemetryMessage,
     getSensorValue,
-    perfCounters: perfCountersRef.current,
+    getPerfCounters: () => perfCountersRef.current,
   };
 }

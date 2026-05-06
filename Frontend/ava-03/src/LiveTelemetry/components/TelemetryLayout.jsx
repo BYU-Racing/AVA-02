@@ -1,8 +1,7 @@
-import React from "react";
-import { StatWidget } from "./widgets/StatWidget";
+import { WIDGET_TYPES } from "../config/widgetConfig";
 import { ChartWidget } from "./widgets/ChartWidget";
 import { FeedWidget } from "./widgets/FeedWidget";
-import { WIDGET_TYPES } from "../config/widgetConfig";
+import { StatWidget } from "./widgets/StatWidget";
 
 /**
  * TelemetryLayout - Manages the 3-panel grid layout
@@ -32,7 +31,7 @@ export function TelemetryLayout({
           />
         );
 
-      case WIDGET_TYPES.CHART:
+      case WIDGET_TYPES.CHART: {
         // Map chart ID to the appropriate chart ref
         let chartRef;
         if (widget.id === "chart-rpm") {
@@ -52,6 +51,7 @@ export function TelemetryLayout({
             chartRef={chartRef}
           />
         );
+      }
 
       case WIDGET_TYPES.FEED:
         return (

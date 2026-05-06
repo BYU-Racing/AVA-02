@@ -32,17 +32,22 @@ Backend folder has `main.py`, from which everything runs. \
 
 Rest of the stuff is self-explanatory.
 
+
 ## Getting Started
 
-### Redeploy Changes
+This whole project can work on any operating system, but we advise running on Linux, as the deployment scripts are made in Bash. It was made to work on AWS EC2, but can also work locally as well.
 
-To redeploy AVA, run from the base folder on Linux or WSL:
-- ```./autodeploy.sh```
+We should have a website already going for it, ask the LV Electronics team for the link.
 
-Optionally, you can also restart the database as well:
-- ```./autodeploy.sh --restart-db```
+### Instructions for First Deployment
 
-If you change the `autodeploy.sh` script, do a `git pull`.
+Start by running:
+- `./installDependencies.sh`
+
+Restart the terminal:
+- `./firstDeploy.sh`
+
+And it should be up!
 
 
 ### Local Development
@@ -56,3 +61,14 @@ See [Setup_Guides/LOCAL_SETUP.md](Setup_Guides/LOCAL_SETUP.md)
 To deploy to AWS EC2:
 
 See [Setup_Guides/AWS_DEPLOYMENT.md](Setup_Guides/AWS_DEPLOYMENT.md)
+
+
+### Redeploy Changes
+
+To redeploy AVA after making changes and pushing them to main, run this from the base folder:
+- ```./redeploy.sh```
+
+Optionally, you can also restart the database as well:
+- ```./redeploy.sh --restart-db```
+
+If you change the `redeploy.sh` script, do a `git pull` before running it again.

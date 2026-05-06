@@ -1,38 +1,43 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { LoadScript } from "@react-google-maps/api";
+import { useEffect, useState } from "react";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import Analytics from "./Analytics/Analytics";
 import Header from "./Header";
 import Home from "./Home";
-import Analytics from "./Analytics/Analytics";
 import LiveTelemetry from "./LiveTelemetry/LiveTelemetry";
-import { useState, useEffect } from "react";
-import { LoadScript } from "@react-google-maps/api";
 
 function App() {
   const [driveList, setDriveList] = useState([]);
   const [cachedData, setCachedData] = useState({});
 
-  // Fetch drives on component mount
-  const getDrives = async () => {
-    async function fetchDrives() {
-      const response = await fetch("/api/drive");
-      const data = await response.json();
-      return data;
-    }
-
-    const drives = await fetchDrives();
-
-    let cacheStart = {};
-    for (let i = 0; i < drives.length; i++) {
-      cacheStart[drives[i].drive_id] = {};
-    }
-    setCachedData(cacheStart);
-    setDriveList(drives);
-  };
-
   useEffect(() => {
-    if (driveList.length === 0) {
-      getDrives();
-    }
+    const controller = new AbortController();
+
+    fetch("/api/drive", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch drives (${response.status})`);
+        }
+
+        return response.json();
+      })
+      .then((drives) => {
+        const cacheStart = {};
+
+        for (let i = 0; i < drives.length; i++) {
+          cacheStart[drives[i].drive_id] = {};
+        }
+
+        setCachedData(cacheStart);
+        setDriveList(drives);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Failed to fetch drives:", error);
+        }
+      });
+
+    return () => controller.abort();
   }, []);
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>

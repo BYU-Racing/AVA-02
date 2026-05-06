@@ -1,6 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const STORAGE_KEY = "ava-telemetry-preferences";
+
+function getSavedPreferences(defaultLayout) {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+
+    const parsed = JSON.parse(stored);
+    return parsed.version === defaultLayout.version ? parsed : null;
+  } catch (err) {
+    console.error("Failed to load widget preferences:", err);
+    return null;
+  }
+}
 
 /**
  * Custom hook for managing user widget preferences with localStorage
@@ -8,24 +21,16 @@ const STORAGE_KEY = "ava-telemetry-preferences";
  * @returns {Object} Layout state and management functions
  */
 export function useWidgetPreferences(defaultLayout) {
-  const [layout, setLayout] = useState(defaultLayout.layout);
-  const [isCustomized, setIsCustomized] = useState(false);
-
   // Load preferences from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.version === defaultLayout.version) {
-          setLayout(parsed.layout);
-          setIsCustomized(true);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load widget preferences:", err);
-    }
-  }, [defaultLayout.version]);
+  const savedPreferences = getSavedPreferences(defaultLayout);
+  
+  const [layout, setLayout] = useState(() =>
+    savedPreferences?.layout ?? defaultLayout.layout
+  );
+
+  const [isCustomized, setIsCustomized] = useState(() =>
+    Boolean(savedPreferences)
+  );
 
   // Save preferences to localStorage whenever layout changes
   const saveLayout = (newLayout) => {

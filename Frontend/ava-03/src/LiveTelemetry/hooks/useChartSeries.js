@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const TICK_TIME_MS = 100;
 const DATA_SAVED_DURATION_S = 20;
@@ -139,6 +139,6 @@ export function useChartSeries(connected) {
     },
     // Functions
     updateSample,
-    perfCounters: perfCountersRef.current,
+    getPerfCounters: () => perfCountersRef.current,
   };
 }
