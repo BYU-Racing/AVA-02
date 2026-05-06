@@ -91,8 +91,7 @@ def get_unique_sensors_from_drive(drive_id: int, db: Session = Depends(get_db)):
     if not sensors:
         raise HTTPException(status_code=404, detail="No sensors found for this drive")
 
-    # Extract the sensor IDs from the results
-    return [sensor_id[0] for sensor_id in sensors]
+    return sensors
 
 
 @router.post("/drive", response_model=schemas.Drive)

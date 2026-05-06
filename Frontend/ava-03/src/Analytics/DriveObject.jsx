@@ -130,7 +130,7 @@ function DriveObject({
     const fetchPromise = (async () => {
       try {
         const response = await fetch(
-          `/api/data/${driveId}/${sensorId}`
+          `/api/data/${driveId}/${sensorId}/0/-1`
         );
         const canMessages = await response.json();
         const timeSeriesData = CANtoTimeseries(canMessages, normalizedSensorId);

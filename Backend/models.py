@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
@@ -34,6 +34,10 @@ class Drive(Base):
 
 class RawData(Base):
     __tablename__ = "raw_data"
+    __table_args__ = (
+        Index("ix_raw_data_drive_msg_time", "drive_id", "msg_id", "time"),
+    )
+
     data_id = Column(Integer, primary_key=True)
     drive_id = Column(
         Integer,
