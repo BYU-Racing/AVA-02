@@ -1,6 +1,6 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
@@ -22,22 +22,24 @@ class Drive(Base):
     notes = Column(String)
     hash = Column(String)
 
-
     driver = relationship("Driver", back_populates="drives")
 
-
-    raw_data = relationship("RawData", back_populates="drive")
-
-
+    raw_data = relationship(
+        "RawData",
+        back_populates="drive",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class RawData(Base):
     __tablename__ = "raw_data"
     data_id = Column(Integer, primary_key=True)
-    drive_id = Column(Integer, ForeignKey("drive.drive_id"))
+    drive_id = Column(
+        Integer, ForeignKey("drive.drive_id", ondelete="CASCADE", nullable=False)
+    )
     msg_id = Column(Integer)
     raw_data = Column(ARRAY(Integer))
     time = Column(Integer)
-
 
     drive = relationship("Drive", back_populates="raw_data")

@@ -13,7 +13,7 @@ Third Generation BYU-Racing Analytics Application
 ### Backend
 
 Backend folder has `main.py`, from which everything runs. \
---It technically runs `__init__.py` first, but that does nothing.
+--It technically runs `__init__.py` first, but that does nothing. There for linters.
 
 `models.py` contains database models. \
 `schemas.py` contains schemas for CRUD (Create, Read, Update, Delete) operations. \
