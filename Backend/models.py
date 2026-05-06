@@ -36,7 +36,9 @@ class RawData(Base):
     __tablename__ = "raw_data"
     data_id = Column(Integer, primary_key=True)
     drive_id = Column(
-        Integer, ForeignKey("drive.drive_id", ondelete="CASCADE", nullable=False)
+        Integer,
+        ForeignKey("drive.drive_id", ondelete="CASCADE"),
+        nullable=False,
     )
     msg_id = Column(Integer)
     raw_data = Column(ARRAY(Integer))

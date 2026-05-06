@@ -1,4 +1,3 @@
-import { LoadScript } from "@react-google-maps/api";
 import { useEffect, useState } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Analytics from "./Analytics/Analytics";
@@ -40,32 +39,30 @@ function App() {
     return () => controller.abort();
   }, []);
   return (
-    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-      <Router>
-        <Header />
-        <div style={{ paddingTop: '50px' }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route
-              path="/analytics"
-              element={
-                <Analytics
-                  driveList={driveList}
-                  setDriveList={setDriveList}
-                  setCachedData={setCachedData}
-                  cachedData={cachedData}
-                />
-              }
-            />
-            <Route path="/live-telemetry" element={<LiveTelemetry />} />
-            <Route
-              path="/*"
-              element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
-            />
-          </Routes>
-        </div>
-      </Router>
-    </LoadScript>
+    <Router>
+      <Header />
+      <div style={{ paddingTop: "50px" }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route
+            path="/analytics"
+            element={
+              <Analytics
+                driveList={driveList}
+                setDriveList={setDriveList}
+                setCachedData={setCachedData}
+                cachedData={cachedData}
+              />
+            }
+          />
+          <Route path="/live-telemetry" element={<LiveTelemetry />} />
+          <Route
+            path="/*"
+            element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}
+          />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

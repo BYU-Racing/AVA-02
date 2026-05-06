@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GoogleMap, Polyline, useJsApiLoader } from "@react-google-maps/api";
 
 const containerStyle = {
@@ -21,43 +21,45 @@ const polylineOptions = {
 
 const GPSMap = ({
   dataSets,
-  left,
-  right,
   globalZoomBounds,
   globalZoom,
   setLeft,
   setRight,
 }) => {
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: googleMapsApiKey || "",
   });
 
   const [map, setMap] = useState(null);
 
-  const path =
-    dataSets[0]?.data
-      ?.filter(
-        (point) =>
-          point.value.lat != null &&
-          point.value.long != null &&
-          !isNaN(point.value.lat) &&
-          !isNaN(point.value.long) &&
-          point.value.long !== 0 &&
-          point.value.lat !== 0
-      )
-      ?.sort((a, b) => a.timestamp - b.timestamp)
-      ?.map((point) => ({
-        lat: Number(point.value.lat),
-        lng: Number(point.value.long),
-      })) || [];
+  const path = useMemo(
+    () =>
+      dataSets[0]?.data
+        ?.filter(
+          (point) =>
+            point.value.lat != null &&
+            point.value.long != null &&
+            !isNaN(point.value.lat) &&
+            !isNaN(point.value.long) &&
+            point.value.long !== 0 &&
+            point.value.lat !== 0
+        )
+        ?.sort((a, b) => a.timestamp - b.timestamp)
+        ?.map((point) => ({
+          lat: Number(point.value.lat),
+          lng: Number(point.value.long),
+        })) || [],
+    [dataSets]
+  );
 
   useEffect(() => {
     if (globalZoom && globalZoomBounds) {
       setLeft(globalZoomBounds.left);
       setRight(globalZoomBounds.right);
     }
-  }, [globalZoomBounds, globalZoom]);
+  }, [globalZoomBounds, globalZoom, setLeft, setRight]);
 
   useEffect(() => {
     if (map && path.length > 0) {
@@ -74,6 +76,10 @@ const GPSMap = ({
   const onUnmount = useCallback(() => {
     setMap(null);
   }, []);
+
+  if (!googleMapsApiKey) {
+    return <div>Google Maps API key is not configured.</div>;
+  }
 
   if (loadError) {
     return <div>Error loading maps</div>;
