@@ -6,6 +6,15 @@
 set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
+if docker compose version >/dev/null 2>&1; then
+    COMPOSE="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE="docker-compose"
+else
+    echo "Docker Compose is not installed."
+    exit 1
+fi
+
 RESTART_DB=false
 [[ "${1:-}" == "--restart-db" ]] && RESTART_DB=true
 
@@ -16,13 +25,13 @@ git pull
 
 if $RESTART_DB; then
   echo "Restarting db service..."
-  docker compose restart db
+  $COMPOSE restart db
 else
   echo "Making sure db service is running..."
-  docker compose up -d db
+  $COMPOSE up -d db
 fi
 
-until docker compose exec -T db pg_isready -U evangelion -d appdb; do
+until $COMPOSE exec -T db pg_isready -U evangelion -d appdb; do
   echo "Waiting for database..."
   sleep 2
 done
@@ -30,7 +39,7 @@ done
 echo "Building and deploying web service"
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
-docker compose up -d --no-deps --build web
+$COMPOSE up -d --no-deps --build web
 
 until curl -fsS http://localhost:8000/api/health | grep -q 'status.*healthy'; do
   echo "Waiting for website to be healthy..."

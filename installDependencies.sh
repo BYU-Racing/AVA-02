@@ -13,6 +13,6 @@ sudo yum install -y docker git curl
 sudo systemctl enable --now docker
 sudo usermod -a -G docker ec2-user
 
-sudo yum install -y docker-compose-plugin
+sudo yum install -y docker-compose-plugin || sudo yum install -y docker-compose
 
 echo "Dependencies installed. Please log out and ssh back in to apply Docker permissions."
