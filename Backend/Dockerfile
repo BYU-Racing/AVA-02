@@ -12,14 +12,16 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.10.8 /uv /uvx /bin/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from the lockfile
+COPY pyproject.toml uv.lock ./Backend/
+RUN uv sync --directory Backend --locked --no-dev --no-install-project
 
 # Copy application code
-COPY . .
+COPY . ./Backend/
+ENV PATH="/app/Backend/.venv/bin:$PATH"
 
 # Expose port
 EXPOSE 8000

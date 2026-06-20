@@ -23,11 +23,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Python deps
-COPY Backend/requirements.txt ./Backend/
-RUN pip install --no-cache-dir -r Backend/requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:0.10.8 /uv /uvx /bin/
+COPY Backend/pyproject.toml Backend/uv.lock ./Backend/
+
+RUN uv sync --directory Backend --locked --no-dev --no-install-project
 
 # Backend code
 COPY Backend/ ./Backend/
+ENV PATH="/app/Backend/.venv/bin:$PATH"
+
 
 # Copy built frontend from the frontend stage
 COPY --from=frontend /app/Frontend/dist ./FrontendDist

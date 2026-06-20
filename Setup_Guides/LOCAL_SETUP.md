@@ -6,7 +6,8 @@ This guide walks you through setting up and running AVA-02 on your local machine
 
 Before you begin, ensure you have the following installed:
 
-- **Python 3.9+** - Check with `python3 --version`
+- **Python 3.11+** - Check with `python3 --version`
+- **uv** - Python dependency manager; check with `uv --version`
 - **Node.js 16+** and npm - Check with `node --version` and `npm --version`
 - **PostgreSQL 14+** - Database server
 - **Git** - For version control
@@ -16,13 +17,15 @@ Before you begin, ensure you have the following installed:
 ```bash
 # 1. Set up PostgreSQL database
 # 2. Install backend dependencies
-pip install -r Backend/requirements.txt
+cd Backend && uv sync --locked && cd ..
 
 # 3. Build frontend
 cd Frontend/ava-03 && npm install && npm run build && cd ../..
 
 # 4. Run backend from project root
-uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
+export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
+export DELETE_PASSWORD="ava2"
+uv run --project Backend uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Visit http://localhost:8000
@@ -77,18 +80,11 @@ GRANT ALL PRIVILEGES ON DATABASE postgres TO evangelion;
 \q
 ```
 
-**Important**: The default local configuration in [Backend/configDB.py](Backend/configDB.py#L15-L18) expects:
-
-- Host: `localhost`
-- Port: `5432`
-- Database: `postgres`
-- Username: `evangelion`
-- Password: `password`
-
-You can customize these by setting the `DATABASE_URL` environment variable:
+**Important**: [Backend/configDB.py](Backend/configDB.py) requires these environment variables before the backend starts:
 
 ```bash
-export DATABASE_URL="postgresql://your_user:your_password@localhost/your_database"
+export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
+export DELETE_PASSWORD="ava2"
 ```
 
 ### Step 3: Import Database (Optional)
@@ -109,7 +105,9 @@ From the project root directory:
 cd AVA-02-1
 
 # Install Python dependencies
-pip install -r Backend/requirements.txt
+cd Backend
+uv sync --locked
+cd ..
 ```
 
 **Common packages installed:**
@@ -118,12 +116,12 @@ pip install -r Backend/requirements.txt
 - Uvicorn - ASGI server
 - SQLAlchemy - Database ORM
 - psycopg2-binary - PostgreSQL adapter
-- And more (see [Backend/requirements.txt](Backend/requirements.txt))
+- And more (see [Backend/pyproject.toml](Backend/pyproject.toml))
 
 ### Step 5: Build Frontend
 
 ```bash
-cd Frontend/ava-02
+cd Frontend/ava-03
 
 # Install Node dependencies
 npm install
@@ -135,15 +133,15 @@ npm run build
 cd ../..
 ```
 
-This creates `Frontend/ava-02/build/` with optimized React files.
+This creates `Frontend/ava-03/dist/` with optimized Vite files.
 
 **Verify the build:**
 
 ```bash
-ls Frontend/ava-02/build
+ls Frontend/ava-03/dist
 ```
 
-You should see: `index.html`, `static/`, and other files.
+You should see: `index.html`, `assets/`, and other files.
 
 ### Step 6: Run the Backend Server
 
@@ -153,7 +151,9 @@ You should see: `index.html`, `static/`, and other files.
 cd /Users/rental/AVA-02-1
 
 # Run with auto-reload (development mode)
-uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
+export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
+export DELETE_PASSWORD="ava2"
+uv run --project Backend uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Why from project root?**
@@ -184,11 +184,11 @@ Open your browser and navigate to:
 For faster frontend development with hot-reload:
 
 ```bash
-cd Frontend/ava-02
-npm start
+cd Frontend/ava-03
+npm run dev
 ```
 
-This runs the React dev server on http://localhost:3000
+This runs the Vite dev server.
 
 **Note**: You'll need to configure proxy settings in `package.json` to connect to the backend:
 
@@ -210,13 +210,13 @@ This runs the React dev server on http://localhost:3000
 If running production build (served by FastAPI):
 
 ```bash
-cd Frontend/ava-02
+cd Frontend/ava-03
 npm run build
 cd ../..
 # Backend will serve updated build automatically
 ```
 
-If running dev server (`npm start`):
+If running dev server (`npm run dev`):
 
 - Changes reload automatically
 
@@ -232,16 +232,17 @@ If running dev server (`npm start`):
 │   ├── models.py                # SQLAlchemy models
 │   ├── schemas.py               # Pydantic schemas
 │   ├── crud.py                  # Database operations
-│   ├── requirements.txt         # Python dependencies
+│   ├── pyproject.toml            # Python dependency declarations
+│   ├── uv.lock                   # Locked Python dependencies
 │   └── endpoints/               # API route handlers
 │       ├── __init__.py
 │       ├── drive.py
 │       ├── driver.py
 │       └── data.py
-└── Frontend/ava-02/
+└── Frontend/ava-03/
     ├── src/                     # React source code
     ├── public/                  # Static assets
-    ├── build/                   # Production build (created by npm run build)
+    ├── dist/                    # Production build (created by npm run build)
     └── package.json             # Node dependencies
 ```
 
@@ -249,23 +250,19 @@ If running dev server (`npm start`):
 
 ### Local Development
 
-The app automatically uses local defaults if AWS RDS variables aren't set:
+The app requires these variables locally:
 
 ```bash
-# Optional: Override database URL
 export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
-
-# The app checks for these AWS variables (not needed locally):
-# RDS_HOSTNAME, RDS_PORT, RDS_DB_NAME, RDS_USERNAME, RDS_PASSWORD
+export DELETE_PASSWORD="ava2"
 ```
 
-### Configuration Priority
+### Configuration
 
 From [Backend/configDB.py](Backend/configDB.py):
 
-1. **AWS RDS variables** (if `RDS_HOSTNAME` exists)
-2. **`DATABASE_URL` environment variable** (if set)
-3. **Default local**: `postgresql://evangelion:password@localhost/postgres`
+1. **`DATABASE_URL`** must be set.
+2. **`DELETE_PASSWORD`** must be set.
 
 ## Common Issues and Solutions
 
@@ -287,7 +284,7 @@ uvicorn main:app --reload
 
 # Correct ✅
 cd /Users/rental/AVA-02-1
-uvicorn Backend.main:app --reload
+uv run --project Backend uvicorn Backend.main:app --reload
 ```
 
 ### Issue 2: Database Connection Failed
@@ -329,7 +326,7 @@ Browser shows 404 when accessing http://localhost:8000
 The frontend build folder doesn't exist. Build it:
 
 ```bash
-cd Frontend/ava-02
+cd Frontend/ava-03
 npm install
 npm run build
 cd ../..
@@ -338,7 +335,7 @@ cd ../..
 Verify:
 
 ```bash
-ls Frontend/ava-02/build
+ls Frontend/ava-03/dist
 ```
 
 ### Issue 4: Static Files Not Found
@@ -346,17 +343,17 @@ ls Frontend/ava-02/build
 **Error:**
 
 ```
-RuntimeError: Directory 'Frontend/ava-02/build' does not exist
+RuntimeError: Directory 'Frontend/ava-03/dist' does not exist
 ```
 
 **Solution:**
-The backend can't find the build folder. Check [Backend/main.py:46](Backend/main.py#L46):
+The backend can't find the build folder. In Docker, the app serves built frontend files from `/app/FrontendDist`:
 
 ```python
-app.mount("/", StaticFiles(directory="Frontend/ava-02/build", html=True), name="static")
+build_dir = Path("/app/FrontendDist")
 ```
 
-This path is relative to where you run `uvicorn`. Always run from project root.
+Make sure the frontend image stage built successfully and copied the `dist` output into the backend image.
 
 ### Issue 5: Port Already in Use
 
@@ -382,7 +379,7 @@ OSError: [Errno 48] Address already in use
 
 3. **Or use a different port:**
    ```bash
-   uvicorn Backend.main:app --reload --port 8001
+   uv run --project Backend uvicorn Backend.main:app --reload --port 8001
    ```
 
 ### Issue 6: Module Not Found Errors
@@ -397,15 +394,17 @@ ModuleNotFoundError: No module named 'fastapi'
 Install dependencies:
 
 ```bash
-pip install -r Backend/requirements.txt
+cd Backend
+uv sync --locked
+cd ..
 ```
 
-If you're using a virtual environment (recommended):
+uv creates and manages the backend virtual environment from the lockfile:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r Backend/requirements.txt
+cd Backend
+uv run python -c "import fastapi"
+cd ..
 ```
 
 ## Testing Your Setup
@@ -441,27 +440,20 @@ Visit http://localhost:8000 in your browser. You should see the React applicatio
 
 Visit http://localhost:8000/docs to see interactive API documentation (automatically generated by FastAPI).
 
-## Using Virtual Environment (Recommended)
+## Using uv Environment (Recommended)
 
-It's best practice to use a Python virtual environment:
+uv creates and manages the backend virtual environment from the lockfile:
 
 ```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate it
-source venv/bin/activate  # macOS/Linux
-# or
-venv\Scripts\activate  # Windows
-
 # Install dependencies
-pip install -r Backend/requirements.txt
+cd Backend
+uv sync --locked
 
 # Run the app
-uvicorn Backend.main:app --reload
-
-# When done, deactivate
-deactivate
+cd ..
+export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
+export DELETE_PASSWORD="ava2"
+uv run --project Backend uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Next Steps
@@ -470,7 +462,7 @@ Once your local environment is working:
 
 1. Make your code changes
 2. Test locally
-3. Build frontend: `cd Frontend/ava-02 && npm run build && cd ../..`
+3. Build frontend: `cd Frontend/ava-03 && npm run build && cd ../..`
 4. Deploy to AWS using one of the deployment guides:
    - [AWS_CONSOLE_DEPLOY.md](AWS_CONSOLE_DEPLOY.md) - For AWS Console (Learner Lab)
    - [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) - For EB CLI
@@ -491,13 +483,15 @@ brew services start postgresql@14  # macOS
 sudo systemctl start postgresql    # Linux
 
 # Build frontend
-cd Frontend/ava-02 && npm run build && cd ../..
+cd Frontend/ava-03 && npm run build && cd ../..
 
 # Run backend (from project root)
-uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
+export DATABASE_URL="postgresql://evangelion:password@localhost/postgres"
+export DELETE_PASSWORD="ava2"
+uv run --project Backend uvicorn Backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run frontend dev server
-cd Frontend/ava-02 && npm start
+cd Frontend/ava-03 && npm run dev
 
 # Connect to database
 psql -U evangelion -d postgres
@@ -512,8 +506,8 @@ Before asking for help, verify:
 
 - [ ] PostgreSQL is running: `pg_isready`
 - [ ] Database exists and is accessible: `psql -U evangelion -d postgres -c "\l"`
-- [ ] Backend dependencies installed: `pip list | grep fastapi`
-- [ ] Frontend is built: `ls Frontend/ava-02/build`
+- [ ] Backend dependencies installed: `cd Backend && uv run python -c "import fastapi"`
+- [ ] Frontend is built: `ls Frontend/ava-03/dist`
 - [ ] Running from project root: `pwd` should show `/Users/rental/AVA-02-1`
 - [ ] Port 8000 is free: `lsof -i :8000`
 
