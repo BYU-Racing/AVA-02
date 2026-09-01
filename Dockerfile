@@ -9,7 +9,8 @@ RUN npm ci
 # Copy source and build
 COPY Frontend/ava-03/ ./
 # outputs /app/frontend/dist
-RUN NODE_OPTIONS=--max_old_space_size=2048 npm run build
+# Keep enough RAM available for Docker and the OS on a 2 GiB EC2 instance.
+RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 # ---------- Backend stage ----------
 FROM python:3.11-slim
