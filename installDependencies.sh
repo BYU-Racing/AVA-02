@@ -8,8 +8,8 @@ set -euo pipefail
 
 echo "===== Installing Dependencies for AVA-03 ====="
 
-sudo yum update -y
-sudo yum install -y docker git
+sudo apt update -y
+sudo apt install -y docker git
 sudo systemctl enable --now docker
 sudo usermod -a -G docker ec2-user
 
