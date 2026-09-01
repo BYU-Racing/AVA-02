@@ -10,6 +10,10 @@ TARGET_USER="${SUDO_USER:-$(id -un)}"
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl git
 
+# Remove the architecture-specific Compose binary created by the old installer.
+# It otherwise takes precedence over the plugin installed through apt below.
+sudo rm -f /usr/local/lib/docker/cli-plugins/docker-compose
+
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
     -o /etc/apt/keyrings/docker.asc
