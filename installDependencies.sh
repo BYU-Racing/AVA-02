@@ -1,24 +1,39 @@
 #!/usr/bin/env bash
 # Usage: ./installDependencies.sh
 
-# ===== This script should be run first, before any other scripts =====
-# --After it is run, make sure to log out and ssh back in
-
 set -euo pipefail
 
-echo "===== Installing Dependencies for AVA-03 ====="
+echo "===== Installing dependencies for AVA-03 ====="
 
-sudo apt update -y
-sudo apt install -y docker git
+TARGET_USER="${SUDO_USER:-$(id -un)}"
+
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl git
+
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt-get update
+sudo apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
+
 sudo systemctl enable --now docker
-sudo usermod -a -G docker ec2-user
+sudo usermod -aG docker "$TARGET_USER"
+sudo docker compose version
 
-sudo mkdir -p /usr/local/lib/docker/cli-plugins
-
-sudo curl -SL \
-  https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-aarch64 \
-  -o /usr/local/lib/docker/cli-plugins/docker-compose
-
-sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-
-echo "Dependencies installed. Please log out and ssh back in to apply Docker permissions."
+echo "Dependencies installed. Log out and SSH back in before running ./firstDeploy.sh."
