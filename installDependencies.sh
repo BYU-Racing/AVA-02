@@ -13,7 +13,7 @@ sudo apt-get install -y curl git docker.io docker-compose-v2
 
 # Add 2 GiB of disk-backed memory. Creating the file is skipped on later runs.
 if [[ ! -f "$SWAP_FILE" ]]; then
-    sudo fallocate -L 2G "$SWAP_FILE"
+    sudo fallocate -l 2G "$SWAP_FILE"
     sudo chmod 600 "$SWAP_FILE"
     sudo mkswap "$SWAP_FILE"
 fi
