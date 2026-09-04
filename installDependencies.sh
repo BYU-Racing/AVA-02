@@ -8,6 +8,7 @@ echo "===== Installing dependencies for AVA-03 ====="
 TARGET_USER="${SUDO_USER:-$(id -un)}"
 SWAP_FILE="/swapfile"
 
+# Update package lists and isntall docker, docker-compose, curl, and git
 sudo apt-get update
 sudo apt-get install -y curl git docker.io docker-compose-v2
 
@@ -26,9 +27,15 @@ if ! sudo grep -q '^/swapfile ' /etc/fstab; then
     echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
 fi
 
+# Enable Docker and add user to docker group
 sudo systemctl enable --now docker
 sudo usermod -aG docker "$TARGET_USER"
 sudo docker compose version
 free -h
+
+# Install Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+
 
 echo "Dependencies installed. Log out and SSH back in before running ./firstDeploy.sh."

@@ -6,6 +6,12 @@
 set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
+echo "Checking tailscale status..."
+tailscale status 2>&1 || {
+    echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
+    exit 1
+}
+
 if [[ ! -f .env ]]; then
     echo "Missing .env file. Create it with: cp .env.example .env"
     echo "Then edit .env and replace the example passwords before deploying."
