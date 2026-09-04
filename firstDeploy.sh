@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
 echo "Checking tailscale status..."
-if tailscale status 2>&1; then
+if tailscale status >/dev/null 2>&1; then
     echo "Tailscale is already running."
 else
     echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."

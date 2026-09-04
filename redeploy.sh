@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
 echo "Checking tailscale status..."
-tailscale status 2>&1 || {
+tailscale status >/dev/null 2>&1 || {
     echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
     exit 1
 }
