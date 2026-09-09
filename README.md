@@ -28,7 +28,7 @@ Backend folder has `main.py`, from which everything runs. \
 ### Frontend
 
 `.env.development` has VITE_WS_URL, for setting where the Frontend connects to the Backend. \
-`index.html` is the starter HTML page. \
+`index.html` is the starter HTML page.
 
 Rest of the stuff is self-explanatory.
 
@@ -36,8 +36,6 @@ Rest of the stuff is self-explanatory.
 ## Getting Started
 
 This whole project can work on any operating system, but we advise running on Linux, as the deployment scripts are made in Bash. It was made to work on AWS EC2, but can also work locally as well.
-
-We should have a website already going for it, ask the LV Electronics team for the link.
 
 ### Instructions for First Deployment
 
@@ -62,6 +60,9 @@ To deploy to AWS EC2:
 
 See [Setup_Guides/AWS_DEPLOYMENT.md](Setup_Guides/AWS_DEPLOYMENT.md)
 
+Start an AWS EC2 instance with Ubuntu on an ARM processor. It needs at least 2GB RAM and 16GB storage.
+
+Make sure in security rules that you have SSH access for inbound rules and general access for outbound rules.
 
 ### Redeploy Changes
 
