@@ -39,22 +39,36 @@ This whole project can work on any operating system, but we advise running on Li
 
 We should have a website already going for it, ask the LV Electronics team for the link.
 
-### Instructions for First Deployment
+### Instructions for Linux Deployment
 
-Start by running:
+First, copy the .env file and put in new values:
+- `cp .env.example .env`
+
+Then run the dep install script:
 - `./installDependencies.sh`
 
-Restart the terminal:
+Restart the terminal, then run:
 - `./firstDeploy.sh`
 
 And it should be up!
 
 
-### Local Development
+### Local Development on non-linux machines
 
-To run the application locally on your machine:
+First, copy the .env file and put in new values:
+- `cp .env.example .env`
 
-See [Setup_Guides/LOCAL_SETUP.md](Setup_Guides/LOCAL_SETUP.md)
+Then start Docker Desktop and then run this 
+command from the repo root:
+- `docker compose up -d --build`
+
+To restart the application without destroying the db:
+
+- `docker compose up -d --build web`
+
+If database config changed:
+
+- `docker compose up -d --build`
 
 ### AWS Deployment
 
