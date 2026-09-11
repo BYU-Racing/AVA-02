@@ -61,12 +61,16 @@ command from the repo root:
 - `docker compose up -d --build`
 
 To restart the application without destroying the db:
-
 - `docker compose up -d --build web`
 
 If database config changed:
-
 - `docker compose up -d --build`
+
+To stop AVA:
+- `docker compose down`
+
+To delete the volumes:
+- `docker compose down -v`
 
 ### AWS Deployment
 
