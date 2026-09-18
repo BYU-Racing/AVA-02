@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "alembic>=1.20.0",
     "cantools>=41.4.3",
     "fastapi==0.115.5",
     "pandas==2.2.3",

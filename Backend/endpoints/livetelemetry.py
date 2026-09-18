@@ -3,26 +3,30 @@
 # Desc: Our live telemetry WebSocket endpoint, based off of telemetry.py (the one from Claude)
 # Receives data from the Pi over /ws/send, decodes it, then sends to Frontend over /ws/livetelemetry and database
 
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-from typing import List, Dict, Optional
-import logging
 import asyncio
+import logging
 import os
 import uuid
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from .. import crud, models, schemas
-from ..services.livetelemetry_decoder import decode_pi_to_server, convert_decoded_can_data
-from ..database import SessionLocal
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional
 
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy.orm import Session
+
+from .. import crud, models, schemas
+from ..database import SessionLocal
+from ..services.livetelemetry_decoder import (
+    convert_decoded_can_data,
+    decode_pi_to_server,
+)
 
 # ========== Constants and Globals ===========
 
 # Default values
-DEFAULT_LIVE_DRIVER_ID : int = int(os.getenv("DEFAULT_LIVE_DRIVER_ID", "1"))
-DEFAULT_LIVE_DRIVER_NAME : str = os.getenv("DEFAULT_LIVE_DRIVER_NAME", "Live Driver")
-AUTO_DRIVE_NOTE : str = "Auto-created from live sender connection (/api/ws/send)"
-UTC_PLUS_8 = timezone(timedelta(hours=8)) # UTC + 8 timezone
+DEFAULT_LIVE_DRIVER_ID: int = int(os.getenv("DEFAULT_LIVE_DRIVER_ID", "1"))
+DEFAULT_LIVE_DRIVER_NAME: str = os.getenv("DEFAULT_LIVE_DRIVER_NAME", "Live Driver")
+AUTO_DRIVE_NOTE: str = "Live Telemetry"
+UTC_PLUS_8 = timezone(timedelta(hours=8))  # UTC + 8 timezone
 
 router = APIRouter()
 
@@ -33,37 +37,46 @@ logger = logging.getLogger(__name__)
 
 # ========== Connection manager class for websockets ===========
 
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        
-    async def connect(self, websocket: WebSocket, client = True):
+
+    async def connect(self, websocket: WebSocket, client=True):
         await websocket.accept()
         if client:
             self.active_connections.append(websocket)
-            logger.info(f"New client connection established. Total clients: {len(self.active_connections)}")
+            logger.info(
+                f"New client connection established. Total clients: {len(self.active_connections)}"
+            )
         if not client:
-            await self.broadcast({
-                "type": "connection",
-                "status": "connected",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "message": "Connected to sender WebSocket!"
-            })
-        
-    async def disconnect(self, websocket: WebSocket, client = True):
+            await self.broadcast(
+                {
+                    "type": "connection",
+                    "status": "connected",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message": "Connected to sender WebSocket!",
+                }
+            )
+
+    async def disconnect(self, websocket: WebSocket, client=True):
         if client:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
-                logger.info(f"Connection closed. Total clients: {len(self.active_connections)}")
+                logger.info(
+                    f"Connection closed. Total clients: {len(self.active_connections)}"
+                )
         else:
             logger.info("Sender disconnected (/ws/send)")
-            await self.broadcast({
-                "type": "connection",
-                "status": "disconnected",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "message": "Sender disconnected from WebSocket"
-            })
-    
+            await self.broadcast(
+                {
+                    "type": "connection",
+                    "status": "disconnected",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message": "Sender disconnected from WebSocket",
+                }
+            )
+
     # Sends message to all connected clients. If a client is disconnected, removes it from the list.
     async def broadcast(self, message: Dict):
         disconnected: List[WebSocket] = []
@@ -78,7 +91,7 @@ class ConnectionManager:
         # Clean up dead connections
         for conn in disconnected:
             await self.disconnect(conn)
-    
+
     async def broadcast_bytes(self, message: bytes):
         disconnected: List[WebSocket] = []
 
@@ -96,9 +109,11 @@ class ConnectionManager:
 
 # ========== Functions for adding data to database ===========
 
+
 def normalize_raw_data(raw_data: List[int]) -> List[int]:
     # Analysis pipeline expects 8-byte payload-style arrays.
     return (raw_data + [0] * 8)[:8]
+
 
 def get_or_create_default_driver_id(db: Session) -> int:
     driver = crud.get_driver(db, DEFAULT_LIVE_DRIVER_ID)
@@ -107,15 +122,13 @@ def get_or_create_default_driver_id(db: Session) -> int:
 
     try:
         default_driver = models.Driver(
-            driver_id=DEFAULT_LIVE_DRIVER_ID,
-            name=DEFAULT_LIVE_DRIVER_NAME
+            driver_id=DEFAULT_LIVE_DRIVER_ID, name=DEFAULT_LIVE_DRIVER_NAME
         )
         db.add(default_driver)
         db.commit()
         db.refresh(default_driver)
         logger.info(
-            "Created default live telemetry driver with id=%s",
-            default_driver.driver_id
+            "Created default live telemetry driver with id=%s", default_driver.driver_id
         )
         return default_driver.driver_id
     except Exception as exc:
@@ -123,7 +136,7 @@ def get_or_create_default_driver_id(db: Session) -> int:
         logger.warning(
             "Could not create default driver id=%s (%s). Falling back.",
             DEFAULT_LIVE_DRIVER_ID,
-            exc
+            exc,
         )
 
     existing_by_name = crud.get_driver_by_name(db, DEFAULT_LIVE_DRIVER_NAME)
@@ -131,14 +144,13 @@ def get_or_create_default_driver_id(db: Session) -> int:
         return existing_by_name.driver_id
 
     fallback_driver = crud.create_driver(
-        db=db,
-        user=schemas.DriverCreate(name=DEFAULT_LIVE_DRIVER_NAME)
+        db=db, user=schemas.DriverCreate(name=DEFAULT_LIVE_DRIVER_NAME)
     )
     logger.warning(
-        "Using fallback live telemetry driver id=%s",
-        fallback_driver.driver_id
+        "Using fallback live telemetry driver id=%s", fallback_driver.driver_id
     )
     return fallback_driver.driver_id
+
 
 def create_live_drive(db: Session) -> models.Drive:
     driver_id = get_or_create_default_driver_id(db)
@@ -148,16 +160,17 @@ def create_live_drive(db: Session) -> models.Drive:
         driver_id=driver_id,
         date=now,
         notes=AUTO_DRIVE_NOTE,
-        hash=f"live-{uuid.uuid4().hex}"
+        hash=f"live-{uuid.uuid4().hex}",
     )
     return crud.create_drive(db=db, drive=drive)
+
 
 def persist_live_packet(db: Session, drive_id: int, decoded_packet: Dict):
     db_row = models.RawData(
         drive_id=drive_id,
         msg_id=decoded_packet["id"],
         raw_data=normalize_raw_data(decoded_packet["bytes"]),
-        time=decoded_packet["timestamp"]
+        time=decoded_packet["timestamp"],
     )
     db.add(db_row)
     db.commit()
@@ -222,25 +235,30 @@ async def set_live_db_state(enabled: bool = Query(...)):
     await broadcast_database_state()
     return get_database_state_payload()
 
-@router.websocket("/ws/livetelemetry") # handler for connecting to client for sending data to Frontend
+
+@router.websocket(
+    "/ws/livetelemetry"
+)  # handler for connecting to client for sending data to Frontend
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     logger.info("Client connected to live telemetry WebSocket")
     try:
-        await websocket.send_json({
-            "type": "connection",
-            "status": "connected",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "message": "Connected to live telemetry WebSocket"
-        })
+        await websocket.send_json(
+            {
+                "type": "connection",
+                "status": "connected",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "message": "Connected to live telemetry WebSocket",
+            }
+        )
         await websocket.send_json(get_database_state_payload())
-        
+
         while True:
             # For testing
             msg = await websocket.receive_json()
             if msg.get("type") == "ping":
                 await websocket.send_json({"type": "pong"})
-            
+
             # "type": "db",
             # "enabled": bool",
             # "timestamp": datetime.now(timezone.utc).isoformat()
@@ -257,11 +275,11 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"LiveTelemetry webSocket error: {e}")
     finally:
         await manager.disconnect(websocket)
-    
 
-@router.websocket("/ws/send") # handler for data from pi
+
+@router.websocket("/ws/send")  # handler for data from pi
 async def websocket_sendpoint(websocket: WebSocket):
-    '''WS handler for data sent from pi'''
+    """WS handler for data sent from pi"""
     global _pi_live_drive, _pi_db, _pi_packets_written, _pi_reconnect_task
     await manager.connect(websocket, client=False)
     logger.info("Pi connected to send telemetry WebSocket")
@@ -277,7 +295,10 @@ async def websocket_sendpoint(websocket: WebSocket):
     ):
         _pi_reconnect_task.cancel()
         _pi_reconnect_task = None
-        logger.info("Pi reconnected within window, resuming drive_id=%s", _pi_live_drive.drive_id)
+        logger.info(
+            "Pi reconnected within window, resuming drive_id=%s",
+            _pi_live_drive.drive_id,
+        )
         db, live_drive = _pi_db, _pi_live_drive
     else:
         db = SessionLocal()
@@ -286,7 +307,7 @@ async def websocket_sendpoint(websocket: WebSocket):
             logger.info(
                 "Live telemetry drive started: drive_id=%s driver_id=%s",
                 live_drive.drive_id,
-                live_drive.driver_id
+                live_drive.driver_id,
             )
         except Exception as e:
             logger.error(f"Error creating live drive: {e}")
@@ -297,16 +318,18 @@ async def websocket_sendpoint(websocket: WebSocket):
         _pi_db, _pi_live_drive, _pi_packets_written = db, live_drive, 0
 
     if live_drive is not None:
-        await manager.broadcast({
-            "type": "drive",
-            "status": "started",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "drive_id": live_drive.drive_id,
-            "driver_id": live_drive.driver_id
-        })
-    
+        await manager.broadcast(
+            {
+                "type": "drive",
+                "status": "started",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "drive_id": live_drive.drive_id,
+                "driver_id": live_drive.driver_id,
+            }
+        )
+
     try:
-        while True: # Receive and parse data from pi
+        while True:  # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
 
@@ -316,15 +339,20 @@ async def websocket_sendpoint(websocket: WebSocket):
                     try:
                         live_drive = create_live_drive(db)
                         _pi_db, _pi_live_drive, _pi_packets_written = db, live_drive, 0
-                        await manager.broadcast({
-                            "type": "drive",
-                            "status": "started",
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "drive_id": live_drive.drive_id,
-                            "driver_id": live_drive.driver_id
-                        })
+                        await manager.broadcast(
+                            {
+                                "type": "drive",
+                                "status": "started",
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "drive_id": live_drive.drive_id,
+                                "driver_id": live_drive.driver_id,
+                            }
+                        )
                     except Exception as exc:
-                        logger.error("Could not create live drive while persisting telemetry: %s", exc)
+                        logger.error(
+                            "Could not create live drive while persisting telemetry: %s",
+                            exc,
+                        )
                         db.close()
                         db = None
                         live_drive = None
@@ -339,13 +367,13 @@ async def websocket_sendpoint(websocket: WebSocket):
                         logger.error(
                             "Failed to persist live telemetry packet for drive_id=%s: %s",
                             live_drive.drive_id,
-                            exc
+                            exc,
                         )
 
             # Put decoded_packet through CAN_DBC decoder
             sensor_data = convert_decoded_can_data(decoded_packet)
             await manager.broadcast_bytes(sensor_data.SerializeToString())
-    
+
     except WebSocketDisconnect:
         pass
     except Exception as e:
@@ -358,7 +386,10 @@ async def websocket_sendpoint(websocket: WebSocket):
             reset_pi_state(close_db=True)
             return
 
-        logger.info("Pi disconnecting, attempting to reconnect within %ss", RECONNECT_TIMEOUT_SEC)
+        logger.info(
+            "Pi disconnecting, attempting to reconnect within %ss",
+            RECONNECT_TIMEOUT_SEC,
+        )
 
         async def wait_for_reconnect(drive_id: int):
             try:
@@ -366,11 +397,13 @@ async def websocket_sendpoint(websocket: WebSocket):
                 logger.info(
                     "Reconnect timer expired, closing drive_id=%s with %s packets written",
                     drive_id,
-                    _pi_packets_written
+                    _pi_packets_written,
                 )
                 reset_pi_state(close_db=True)
             except asyncio.CancelledError:
                 logger.info("Reconnect timer cancelled for drive_id=%s", drive_id)
                 raise
 
-        _pi_reconnect_task = asyncio.create_task(wait_for_reconnect(live_drive.drive_id))
+        _pi_reconnect_task = asyncio.create_task(
+            wait_for_reconnect(live_drive.drive_id)
+        )

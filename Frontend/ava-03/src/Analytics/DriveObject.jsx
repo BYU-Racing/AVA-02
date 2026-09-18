@@ -1,29 +1,29 @@
-import { useEffect, useState, useRef } from "react";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import Typography from "@mui/material/Typography";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import Accordion from "@mui/material/Accordion";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import CircularProgress from "@mui/material/CircularProgress";
+import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
-import id_map from "../idMap";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
+import { useEffect, useRef, useState } from "react";
+import id_map from "../idMap";
 import { CANtoTimeseries } from "./CANtransformations";
-import CircularProgress from "@mui/material/CircularProgress";
 // Deleting drives
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
+import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
+import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 
 const HOVER_TIMEOUT = 200;
@@ -226,9 +226,17 @@ function DriveObject({
           aria-controls="panel2-content"
           id="panel2-header"
         >
-          <Typography sx={{ flexGrow: 1 }}>
-            {formattedDate} - {drive.driver.name}
-          </Typography>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography>
+              {formattedDate} - {drive.driver.name}
+            </Typography>
+
+            {drive.notes && (
+              <Typography variant="body2" color="text.secondary" noWrap title={drive.notes}>
+                {drive.notes}
+              </Typography>
+            )}
+          </Box>
           <Tooltip title="Download CSV">
             <span>
               <IconButton
