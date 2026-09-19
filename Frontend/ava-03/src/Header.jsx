@@ -95,6 +95,13 @@ const Header = () => {
             to="/live-telemetry"
             value="/live-telemetry"
           />
+
+          <Tab
+            label="GPS"
+            component={Link}
+            to="/gps"
+            value="/gps"
+          />
         </Tabs>
       </Toolbar>
     </AppBar>
