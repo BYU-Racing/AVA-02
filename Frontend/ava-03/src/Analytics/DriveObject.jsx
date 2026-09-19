@@ -228,15 +228,10 @@ function DriveObject({
           id="panel2-header"
         >
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography>
-              {formattedDate} - {drive.driver.name}
+            <Typography noWrap>{formattedDate}</Typography>
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {drive.driver.name}
             </Typography>
-
-            {drive.notes && (
-              <Typography variant="body2" color="text.secondary" noWrap title={drive.notes}>
-                {drive.notes}
-              </Typography>
-            )}
           </Box>
           <Tooltip title="Download CSV">
             <span>
@@ -264,6 +259,15 @@ function DriveObject({
           </Tooltip>
         </AccordionSummary>
         <AccordionDetails>
+          {drive.notes && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ marginBottom: 1, overflowWrap: "anywhere" }}
+            >
+              <strong>Notes:</strong> {drive.notes}
+            </Typography>
+          )}
           {loadingSensors === true ? (
             <Typography>Loading</Typography>
           ) : sensorData[drive.drive_id] &&

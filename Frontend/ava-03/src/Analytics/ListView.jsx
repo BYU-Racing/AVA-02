@@ -40,7 +40,8 @@ function ListView({
       <Box
         sx={{
           flexGrow: 1,
-          overflow: "auto", // Enable scrolling for this container
+          overflowY: "auto", // Enable vertical scrolling for this container
+          overflowX: "hidden",
           padding: 1,
           minHeight: 0, // Allow the box to shrink below its content size
           maxHeight: "calc(100vh - 145px)",
