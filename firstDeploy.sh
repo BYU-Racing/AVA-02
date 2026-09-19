@@ -1,16 +1,31 @@
 #!/usr/bin/env bash
-# Usage: ./firstDeploy.sh
+# Usage: ./firstDeploy.sh [ec2 | local_live | local]
 
 set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
-echo "Checking tailscale status..."
-if tailscale status >/dev/null 2>&1; then
-    echo "Tailscale is already running."
-else
-    echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/scripts/script_helper.sh"
+
+# Checking numbers of params
+if (( $# > 1 )); then
+    echo "Usage: $0 [ec2 | local_live | local]"
     exit 1
-fi  
+fi
+
+OPTION="$(validate_option "${1:-local}")" || {
+    echo "Usage: $0 [ec2 | local_live | local]"
+    exit 1
+}
+
+if [[ "$OPTION" == "local_live" || "$OPTION" == "ec2" ]]; then
+    echo "Checking tailscale status..."
+    tailscale status >/dev/null 2>&1 || {
+        echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
+        exit 1
+    }
+fi
 
 if [[ ! -f .env ]]; then
     echo "Missing .env file. Create it with: cp .env.example .env"
@@ -26,28 +41,10 @@ for variable in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB DELETE_PASSWORD; do
 done
 
 # Check Docker separately so a Docker error is not reported as missing Compose.
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker is not installed or is not in PATH. Rerun ./installDependencies.sh."
+COMPOSE="$(verify_docker)" || {
+    echo "Docker must be running before deploying"
     exit 1
-fi
-
-if docker compose version >/dev/null 2>&1; then
-    COMPOSE="docker compose"
-elif command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE="docker-compose"
-else
-    echo "The Docker Compose plugin is not available to the Docker CLI."
-    echo "Docker executable: $(command -v docker)"
-    docker --version || true
-    echo "Rerun ./installDependencies.sh, then verify with: docker compose version"
-    exit 1
-fi
-
-if ! docker info >/dev/null 2>&1; then
-    echo "Docker is installed, but the daemon is unavailable or this user lacks permission."
-    echo "Log out and SSH back in, then run: docker info"
-    exit 1
-fi
+}
 
 echo "===== Starting AVA-03 First Deployment ====="
 echo "Starting database docker container..."

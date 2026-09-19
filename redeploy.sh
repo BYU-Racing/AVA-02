@@ -1,16 +1,33 @@
 #!/usr/bin/env bash
-# Usage: ./redeploy.sh [--restart-db]
+# Usage: ./redeploy.sh [ec2 | local_live | local] [--restart-db]
 
 # ===== This script is for re-deploying after changes =====
 
 set -euo pipefail
 cd "$(dirname "$0")" # in case it's run from another directory
 
-echo "Checking tailscale status..."
-tailscale status >/dev/null 2>&1 || {
-    echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/scripts/script_helper.sh"
+
+# Checking numbers of params
+if (( $# > 2 )); then
+    echo "Usage: $0 [ec2 | local_live | local] [--restart-db]"
+    exit 1
+fi
+
+OPTION="$(validate_option "${1:-local}")" || {
+    echo "Usage: $0 [ec2 | local_live | local] [--restart-db]"
     exit 1
 }
+
+if [[ "$OPTION" == "ec2" || "$OPTION" == "local_live" ]]; then
+    echo "Checking tailscale status..."
+    tailscale status >/dev/null 2>&1 || {
+        echo "Tailscale is not running. Please run ./installDependencies.sh and log out and back in."
+        exit 1
+    }
+fi
 
 if [[ ! -f .env ]]; then
     echo "Missing .env file. Create it with: cp .env.example .env"
@@ -25,31 +42,24 @@ for variable in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB DELETE_PASSWORD; do
     fi
 done
 
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker is not installed or is not in PATH. Rerun ./installDependencies.sh."
+COMPOSE="$(verify_docker)" || {
+    echo "Docker must be running before deploying"
     exit 1
-fi
-
-if docker compose version >/dev/null 2>&1; then
-    COMPOSE="docker compose"
-elif command -v docker-compose >/dev/null 2>&1; then
-    COMPOSE="docker-compose"
-else
-    echo "The Docker Compose plugin is not available to the Docker CLI."
-    echo "Docker executable: $(command -v docker)"
-    docker --version || true
-    echo "Rerun ./installDependencies.sh, then verify with: docker compose version"
-    exit 1
-fi
-
-if ! docker info >/dev/null 2>&1; then
-    echo "Docker is installed, but the daemon is unavailable or this user lacks permission."
-    echo "Log out and SSH back in, then run: docker info"
-    exit 1
-fi
+}
 
 RESTART_DB=false
-[[ "${1:-}" == "--restart-db" ]] && RESTART_DB=true
+case "${2:-}" in
+    "") # 2nd arg is blank
+        ;;
+    --restart-db) # 2nd arg is --restart-db
+        RESTART_DB=true
+        ;;
+    *) # 2nd arg is something else
+        echo "Usage: $0 [ec2 | local_live | local] [--restart-db]" >&2
+        exit 1
+        ;;
+esac
+
 
 echo "===== Starting AVA-03 re-deployment! ====="
 
