@@ -1,6 +1,7 @@
 # Frontend/ava-02/node_modules
 # Frontend/ava-02/.pnp
 *.pnp.js
+.DS_Store
 
 # Vite
 Frontend/ava-vite/node_modules/
@@ -21,6 +22,3 @@ node_modules
 
 # Env
 .env
-
-# Fun
-maxverstappen.jpg

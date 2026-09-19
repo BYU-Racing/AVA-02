@@ -2,8 +2,6 @@
 
 Third Generation BYU-Racing Analytics Application
 
-![AVA Image](./maxverstappen.jpg)
-
 ## Architecture
 
 - **Backend**: FastAPI (Python) with PostgreSQL database
@@ -43,10 +41,10 @@ First, copy the .env file and put in new values:
 - `cp .env.example .env`
 
 Then run the dep install script:
-- `./installDependencies.sh`
+- `./installDependencies.sh local`
 
 Restart the terminal, then run:
-- `./firstDeploy.sh`
+- `./firstDeploy.sh local`
 
 And it should be up!
 
@@ -85,9 +83,12 @@ Make sure in security rules that you have SSH access for inbound rules and gener
 ### Redeploy Changes
 
 To redeploy AVA after making changes and pushing them to main, run this from the base folder:
-- ```./redeploy.sh```
+
+- AWS EC2: `./redeploy.sh ec2`
+- Linux with Tailscale: `./redeploy.sh local_live`
+- Standard local Linux: `./redeploy.sh local` (or `./redeploy.sh`)
 
 Optionally, you can also restart the database as well:
-- ```./redeploy.sh --restart-db```
+- `./redeploy.sh ec2 --restart-db`
 
 If you change the `redeploy.sh` script, do a `git pull` before running it again.
