@@ -4,6 +4,7 @@ import Analytics from "./Analytics/Analytics";
 import Header from "./Header";
 import Home from "./Home";
 import LiveTelemetry from "./LiveTelemetry/LiveTelemetry";
+import GPS from "./GPS/GPS";
 
 function App() {
   const [driveList, setDriveList] = useState([]);
@@ -56,6 +57,7 @@ function App() {
             }
           />
           <Route path="/live-telemetry" element={<LiveTelemetry />} />
+          <Route path="/gps" element={<GPS />} />
           <Route
             path="/*"
             element={<p>WAKE UP!! YOU ARE LOST!! WAKE UP!! YOU ARE LOST!!</p>}

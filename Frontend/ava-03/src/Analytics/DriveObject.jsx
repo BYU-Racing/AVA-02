@@ -12,6 +12,7 @@ import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 import id_map from "../idMap";
 import { CANtoTimeseries } from "./CANtransformations";
+import { Box } from "@mui/material";
 // Deleting drives
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
