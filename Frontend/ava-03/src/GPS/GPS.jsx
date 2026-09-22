@@ -2,7 +2,7 @@ import React from "react";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet'
-import { TestProvider, useTestContext } from "../Provider/TestContext";
+import { TelemetryProvider, useTelemetryContext } from "../Provider/TelemetryProvider";
 
 
 
@@ -12,14 +12,15 @@ import { TestProvider, useTestContext } from "../Provider/TestContext";
 
 //Note: An implementation of the GPS component will be changed over to Leaflet in the future.  Current implementation is just a placeholder
 function GPS() {
-    const msgContext = useTestContext();
-    const [msg, setMsg] = useState("emptyMessage");
+    const telemetryContext = useTelemetryContext();
+    const [telemetryData, setTelemetryData] = useState({});
     useEffect(() => {
-        console.log("msgContext changed:", msgContext);
-        setMsg(msgContext);
-}, [msgContext]);
+        console.log("telemetryContext:", telemetryContext);
+        if(telemetryContext) {
+            setTelemetryData(telemetryContext.telemetryData);
+        }
+    }, [telemetryContext]);
 
-    console.log("msg:", msgContext);
     return (
         <MapContainer center={[40.2488, -111.6495]} zoom={18} scrollWheelZoom={true} style={{height:"100vh", width:"100vw"}}>
             <TileLayer
@@ -34,6 +35,10 @@ function GPS() {
         </MapContainer>
 
     );
+}
+
+function interpretTelemetryData(telemetryData) {
+    // Placeholder function to interpret telemetry data and extract GPS coordinates.
 }
 
 export default GPS;

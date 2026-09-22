@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useContext, createContext } from "react";
 import { Telemetry } from "../protobuf/proto/ava3_pb";
+import React from "react";
 
 // Configuration
 const WS_URL = (import.meta.env.VITE_WS_URL?.trim())
