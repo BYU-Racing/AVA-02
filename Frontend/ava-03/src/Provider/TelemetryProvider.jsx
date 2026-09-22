@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext, createContext } from "react";
 import { Telemetry } from "../protobuf/proto/ava3_pb";
 
 // Configuration
@@ -13,6 +13,8 @@ const RECONNECT_INTERVAL = 3000;
 
 let autoReconnect = true;
 
+const DataContext = React.createContext(null);
+
 /**
  * Custom hook for managing WebSocket connection to live telemetry stream
  * @param {Function} onMessage - Callback function when telemetry message is received
@@ -22,7 +24,7 @@ export function useWebSocketTelemetry(onMessage) {
   const [connected, setConnected] = useState(false);
   const [senderConnected, setSenderConnected] = useState(false);
   const [database_enabled, setDatabaseEnabled] = useState(true);
-
+  const [telemetryData, setTelemetryData] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
@@ -58,6 +60,7 @@ export function useWebSocketTelemetry(onMessage) {
             };
 
             if (data.type === "telemetry") {
+              setTelemetryData(data);
               setSenderConnected(true);
               if (onMessage) {
                 onMessage(data);
@@ -77,6 +80,7 @@ export function useWebSocketTelemetry(onMessage) {
             }
             console.log("Connection confirmed:", data.message);
           } else if (data.type === "telemetry") {
+            setTelemetryData(data);
             setSenderConnected(true);
             if (onMessage) {
               onMessage(data);
@@ -177,8 +181,30 @@ export function useWebSocketTelemetry(onMessage) {
     connected,
     senderConnected,
     database_enabled,
+    telemetryData,
     connect: connectWebSocket,
     disconnect: disconnectWebSocket,
     togglePersist,
   };
 }
+
+function TelemetryProvider({ children }) {
+  const telemetryState = useWebSocketTelemetry();
+  
+  return(
+        <DataContext.Provider value={telemetryState}>
+            {children}
+        </DataContext.Provider>
+  )
+}
+
+function useTelemetryContext() {
+  const context = useContext(DataContext);
+  if(context === null) {
+    console.error("useTelemetryContext must be used within a TelemetryProvider");
+  } else {
+    return context;
+  }
+}
+
+export { useTelemetryContext, TelemetryProvider };
