@@ -5,6 +5,7 @@ import Header from "./Header";
 import Home from "./Home";
 import LiveTelemetry from "./LiveTelemetry/LiveTelemetry";
 import GPS from "./GPS/GPS";
+import  {TestProvider} from "./Provider/TestContext";
 
 function App() {
   const [driveList, setDriveList] = useState([]);
@@ -40,6 +41,7 @@ function App() {
     return () => controller.abort();
   }, []);
   return (
+    <TestProvider>
     <Router>
       <Header />
       <div style={{ paddingTop: "50px" }}>
@@ -65,6 +67,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    </TestProvider>
   );
 }
 
