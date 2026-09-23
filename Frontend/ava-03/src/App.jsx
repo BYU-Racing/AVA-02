@@ -5,7 +5,6 @@ import Header from "./Header";
 import Home from "./Home";
 import LiveTelemetry from "./LiveTelemetry/LiveTelemetry";
 import GPS from "./GPS/GPS";
-import  {TestProvider} from "./Provider/TestContext";
 import { TelemetryProvider } from "./Provider/TelemetryProvider";
 
 function App() {
