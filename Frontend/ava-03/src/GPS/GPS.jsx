@@ -21,6 +21,7 @@ function GPS() {
             const newGpsCoordinates = interpretTelemetryData(telemetryContext.telemetryData);
             if(newGpsCoordinates != null) {
                 setGpsCoordinates(newGpsCoordinates);
+                console.log("Updated GPS Coordinates:", newGpsCoordinates);
             }
         }
     }, [telemetryContext]);
@@ -46,16 +47,13 @@ function interpretTelemetryData(telemetryData) {
     //Step 1: Check if telemetryData is not null and if it it actually contains telemetry Data
     if(telemetryData !== null && telemetryData.type === "telemetry") {
         //For now, We will just log the data to the console and return a placeholder coordinate.
-        console.log("Telemetry Data:", telemetryData);
         //Step 2: Extract GPS coordinates from telemetryData.  This will depend on the structure of the telemetryData.
         if(telemetryData.data != null && telemetryData.id !== null) { //Making sure that a packet is not empty and that it actually contains data
             if(telemetryData.id === 9) { // 9 is the ID for GPS data from the CAN bus.
                 // For now, we will just return a placeholder coordinate.
                 if(Array.isArray(telemetryData.data) && telemetryData.data.length >= 2) {
-                    console.log("GPS Data:", telemetryData.data);
                     const dataArray = telemetryData.data;
                     const latLong = [Number(dataArray[1] ?? 0n) / 1e7, Number(dataArray[0] ?? 0n) / 1e7];
-                    console.log("GPS Coordinates:", latLong);
                     return latLong;
 
                 }
