@@ -27,10 +27,12 @@ function GPS() {
     }, [telemetryContext]);
 
     return (
-        <MapContainer center={gpsCoordinates} zoom={18} scrollWheelZoom={true} style={{height:"100vh", width:"100vw"}}>
+        <MapContainer center={gpsCoordinates} zoom={18} scrollWheelZoom={true} style={{height:"100vh", width:"100vw"}} maxZoom={24}>
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxNativeZoom={19}
+                maxZoom={24}
             />
             <Marker position={gpsCoordinates}>
                 <Popup>
@@ -46,7 +48,6 @@ function interpretTelemetryData(telemetryData) {
     // Placeholder function to interpret telemetry data and extract GPS coordinates.
     //Step 1: Check if telemetryData is not null and if it it actually contains telemetry Data
     if(telemetryData !== null && telemetryData.type === "telemetry") {
-        //For now, We will just log the data to the console and return a placeholder coordinate.
         //Step 2: Extract GPS coordinates from telemetryData.  This will depend on the structure of the telemetryData.
         if(telemetryData.data != null && telemetryData.id !== null) { //Making sure that a packet is not empty and that it actually contains data
             if(telemetryData.id === 9) { // 9 is the ID for GPS data from the CAN bus.
@@ -59,17 +60,10 @@ function interpretTelemetryData(telemetryData) {
                 }
 
             
-                // if(dataArray.length == 2) {
-                //     let vals = []
-                //      vals[0] = Number(vals[0] ?? 0n) / 1e7;
-                //     const lon = Number(vals[1] ?? 0n) / 1e7;
-
-                // }
             }
         }
-        //For now, we will just return a placeholder coordinate.
     }
-    return null; //Current Coordinates.
+    return null;
 }
 
 
