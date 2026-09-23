@@ -55,6 +55,11 @@ function LiveTelemetry() {
     setWsConnected(connected);
   }, [connected]);
 
+  //Logging for debugging purposes
+  React.useEffect(() => {
+    console.log("Telemetry Data Updated:", telemetryData);
+  }, [telemetryData]);
+
   const {
     layout,
     addWidget,
@@ -63,6 +68,7 @@ function LiveTelemetry() {
     applyProfile,
     isCustomized,
   } = useWidgetPreferences(DEFAULT_LAYOUT);
+
 
   return (
     <div className="telemetry-dashboard">
