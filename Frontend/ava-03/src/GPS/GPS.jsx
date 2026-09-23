@@ -1,8 +1,10 @@
 import React from "react";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet'
 import { TelemetryProvider, useTelemetryContext } from "../Provider/TelemetryProvider";
+import positionMarkerUrl from "../Assets/position-marker.svg";
 
 
 
@@ -34,7 +36,7 @@ function GPS() {
                 maxNativeZoom={19}
                 maxZoom={24}
             />
-            <Marker position={gpsCoordinates}>
+            <Marker position={gpsCoordinates} icon={createCustomIcon()}>
                 <Popup>
                     Here is the HBLL.
                 </Popup>
@@ -64,6 +66,17 @@ function interpretTelemetryData(telemetryData) {
         }
     }
     return null;
+}
+
+function createCustomIcon() {
+    const customIcon = new L.Icon({
+        iconUrl: positionMarkerUrl,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -15],
+    });
+
+    return customIcon;
 }
 
 
