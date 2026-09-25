@@ -186,8 +186,11 @@ _pi_db: Session | None = None
 _pi_packets_written: int = 0
 _pi_reconnect_task: asyncio.Task | None = None
 RECONNECT_TIMEOUT_SEC = 5
+GPS_LIVE_TIMEOUT_SEC = 2
 
 _database_enabled: bool = True
+_time_since_gps: datetime = datetime.now(timezone.utc)
+_gps_live: bool = False
 
 
 def get_database_state_payload() -> dict:
@@ -198,8 +201,20 @@ def get_database_state_payload() -> dict:
     }
 
 
+def get_gps_status_payload() -> dict:
+    return {
+        "type": "gps_status",
+        "gps_live": _gps_live,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 async def broadcast_database_state():
     await manager.broadcast(get_database_state_payload())
+
+
+async def broadcast_gps_status():
+    await manager.broadcast(get_gps_status_payload())
 
 
 def update_database_enabled(enabled: bool) -> bool:
@@ -256,7 +271,11 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # For testing
             msg = await websocket.receive_json()
-
+            if msg.get("type") in {"gps_status"}:
+                _gps_live = (datetime.now(timezone.utc) - _time_since_gps) < timedelta(
+                    seconds=GPS_LIVE_TIMEOUT_SEC
+                )
+                await broadcast_gps_status()
             # "type": "db",
             # "enabled": bool",
             # "timestamp": datetime.now(timezone.utc).isoformat()
@@ -278,12 +297,13 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.websocket("/ws/send")  # handler for data from pi
 async def websocket_sendpoint(websocket: WebSocket):
     """WS handler for data sent from pi"""
-    global _pi_live_drive, _pi_db, _pi_packets_written, _pi_reconnect_task
+    global _pi_live_drive, _pi_db, _pi_packets_written
+    global _pi_reconnect_task, _time_since_gps
     await manager.connect(websocket, client=False)
     logger.info("Pi connected to send telemetry WebSocket")
 
-    db: Optional[Session] = None
-    live_drive: Optional[models.Drive] = None
+    db: Session | None = None
+    live_drive: models.Drive | None = None
 
     if (
         _pi_reconnect_task
@@ -330,6 +350,8 @@ async def websocket_sendpoint(websocket: WebSocket):
         while True:  # Receive and parse data from pi
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
+            if decoded_packet["id"] in {288, 289}:
+                _time_since_gps = datetime.now(timezone.utc)
 
             if _database_enabled:
                 if db is None or live_drive is None:
