@@ -15,7 +15,7 @@ COPY Frontend/ava-03/src/ ./src/
 # transform them, so keeping them out of this step avoids recopying 75 MiB of
 # animation frames whenever frontend source code changes.
 # Keep enough RAM available for Docker and the OS on a 2 GiB EC2 instance.
-RUN NODE_OPTIONS=--max-old-space-size=1500 npm run build
+RUN NODE_OPTIONS=--max-old-space-size=1536 npm run build
 
 # ---------- Backend stage ----------
 FROM python:3.11-slim
@@ -36,4 +36,8 @@ ENV PATH="/app/Backend/.venv/bin:$PATH"
 COPY --from=frontend /app/Frontend/dist ./FrontendDist
 
 EXPOSE 8000
-CMD ["uvicorn", "Backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "Backend.main:app", \
+    "--host", "0.0.0.0", \
+    "--port", "8000", \
+    "--ws-ping-interval", "10"\
+    "--ws-ping-timeout", "10"]

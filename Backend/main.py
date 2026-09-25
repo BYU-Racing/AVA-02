@@ -71,7 +71,7 @@ class SPAStaticFiles(StaticFiles):
             # If file not found, serve index.html for SPA routing
             if getattr(e, "status_code", None) == 404:
                 return await super().get_response("index.html", scope)
-            raise e
+            raise
 
 
 # Mount static files LAST (catch-all route)

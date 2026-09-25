@@ -2,7 +2,6 @@
 # Desc: Pydantic schemas for database models
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 # Schema for RawData
 class RawDataBase(BaseModel):
     msg_id: int
-    raw_data: List[int]
+    raw_data: list[int]
     time: int
 
 
@@ -29,8 +28,8 @@ class RawData(RawDataBase):
 
 class DriveBase(BaseModel):
     date: datetime
-    notes: Optional[str] = None
-    hash: Optional[str] = None
+    notes: str | None = None
+    hash: str
 
 
 class DriveCreate(DriveBase):
@@ -39,7 +38,7 @@ class DriveCreate(DriveBase):
 
 class Drive(DriveBase):
     drive_id: int
-    raw_data: List[RawData] = []
+    raw_data: list[RawData] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,7 +61,7 @@ class DriverCreate(DriverBase):
 
 class Driver(DriverBase):
     driver_id: int
-    drives: List[Drive] = []
+    drives: list[Drive] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,7 +75,7 @@ class DriverSimple(BaseModel):
 
 class DriveSimple(BaseModel):
     date: datetime
-    notes: Optional[str] = None
+    notes: str | None = None
     driver: DriverSimple
     drive_id: int
 

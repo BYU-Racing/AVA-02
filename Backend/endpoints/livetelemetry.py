@@ -8,7 +8,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket, client=True):
         await websocket.accept()
@@ -78,8 +78,8 @@ class ConnectionManager:
             )
 
     # Sends message to all connected clients. If a client is disconnected, removes it from the list.
-    async def broadcast(self, message: Dict):
-        disconnected: List[WebSocket] = []
+    async def broadcast(self, message: dict):
+        disconnected: list[WebSocket] = []
 
         for conn in self.active_connections:
             try:
@@ -93,7 +93,7 @@ class ConnectionManager:
             await self.disconnect(conn)
 
     async def broadcast_bytes(self, message: bytes):
-        disconnected: List[WebSocket] = []
+        disconnected: list[WebSocket] = []
 
         for conn in self.active_connections:
             try:
@@ -110,7 +110,7 @@ class ConnectionManager:
 # ========== Functions for adding data to database ===========
 
 
-def normalize_raw_data(raw_data: List[int]) -> List[int]:
+def normalize_raw_data(raw_data: list[int]) -> list[int]:
     # Analysis pipeline expects 8-byte payload-style arrays.
     return (raw_data + [0] * 8)[:8]
 
@@ -165,7 +165,7 @@ def create_live_drive(db: Session) -> models.Drive:
     return crud.create_drive(db=db, drive=drive)
 
 
-def persist_live_packet(db: Session, drive_id: int, decoded_packet: Dict):
+def persist_live_packet(db: Session, drive_id: int, decoded_packet: dict):
     db_row = models.RawData(
         drive_id=drive_id,
         msg_id=decoded_packet["id"],
@@ -181,16 +181,16 @@ def persist_live_packet(db: Session, drive_id: int, decoded_packet: Dict):
 manager = ConnectionManager()
 
 # Reconnect state
-_pi_live_drive: Optional[models.Drive] = None
-_pi_db: Optional[Session] = None
+_pi_live_drive: models.Drive | None = None
+_pi_db: Session | None = None
 _pi_packets_written: int = 0
-_pi_reconnect_task: Optional[asyncio.Task] = None
+_pi_reconnect_task: asyncio.Task | None = None
 RECONNECT_TIMEOUT_SEC = 5
 
 _database_enabled: bool = True
 
 
-def get_database_state_payload() -> Dict:
+def get_database_state_payload() -> dict:
     return {
         "type": "database",
         "database_enabled": _database_enabled,
@@ -256,14 +256,12 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # For testing
             msg = await websocket.receive_json()
-            if msg.get("type") == "ping":
-                await websocket.send_json({"type": "pong"})
 
             # "type": "db",
             # "enabled": bool",
             # "timestamp": datetime.now(timezone.utc).isoformat()
             # Turns on and off database persistence based on button
-            elif msg.get("type") in {"db", "database"}:
+            if msg.get("type") in {"db", "database"}:
                 enabled = msg.get("database_enabled", msg.get("enabled"))
                 if isinstance(enabled, bool):
                     update_database_enabled(enabled)
