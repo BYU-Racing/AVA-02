@@ -6,8 +6,10 @@ import ScrollingContent from "./ScrollingContent";
 function Home() {
   return (
     <div style={{ position: "relative" }}>
+      <p>hi!</p>
       <VideoScroll />
       <ScrollingContent />
+      
     </div>
   );
 }
