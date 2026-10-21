@@ -63,15 +63,24 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
     throw new Error(errorMessage);
   };
 
-  const handleDownload = async (driveId) => {
-    const response = await fetch(`/api/drive/${driveId}/csv`);
+  // Takes in format and passes msg ID's as parameters for downloads
+  const handleDownload = async (driveId, format, msgIds) => {
+    if (msgIds.length === 0) {
+      throw new Error("Select at least one CAN ID");
+    }
+
+    const params = new URLSearchParams();
+    msgIds.forEach((id) => params.append("msg_ids", id));
+    const response = await fetch(
+      `/api/drive/${driveId}/${format}?${params.toString()}`
+    );
 
     if (response.ok) {
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const contentDisposition = response.headers.get("Content-Disposition");
       const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] || `drive_${driveId}.csv`;
+      const filename = filenameMatch?.[1] || `drive_${driveId}.${format}`;
       const link = document.createElement("a");
 
       link.href = downloadUrl;
@@ -83,7 +92,7 @@ function Analytics({ driveList, setDriveList, setCachedData, cachedData }) {
       return;
     }
 
-    let errorMessage = "Failed to download drive CSV";
+    let errorMessage = `Failed to download drive ${format.toUpperCase()}`;
     try {
       const errorData = await response.json();
       if (errorData?.detail) {
