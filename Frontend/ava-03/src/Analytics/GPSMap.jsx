@@ -18,7 +18,6 @@ function GPSMap({ dataSets }) {
   const [telemetryData, setTelemetryData] = useState({});
   const [gpsCoordinates, setGpsCoordinates] = useState([40.2488, -111.6495]); // Placeholder coordinates (HBLL)
   const [storedCoordinates, setStoredCoordinates] = useState([]);
-  const [enableDrawLines, setEnableDrawLines] = useState(false);
   useEffect(() => {
     if (dataSets != null && dataSets.length > 0) {
       console.log("GPSMap dataSets:", dataSets);
@@ -55,31 +54,14 @@ function GPSMap({ dataSets }) {
         maxNativeZoom={19}
         maxZoom={24}
       />
-      <MapComponent storedCoordinates={storedCoordinates} enableDrawLines={enableDrawLines} />
-      <Marker position={gpsCoordinates} icon={createCustomIcon()}>
-        <Popup>
-          Current GPS Coordinates: {gpsCoordinates[1]}, {gpsCoordinates[0]}
-
-        </Popup>
-      </Marker>
+      <MapComponent storedCoordinates={storedCoordinates} />
+      
     </MapContainer>
 
   );
 }
 
-
-function createCustomIcon() {
-  const customIcon = new L.Icon({
-    iconUrl: positionMarkerUrl,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15],
-  });
-
-  return customIcon;
-}
-
-function MapComponent({ storedCoordinates, enableDrawLines }) {
+function MapComponent({ storedCoordinates }) {
   const map = useMap();
   useEffect(() => {
 
