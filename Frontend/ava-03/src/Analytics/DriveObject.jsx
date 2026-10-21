@@ -26,6 +26,11 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormGroup from "@mui/material/FormGroup";
+import RadioGroup from "@mui/material/RadioGroup";
+import Radio from "@mui/material/Radio";
 
 const HOVER_TIMEOUT = 200;
 
@@ -47,6 +52,11 @@ function DriveObject({
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [downloadSubmitting, setDownloadSubmitting] = useState(false);
   const [downloadFeedback, setDownloadFeedback] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState("csv");
+  const [availableIds, setAvailableIds] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [loadingExportIds, setLoadingExportIds] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
 
@@ -182,19 +192,54 @@ function DriveObject({
 
   const handleDownloadClick = async (e) => {
     e.stopPropagation();
+    setDownloadFeedback(null);
+    setExportOpen(true);
+
+    if (availableIds.length > 0) return;
+
+    setLoadingExportIds(true);
+    try {
+      const response = await fetch(`/api/sensors/${drive.drive_id}`);
+      if (!response.ok) throw new Error("Could not load CAN IDs");
+
+      const ids = await response.json();
+      const idStrings = ids.map(String);
+      setAvailableIds(idStrings);
+      setSelectedIds(idStrings);
+    } catch (error) {
+      setDownloadFeedback({
+        severity: "error",
+        message: error.message || "Could not load CAN IDs",
+      });
+    } finally {
+      setLoadingExportIds(false);
+    }
+  };
+
+  const toggleCanId = (id) => {
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id]
+    );
+  };
+
+  const handleConfirmDownload = async () => {
+    if (selectedIds.length === 0) return;
+
     setDownloadSubmitting(true);
     setDownloadFeedback(null);
-
     try {
-      await handleDownload(drive.drive_id);
+      await handleDownload(drive.drive_id, exportFormat, selectedIds);
+      setExportOpen(false);
       setDownloadFeedback({
         severity: "success",
-        message: `Downloaded CSV for ${drive.driver.name}`,
+        message: `Downloaded ${exportFormat.toUpperCase()} for ${drive.driver.name}`,
       });
     } catch (error) {
       setDownloadFeedback({
         severity: "error",
-        message: error.message || "Failed to download drive CSV",
+        message: error.message || `Failed to download ${exportFormat.toUpperCase()}`,
       });
     } finally {
       setDownloadSubmitting(false);
@@ -233,14 +278,14 @@ function DriveObject({
               {drive.driver.name}
             </Typography>
           </Box>
-          <Tooltip title="Download CSV">
+          <Tooltip title="Export drive data">
             <span>
               <IconButton
                 size="small"
                 onClick={handleDownloadClick}
                 disabled={downloadSubmitting}
               >
-                {downloadSubmitting ? (
+              {downloadSubmitting ? (
                   <CircularProgress color="inherit" size="18px" />
                 ) : (
                   <DownloadIcon fontSize="small" />
@@ -338,7 +383,68 @@ function DriveObject({
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={exportOpen} onClose={() => setExportOpen(false)}>
+        <DialogTitle>Download drive data</DialogTitle>
 
+        <DialogContent>
+          <DialogContentText>Choose a file format.</DialogContentText>
+
+          <RadioGroup
+            aria-label="export format"
+            value={exportFormat}
+            onChange={(event) => setExportFormat(event.target.value)}
+          >
+            <FormControlLabel value="csv" control={<Radio />} label="CSV Raw" />
+            <FormControlLabel value="csv_decoded" control={<Radio />} label="CSV Decoded" />
+            <FormControlLabel value="log" control={<Radio />} label= "LOG"/>
+          </RadioGroup>
+
+          <DialogContentText>Select CAN IDs to include.</DialogContentText>
+          <Button onClick={() => setSelectedIds(availableIds)}>
+            Select all
+          </Button>
+          <Button onClick={() => setSelectedIds([])}>
+            Clear
+          </Button>
+          {loadingExportIds ? (
+            <CircularProgress size={20} />
+          ) : availableIds.length === 0 ? (
+            <DialogContentText>No CAN IDs found for this drive.</DialogContentText>
+          ) : (
+            <FormGroup>
+              {availableIds.map((id) => (
+                <FormControlLabel
+                  key={id}
+                  label={`${id} (${id_map[id] ?? "Unknown"})`}
+                  control={
+                    <Checkbox
+                      checked={selectedIds.includes(id)}
+                      onChange={() => toggleCanId(id)}
+                    />
+                  }
+                />
+              ))}
+            </FormGroup>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => setExportOpen(false)}
+            disabled={downloadSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDownload}
+            disabled={
+              selectedIds.length === 0 || loadingExportIds || downloadSubmitting
+            }
+          >
+            Download
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={Boolean(downloadFeedback)}
         autoHideDuration={3000}
