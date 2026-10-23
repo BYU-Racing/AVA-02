@@ -1,106 +1,100 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { GoogleMap, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import React from "react";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup } from 'react-leaflet'
+import { TelemetryProvider, useTelemetryContext } from "../Provider/TelemetryProvider";
+import positionMarkerUrl from "../Assets/position-marker.svg";
 
-const containerStyle = {
-  width: "100%",
-  height: "100%",
-};
 
-const mapOptions = {
-  disableDefaultUI: true,
-  zoomControl: false,
-  mapTypeControl: false,
-  fullscreenControl: false,
-};
 
-const polylineOptions = {
-  strokeColor: "#FF0000",
-  strokeOpacity: 1.0,
-  strokeWeight: 4,
-};
 
-const GPSMap = ({
-  dataSets,
-  globalZoomBounds,
-  globalZoom,
-  setLeft,
-  setRight,
-}) => {
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: googleMapsApiKey || "",
-  });
 
-  const [map, setMap] = useState(null);
 
-  const path = useMemo(
-    () =>
-      dataSets[0]?.data
-        ?.filter(
-          (point) =>
-            point.value.lat != null &&
-            point.value.long != null &&
-            !isNaN(point.value.lat) &&
-            !isNaN(point.value.long) &&
-            point.value.long !== 0 &&
-            point.value.lat !== 0
-        )
-        ?.sort((a, b) => a.timestamp - b.timestamp)
-        ?.map((point) => ({
-          lat: Number(point.value.lat),
-          lng: Number(point.value.long),
-        })) || [],
-    [dataSets]
+let storedCoordinates = [];
+//Note: An implementation of the GPS component will be changed over to Leaflet in the future.  Current implementation is just a placeholder
+function GPSMap({ dataSets }) {
+  const telemetryContext = useTelemetryContext();
+  const [telemetryData, setTelemetryData] = useState({});
+  const [gpsCoordinates, setGpsCoordinates] = useState([40.2488, -111.6495]); // Placeholder coordinates (HBLL)
+  const [storedCoordinates, setStoredCoordinates] = useState([]);
+  useEffect(() => {
+    if (dataSets != null && dataSets.length > 0) {
+      console.log("GPSMap dataSets:", dataSets);
+
+      //Now, lets push all the coordinates from the dataSets into the storedCoordinates array.
+      const newCoordinates = dataSets?.flatMap((dataSet) => {
+        if (dataSet?.data != null && dataSet.data.length > 0) {
+          return dataSet.data.map((item) => [item.value.lat, item.value.long]);
+        }
+        return [];
+      });
+      if (newCoordinates != null && newCoordinates.length > 0) {
+        setStoredCoordinates(newCoordinates);
+      }
+    }
+  }, [dataSets]);
+
+  useEffect(() => {
+
+  }, [dataSets]);
+
+  useEffect(() => {
+    if (telemetryContext !== null) {
+      setTelemetryData(telemetryContext.telemetryData);
+    }
+  }, [telemetryContext]);
+
+
+  return (
+    <MapContainer center={gpsCoordinates} zoom={18} scrollWheelZoom={true} style={{ height: "100vh", width: "100vw" }} maxZoom={24}>
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxNativeZoom={19}
+        maxZoom={24}
+      />
+      <MapComponent storedCoordinates={storedCoordinates} />
+      
+    </MapContainer>
+
   );
+}
 
+function MapComponent({ storedCoordinates }) {
+  const map = useMap();
   useEffect(() => {
-    if (globalZoom && globalZoomBounds) {
-      setLeft(globalZoomBounds.left);
-      setRight(globalZoomBounds.right);
+
+    //Here, I will draw the polyline on the map.
+    if (storedCoordinates != null && storedCoordinates.length > 1) {
+      console.log("Drawing a polyline on the map with stored coordinates:", storedCoordinates);
+      const polyLine = drawPolyLines(map, storedCoordinates);
     }
-  }, [globalZoomBounds, globalZoom, setLeft, setRight]);
+  }, [map, storedCoordinates]);
 
-  useEffect(() => {
-    if (map && path.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      path.forEach((point) => bounds.extend(point));
-      map.fitBounds(bounds);
-    }
-  }, [path, map]);
+  let clickCoordinates = null;
+  const mapEvents = useMapEvents({
+    click: (e) => {
+      clickCoordinates = [e.latlng.lat, e.latlng.lng];
+      console.log("Map clicked at:", clickCoordinates);
+      // L.marker(clickCoordinates).addTo(map).bindPopup(`Clicked at: ${clickCoordinates[0]}, ${clickCoordinates[1]}`).openPopup();
+    },
 
-  const onLoad = useCallback((mapInstance) => {
-    setMap(mapInstance);
-  }, []);
+  });
+  if (map != null) {
+    console.log("MapComponent rendered");
 
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  if (!googleMapsApiKey) {
-    return <div>Google Maps API key is not configured.</div>;
   }
 
-  if (loadError) {
-    return <div>Error loading maps</div>;
-  }
+}
 
-  return isLoaded ? (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      options={mapOptions}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-    >
-      {path.length > 0 && (
-        <Polyline
-          path={path}
-          options={polylineOptions}
-          key={JSON.stringify(path)} // Key based on actual path data
-        />
-      )}
-    </GoogleMap>
-  ) : null;
-};
+function drawPolyLines(map, storedCoordinates) {
+  if (map != null && storedCoordinates != null && storedCoordinates.length > 1) {
+    return L.polyline(storedCoordinates, { color: 'blue' }).addTo(map);
+  }
+}
+
+
+//testestest this is test programming oh man this monitor looks really good.  I am so happy with this monit
 
 export default GPSMap;

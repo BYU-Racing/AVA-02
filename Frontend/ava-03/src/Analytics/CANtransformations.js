@@ -116,18 +116,18 @@ export const transformCANMessagesToTimeSeriesLiveTireTemp = (canMessages) => {
 
 export const transformCANmessagesToTimeSeriesGPS = (canMessages) => {
   return canMessages.map((message) => {
-    let lat = decodeFloat32LE(message.raw_data, 0);
-    let long = decodeFloat32LE(message.raw_data, 4);
+    let lat = decodeInt32LE(message.raw_data, 4);
+    let long = decodeInt32LE(message.raw_data, 0);
 
-    const floatLooksValid =
+    const coordLooksValid =
       Number.isFinite(lat) &&
       Number.isFinite(long) &&
       Math.abs(lat) <= 90 &&
       Math.abs(long) <= 180;
 
-    if (!floatLooksValid) {
-      lat = decodeInt32LE(message.raw_data, 0) / 1e7;
-      long = decodeInt32LE(message.raw_data, 4) / 1e7;
+    if (!coordLooksValid) {
+      lat = decodeInt32LE(message.raw_data, 4) / 1e7;
+      long = decodeInt32LE(message.raw_data, 0) / 1e7;
     }
 
     return {
