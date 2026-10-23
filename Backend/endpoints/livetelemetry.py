@@ -7,8 +7,7 @@ import asyncio
 import logging
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
@@ -54,7 +53,7 @@ class ConnectionManager:
                 {
                     "type": "connection",
                     "status": "connected",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "message": "Connected to sender WebSocket!",
                 }
             )
@@ -72,7 +71,7 @@ class ConnectionManager:
                 {
                     "type": "connection",
                     "status": "disconnected",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "message": "Sender disconnected from WebSocket",
                 }
             )
@@ -165,12 +164,14 @@ def create_live_drive(db: Session) -> models.Drive:
     return crud.create_drive(db=db, drive=drive)
 
 
-def persist_live_packet(db: Session, drive_id: int, decoded_packet: dict):
+# MARK: Persist Pkt
+def persist_live_packet(db: Session, drive_id: int, decoded_packet: dict, lap: int):
     db_row = models.RawData(
         drive_id=drive_id,
         msg_id=decoded_packet["id"],
         raw_data=normalize_raw_data(decoded_packet["bytes"]),
         time=decoded_packet["timestamp"],
+        lap_num=lap,
     )
     db.add(db_row)
     db.commit()
@@ -189,15 +190,16 @@ RECONNECT_TIMEOUT_SEC = 5
 GPS_LIVE_TIMEOUT_SEC = 2
 
 _database_enabled: bool = True
-_time_since_gps: datetime = datetime.now(timezone.utc)
+_time_since_gps: datetime = datetime.now(UTC)
 _gps_live: bool = False
+_lap: int = 0
 
 
 def get_database_state_payload() -> dict:
     return {
         "type": "database",
         "database_enabled": _database_enabled,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -205,7 +207,7 @@ def get_gps_status_payload() -> dict:
     return {
         "type": "gps_status",
         "gps_live": _gps_live,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -251,6 +253,7 @@ async def set_live_db_state(enabled: bool = Query(...)):
     return get_database_state_payload()
 
 
+# MARK: Frontend WS
 @router.websocket(
     "/ws/livetelemetry"
 )  # handler for connecting to client for sending data to Frontend
@@ -262,7 +265,7 @@ async def websocket_endpoint(websocket: WebSocket):
             {
                 "type": "connection",
                 "status": "connected",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "message": "Connected to live telemetry WebSocket",
             }
         )
@@ -272,10 +275,14 @@ async def websocket_endpoint(websocket: WebSocket):
             # For testing
             msg = await websocket.receive_json()
             if msg.get("type") in {"gps_status"}:
-                _gps_live = (datetime.now(timezone.utc) - _time_since_gps) < timedelta(
+                _gps_live = (datetime.now(UTC) - _time_since_gps) < timedelta(
                     seconds=GPS_LIVE_TIMEOUT_SEC
                 )
                 await broadcast_gps_status()
+
+            if msg.get("type") in {"lap"}:
+                global _lap
+                _lap += 1
             # "type": "db",
             # "enabled": bool",
             # "timestamp": datetime.now(timezone.utc).isoformat()
@@ -294,6 +301,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await manager.disconnect(websocket)
 
 
+# MARK: Sendpoint
 @router.websocket("/ws/send")  # handler for data from pi
 async def websocket_sendpoint(websocket: WebSocket):
     """WS handler for data sent from pi"""
@@ -340,7 +348,7 @@ async def websocket_sendpoint(websocket: WebSocket):
             {
                 "type": "drive",
                 "status": "started",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "drive_id": live_drive.drive_id,
                 "driver_id": live_drive.driver_id,
             }
@@ -351,7 +359,7 @@ async def websocket_sendpoint(websocket: WebSocket):
             data = await websocket.receive_bytes()
             decoded_packet = decode_pi_to_server(data)
             if decoded_packet["id"] in {288, 289}:
-                _time_since_gps = datetime.now(timezone.utc)
+                _time_since_gps = datetime.now(UTC)
 
             if _database_enabled:
                 if db is None or live_drive is None:
@@ -363,7 +371,7 @@ async def websocket_sendpoint(websocket: WebSocket):
                             {
                                 "type": "drive",
                                 "status": "started",
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "timestamp": datetime.now(UTC).isoformat(),
                                 "drive_id": live_drive.drive_id,
                                 "driver_id": live_drive.driver_id,
                             }
@@ -380,7 +388,9 @@ async def websocket_sendpoint(websocket: WebSocket):
 
                 if db is not None and live_drive is not None:
                     try:
-                        persist_live_packet(db, live_drive.drive_id, decoded_packet)
+                        persist_live_packet(
+                            db, live_drive.drive_id, decoded_packet, _lap
+                        )
                         _pi_packets_written += 1
                     except Exception as exc:
                         db.rollback()

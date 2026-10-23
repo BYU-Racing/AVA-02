@@ -4,7 +4,7 @@
 
 import logging
 
-from sqlalchemy import Numeric, cast, delete, distinct, func, select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session, aliased
 
 from . import models, schemas
@@ -152,11 +152,23 @@ def get_sensors_data_from_drive(db: Session, drive_id: int, sensor_id: int):
         .all()
     )
 
+
 def get_sensor_data_by_msg_id(db: Session, drive_id: int, msg_ids: list[int] | None):
-    statement = select(models.RawData).where(models.RawData.drive_id==drive_id)
+    statement = select(models.RawData).where(models.RawData.drive_id == drive_id)
 
     if msg_ids:
         statement = statement.where(models.RawData.msg_id.in_(msg_ids))
+
+    statement = statement.order_by(models.RawData.time.asc())
+    return db.execute(statement).scalars().all()
+
+
+def get_data_by_lap(db: Session, drive_id: int, lap: int):
+    statement = (
+        select(models.RawData)
+        .where(models.RawData.drive_id == drive_id)
+        .where(models.RawData.lap_num == lap)
+    )
 
     statement = statement.order_by(models.RawData.time.asc())
     return db.execute(statement).scalars().all()

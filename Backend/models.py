@@ -49,5 +49,6 @@ class RawData(Base):
     msg_id: Mapped[int] = mapped_column(Integer)
     raw_data: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
     time: Mapped[int] = mapped_column(Integer)
+    lap_num: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     drive = relationship("Drive", back_populates="raw_data")
