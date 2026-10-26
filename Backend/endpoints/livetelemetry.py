@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta, timezone
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
+from Backend.protobuf.proto.ava3_pb2 import Telemetry
+
 from .. import crud, models, schemas
 from ..database import SessionLocal
 from ..services.livetelemetry_decoder import (
@@ -35,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # ========== Connection manager class for websockets ===========
+# MARK: Conn Man
 
 
 class ConnectionManager:
@@ -107,6 +110,7 @@ class ConnectionManager:
 
 
 # ========== Functions for adding data to database ===========
+# MRK: DB Funcs
 
 
 def normalize_raw_data(raw_data: list[int]) -> list[int]:
@@ -283,6 +287,15 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("type") in {"lap"}:
                 global _lap
                 _lap += 1
+
+                lap_msg = Telemetry(
+                    type="telemetry",
+                    timestamp_ms=int(datetime.now(UTC).timestamp() * 1000),
+                    id=10,
+                    data=_lap,
+                )
+                await manager.broadcast_bytes(lap_msg.SerializeToString())
+
             # "type": "db",
             # "enabled": bool",
             # "timestamp": datetime.now(timezone.utc).isoformat()
